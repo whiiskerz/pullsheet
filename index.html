@@ -963,7 +963,7 @@ tr:last-child td{border-bottom:0}
     <div class="logoMark">PS</div>
     <div>
       <h1>PULL<span>SHEET</span></h1>
-      <small>MAXXECU LOG INTELLIGENCE · v1.6 · @whiiskerzbuilt</small>
+      <small>MAXXECU LOG INTELLIGENCE · v1.7 · @whiiskerzbuilt</small>
     </div>
   </div>
 
@@ -1230,6 +1230,13 @@ tr:last-child td{border-bottom:0}
       </select>
     </div>
 
+    <div class="configItem">
+      <label>Nitrous activation</label>
+      <select id="cfgNitrous">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
   </div>
 
   <div id="detectedChannels" class="detected" style="display:none"></div>
@@ -1322,6 +1329,21 @@ tr:last-child td{border-bottom:0}
   <div class="configHeader">
     <h2>Recent fixes</h2>
     <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
+      v1.7 — Three more. (1) Dyno curve overlay: 2+ pulls in the same
+      log now get an extra chart overlaying every pull's power curve
+      on one graph — actually see if a tune change made more power,
+      instead of eyeballing separate charts. (2) Launch analysis: a
+      new table breaking down the first couple seconds of each
+      standing-start pull — launch RPM, launch boost, 60-ft time, and
+      a heuristic flag for possible wheel or converter slip (RPM
+      climbing hard before the car is actually rolling). (3) Nitrous
+      safety: add a nitrous activation channel in Config I/O and the
+      app now watches specifically for lean or knock events WHILE
+      nitrous is active, using a much tighter threshold than normal
+      (a lean nitrous hit is how pistons get holes in them) — shown
+      as bright pink "NITROUS LEAN"/"NITROUS KNOCK" flags plus a
+      dedicated Nitrous dashboard card (activation count, total active
+      time, worst AFR seen).<br><br>
       v1.6 — Four more. (1) Power/torque curves: any pull with usable
       power data now gets an expandable RPM-based chart (like a real
       dyno sheet) instead of just one peak number — clearly labeled
@@ -1499,6 +1521,7 @@ let activeDashCards={
   power:true,
   knock:true,
   afr:true,
+  nitrous:true,
   iat:false,
   ignTiming:false,
   fuelPress:false,
@@ -1520,6 +1543,7 @@ const DASH_CARD_META=[
   {key:'power',label:'Power'},
   {key:'knock',label:'Knock'},
   {key:'afr',label:'AFR'},
+  {key:'nitrous',label:'Nitrous'},
   {key:'iat',label:'IAT'},
   {key:'ignTiming',label:'Timing'},
   {key:'fuelPress',label:'Fuel PSI'},
@@ -1555,7 +1579,8 @@ const CONFIG_IDS=[
   'cfgTiming',
   'cfgKnockRetard',
   'cfgPower',
-  'cfgTorque'
+  'cfgTorque',
+  'cfgNitrous'
 ];
 
 document.querySelectorAll('.tabs button').forEach(btn=>{
@@ -3173,6 +3198,23 @@ function parseLog(text){
 
     tractionCorrection:findColumn(headers,'auto',[
       'Traction ctrl. correction ['
+    ]),
+
+    /*
+      Nitrous activation — no standard MaxxECU channel name to
+      guess at with confidence (this is normally a user-wired
+      digital output/aux channel, named however the installer
+      named it), so the auto-detect list only tries the obvious
+      ones and leans on the manual I/O Config override for
+      anything else. Treated as "active" whenever the value is
+      >0 — works whether it's logged as a clean 0/1 digital
+      state or a duty-cycle percentage.
+    */
+    nitrous:findColumn(headers,selected('cfgNitrous'),[
+      'Nitrous 1 [',
+      'Nitrous [',
+      'N2O [',
+      'NOS ['
     ])
 
   };
@@ -3245,6 +3287,7 @@ function parseLog(text){
     selectorPosition:[],
     tractionEnabled:[],
     tractionCorrection:[],
+    nitrous:[],
     sourceColumns:cfg
   };
 
@@ -4030,8 +4073,134 @@ function computeAccelStats(d,pull){
 
   return{
     zeroToSixty:timeToSpeed(60),
-    eighthMile:timeToDistance(0.125)
+    eighthMile:timeToDistance(0.125),
+    sixtyFoot:timeToDistance(60/5280)
   };
+
+}
+
+
+/*
+  Looks specifically at the first couple seconds of a pull —
+  the part that actually decides your ET at the track, and the
+  part the rest of the app doesn't zoom in on anywhere else.
+
+  Wheel slip / converter slip detection is a heuristic, not a
+  direct measurement: without wired gear ratios there's no way
+  to know the "correct" RPM-to-speed relationship, so this
+  instead looks for the tell — RPM climbing hard while VSS is
+  still reading ~0. A clean launch has RPM and speed rising
+  together almost immediately; a slipping tire or a converter
+  that hasn't coupled yet shows RPM running away on its own
+  first. 800 RPM of "free" rise before the car is rolling is a
+  deliberately conservative bar — small amounts of pre-load rev
+  are completely normal and shouldn't get flagged every time.
+*/
+function analyzeLaunch(d,p){
+
+  if(!d.runtime || !d.rpm)return null;
+
+  const t0=d.runtime[p.start];
+  const rpm0=d.rpm[p.start];
+
+  const SLIP_RPM_THRESHOLD=800;
+  const MOTION_MPH=3;
+  const WINDOW_SECONDS=2;
+
+  let motionIdx=null;
+
+  for(let i=p.start;i<=p.end;i++){
+
+    const t=d.runtime[i];
+
+    if(Number.isFinite(t) && Number.isFinite(t0) && t-t0>WINDOW_SECONDS)break;
+
+    if(d.vss && Number.isFinite(d.vss[i]) && d.vss[i]/1.609>=MOTION_MPH){
+      motionIdx=i;
+      break;
+    }
+
+  }
+
+  let rpmRiseBeforeMotion=null;
+
+  if(motionIdx!=null && Number.isFinite(rpm0) && Number.isFinite(d.rpm[motionIdx])){
+    rpmRiseBeforeMotion=d.rpm[motionIdx]-rpm0;
+  }
+
+  const accel=computeAccelStats(d,p);
+
+  return{
+
+    launchRpm:Number.isFinite(rpm0)?rpm0:null,
+
+    launchBoost:
+      d.mapPsi && Number.isFinite(d.mapPsi[p.start])
+        ?d.mapPsi[p.start]
+        :null,
+
+    sixtyFoot:accel?accel.sixtyFoot:null,
+
+    rpmRiseBeforeMotion,
+
+    slipDetected:
+      rpmRiseBeforeMotion!=null && rpmRiseBeforeMotion>=SLIP_RPM_THRESHOLD,
+
+    /*
+      No VSS>3mph seen at all within the window despite the pull
+      lasting past it — likely a roll-on pull that started already
+      moving, or VSS just isn't logged well enough here. Either
+      way, "no motion detected" is a more honest label than
+      silently reporting slipDetected:false as if launch behavior
+      was actually confirmed clean.
+    */
+    motionConfirmed:motionIdx!=null
+
+  };
+
+}
+
+
+/*
+  Like detectWotPulls' TPS-active-window logic, generalized to
+  any channel — returns every contiguous {start,end} run where
+  the channel reads "active" (value>0 by default; pass a custom
+  predicate for anything else). Used for nitrous activation
+  windows, where flagged-issue checks need the FULL window (to
+  know if a lean/knock sample fell inside it), not just the
+  single rising-edge moment detectButtonEvents() reports.
+*/
+function detectActiveWindows(d,key,predicate){
+
+  const arr=d[key];
+
+  if(!arr)return [];
+
+  const test=predicate||(v=>v>0);
+
+  const windows=[];
+  let start=-1;
+
+  for(let i=0;i<arr.length;i++){
+
+    const active=Number.isFinite(arr[i]) && test(arr[i]);
+
+    if(active && start<0){
+      start=i;
+    }
+
+    if(!active && start>=0){
+      windows.push({start,end:i-1});
+      start=-1;
+    }
+
+  }
+
+  if(start>=0){
+    windows.push({start,end:arr.length-1});
+  }
+
+  return windows;
 
 }
 
@@ -4127,6 +4296,27 @@ function detectPullIssues(d){
   const BOOST_SPIKE_DELTA=3;
   const IAT_THRESHOLD_F=140;
 
+  /*
+    Nitrous makes lean/knock events much more dangerous (a lean
+    nitrous hit is a classic way to put a hole in a piston), so
+    the SAME checks get a tighter bar while nitrous is active —
+    flagged as their own 'nitrousLean'/'nitrousKnock' types so
+    they read as more urgent than an ordinary lean spot or knock
+    event, instead of blending in.
+  */
+  const NITROUS_KNOCK_THRESHOLD=1.5;
+  const NITROUS_LEAN_THRESHOLD=0.5;
+
+  const nitrousActive=[];
+
+  if(d.nitrous){
+
+    detectActiveWindows(d,'nitrous').forEach(w=>{
+      for(let i=w.start;i<=w.end;i++)nitrousActive[i]=true;
+    });
+
+  }
+
   const issues=[];
 
   d.pulls.forEach(p=>{
@@ -4138,12 +4328,14 @@ function detectPullIssues(d){
 
     for(let i=p.start;i<=p.end;i++){
 
+      const onNitrous=!!nitrousActive[i];
+
       if(
         d.knockRetard &&
         Number.isFinite(d.knockRetard[i]) &&
-        Math.abs(d.knockRetard[i])>=KNOCK_THRESHOLD
+        Math.abs(d.knockRetard[i])>=(onNitrous?NITROUS_KNOCK_THRESHOLD:KNOCK_THRESHOLD)
       ){
-        issues.push({i,type:'knock',value:d.knockRetard[i]});
+        issues.push({i,type:onNitrous?'nitrousKnock':'knock',value:d.knockRetard[i]});
       }
 
       if(
@@ -4154,8 +4346,8 @@ function detectPullIssues(d){
 
         const delta=d.afr[i]-d.targetAfr[i];
 
-        if(delta>=LEAN_THRESHOLD){
-          issues.push({i,type:'lean',value:delta});
+        if(delta>=(onNitrous?NITROUS_LEAN_THRESHOLD:LEAN_THRESHOLD)){
+          issues.push({i,type:onNitrous?'nitrousLean':'lean',value:delta});
         }
 
       }
@@ -4267,6 +4459,12 @@ function formatIssueLabel(ev){
 
     case'heat':
       return`High IAT ${Math.round(ev.value)}°F at ${t}${rpmStr}`;
+
+    case'nitrousKnock':
+      return`NITROUS KNOCK ${Math.abs(ev.value).toFixed(1)}° at ${t}${rpmStr}`;
+
+    case'nitrousLean':
+      return`NITROUS LEAN +${ev.value.toFixed(1)} over target at ${t}${rpmStr}`;
 
     default:
       return`Flagged at ${t}${rpmStr}`;
@@ -5290,6 +5488,57 @@ function render(d,filename,prBadges){
   }
 
 
+  if(d.nitrous && d.nitrous.some(Number.isFinite)){
+
+    const nitrousWindows=detectActiveWindows(d,'nitrous');
+
+    if(nitrousWindows.length){
+
+      let worstLean=null;
+      let worstKnock=null;
+      let totalDuration=0;
+
+      nitrousWindows.forEach(w=>{
+
+        if(d.runtime && Number.isFinite(d.runtime[w.start]) && Number.isFinite(d.runtime[w.end])){
+          totalDuration+=d.runtime[w.end]-d.runtime[w.start];
+        }
+
+        if(d.afr && d.targetAfr){
+          for(let i=w.start;i<=w.end;i++){
+            if(Number.isFinite(d.afr[i]) && Number.isFinite(d.targetAfr[i])){
+              const delta=d.afr[i]-d.targetAfr[i];
+              if(worstLean==null || delta>worstLean)worstLean=delta;
+            }
+          }
+        }
+
+        if(d.knockRetard){
+          const k=peakAbs(valuesAtIndices(d.knockRetard,w.start,w.end));
+          if(k!=null && (worstKnock==null || k>worstKnock))worstKnock=k;
+        }
+
+      });
+
+      const nitrousDanger=(worstLean!=null && worstLean>=0.5) || (worstKnock!=null && worstKnock>=1.5);
+
+      dashCardHTML.nitrous=card({
+        label:nitrousDanger?'Nitrous ⚠':'Nitrous',
+        value:`${nitrousWindows.length} activation${nitrousWindows.length===1?'':'s'}`,
+        stat:`${fmtTime(totalDuration)} TOTAL ACTIVE TIME`,
+        range:
+          worstLean!=null
+            ?`worst AFR during N2O: ${worstLean>=0?'+':''}${worstLean.toFixed(1)} vs. target${worstKnock&&worstKnock>0?` · ${Math.round(worstKnock)}° knock seen`:''}`
+            :'no AFR data during activation',
+        icon:'N2O',
+        accent:nitrousDanger?'var(--red)':'var(--green)'
+      });
+
+    }
+
+  }
+
+
   if(d.fuelPressPsi){
 
     const fp=stabilizedFuelPressure(d.fuelPressPsi);
@@ -5864,7 +6113,14 @@ function render(d,filename,prBadges){
 
   if(issueEvents.length){
 
-    const issueColor={knock:'var(--red)',lean:'var(--amber)',boost:'var(--purple)',heat:'var(--orange)'};
+    const issueColor={
+      knock:'var(--red)',
+      lean:'var(--amber)',
+      boost:'var(--purple)',
+      heat:'var(--orange)',
+      nitrousKnock:'#ff00c8',
+      nitrousLean:'#ff00c8'
+    };
 
     html+=`
       <div class="sectionTitle">
@@ -5878,6 +6134,71 @@ function render(d,filename,prBadges){
             ⚠ ${escapeHTML(formatIssueLabel(ev))}${ev.count>1?` · ×${ev.count} samples`:''}
           </div>
         `).join('')}
+      </div>
+    `;
+
+  }
+
+
+  /*
+    Launch analysis — the first couple seconds of each pull,
+    since that's what actually decides ET at the track and
+    nothing else on the page zooms in on it specifically.
+    Only listed for standing-start pulls (analyzeLaunch requires
+    d.vss+d.runtime and computeAccelStats already restricts
+    zeroToSixty/eighthMile/sixtyFoot to genuine standing starts —
+    a 3rd-gear roll-on pull correctly shows blanks here rather
+    than a made-up number).
+  */
+  const launchRows=d.pulls
+    .map((p,i)=>({i,launch:analyzeLaunch(d,p)}))
+    .filter(x=>x.launch);
+
+  if(launchRows.length){
+
+    html+=`
+      <div class="sectionTitle">
+        <div>Launch analysis</div>
+        <span>${launchRows.length} PULL${launchRows.length===1?'':'S'}</span>
+      </div>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pull</th>
+              <th>Launch RPM</th>
+              <th>Launch boost</th>
+              <th>60-ft</th>
+              <th>Launch behavior</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${launchRows.map(({i,launch})=>`
+              <tr>
+                <td>#${i+1}</td>
+                <td>${launch.launchRpm!=null?Math.round(launch.launchRpm):'—'}</td>
+                <td>${launch.launchBoost!=null?fmtPsi(launch.launchBoost):'—'}</td>
+                <td>${launch.sixtyFoot!=null?launch.sixtyFoot.toFixed(2)+'s':'—'}</td>
+                <td>
+                  ${
+                    !launch.motionConfirmed
+                      ?'no clean launch detected'
+                      :launch.slipDetected
+                        ?`⚠ possible wheel/converter slip · +${Math.round(launch.rpmRiseBeforeMotion)} RPM before moving`
+                        :'clean'
+                  }
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="font-size:11px;color:var(--dim);margin:-8px 0 20px">
+        Slip detection is a heuristic (RPM rising hard before the car is actually
+        rolling), not a direct wheel-speed-vs-driveshaft measurement — treat a
+        flag here as "worth a look," not a confirmed diagnosis.
       </div>
     `;
 
@@ -5987,6 +6308,19 @@ function render(d,filename,prBadges){
         this to read higher than what a dyno would show at the wheels.
       </div>
     `;
+
+    if(dynoPullIndices.length>=2){
+
+      html+=`
+        <div class="chartPanel" style="margin-bottom:16px">
+          <div style="font-size:11px;color:var(--dim);margin-bottom:8px;font-weight:700;letter-spacing:.3px">
+            OVERLAY — ALL PULLS, POWER ONLY
+          </div>
+          <canvas id="dynoOverlayChart" style="height:260px!important"></canvas>
+        </div>
+      `;
+
+    }
 
     dynoPullIndices.forEach(i=>{
 
@@ -6425,6 +6759,14 @@ function render(d,filename,prBadges){
 
   });
 
+  if(dynoPullIndices.length>=2){
+
+    const overlay=buildDynoOverlayChart(d,dynoPullIndices,'dynoOverlayChart');
+
+    if(overlay)dynoCharts.push(overlay);
+
+  }
+
 
   /*
     One CARD button per detected WOT pull — generates a square,
@@ -6675,22 +7017,16 @@ function buildPullCardImage(d,pc,filename){
 
 
 /*
-  Dyno-style power/torque-vs-RPM curve for a single pull, drawn
-  onto an already-mounted canvas. Unlike the main timeline chart
-  (x = time), this puts RPM on the x-axis — the same layout a
-  real dyno sheet uses — so you can see where the powerband
-  actually falls instead of just a single peak-hp number.
-
-  Raw per-sample RPM/power pairs are noisy (log rate + normal
-  sensor jitter), so samples get bucketed into 100rpm bins and
-  averaged within each bin before plotting — smooths the curve
-  without needing a real signal-processing library.
+  Bins one pull's raw per-sample RPM/power/torque pairs into
+  100rpm buckets and averages within each bucket — shared by the
+  single-pull dyno curve and the multi-pull overlay below, so
+  both smooth the same way. Raw samples are noisy (log rate +
+  normal sensor jitter); this is what turns them into a curve
+  worth looking at without needing a real signal-processing
+  library. Returns null when there isn't enough RPM spread in
+  this pull to plot anything meaningful.
 */
-function buildDynoCurve(d,p,canvasId){
-
-  const canvas=$(canvasId);
-
-  if(!canvas)return null;
+function computeDynoCurveData(d,p){
 
   const BIN=100;
   const bins={};
@@ -6731,6 +7067,30 @@ function buildDynoCurve(d,p,canvasId){
   const torqueCurve=rpmKeys.map(r=>
     bins[r].torqueCount?bins[r].torqueSum/bins[r].torqueCount:null
   );
+
+  return{rpmKeys,powerCurve,torqueCurve,hasTorque};
+
+}
+
+
+/*
+  Dyno-style power/torque-vs-RPM curve for a single pull, drawn
+  onto an already-mounted canvas. Unlike the main timeline chart
+  (x = time), this puts RPM on the x-axis — the same layout a
+  real dyno sheet uses — so you can see where the powerband
+  actually falls instead of just a single peak-hp number.
+*/
+function buildDynoCurve(d,p,canvasId){
+
+  const canvas=$(canvasId);
+
+  if(!canvas)return null;
+
+  const curveData=computeDynoCurveData(d,p);
+
+  if(!curveData)return null;
+
+  const{rpmKeys,powerCurve,torqueCurve,hasTorque}=curveData;
 
   const datasets=[{
     label:'Power (hp)',
@@ -6806,6 +7166,123 @@ function buildDynoCurve(d,p,canvasId){
           grid:{color:'#20262a'},
           ticks:{color:'#72d43c'},
           title:{display:true,text:'hp / lb-ft',color:'#72d43c'}
+        }
+
+      }
+
+    }
+
+  });
+
+}
+
+
+/*
+  Overlays multiple pulls' POWER curves (torque is left out here —
+  with several pulls on screen at once, power+torque×N lines gets
+  unreadable fast) on one RPM-based chart, one distinctly colored
+  line per pull. This is what actually answers "did that tune
+  change help" — two single-pull curves side by side make you
+  eyeball it, one overlay makes the answer obvious.
+*/
+function buildDynoOverlayChart(d,pullIndices,canvasId){
+
+  const canvas=$(canvasId);
+
+  if(!canvas)return null;
+
+  const COLORS=['#72d43c','#49a7ff','#ffb627','#c48cff','#ff5c4d','#42dada','#ff8757','#f5d76e'];
+
+  const curves=pullIndices
+    .map(i=>({i,curve:computeDynoCurveData(d,d.pulls[i])}))
+    .filter(x=>x.curve);
+
+  if(curves.length<2)return null;
+
+  /*
+    Each pull was binned independently and may not share the
+    same RPM range, so the shared x-axis is the UNION of every
+    pull's RPM bins — otherwise Chart.js would silently misalign
+    pull #1's 4000rpm point with pull #2's 4000rpm point if their
+    bin sets differ at all.
+  */
+  const allRpm=new Set();
+
+  curves.forEach(({curve})=>{
+    curve.rpmKeys.forEach(r=>allRpm.add(r));
+  });
+
+  const rpmKeys=[...allRpm].sort((a,b)=>a-b);
+
+  const datasets=curves.map(({i,curve},idx)=>{
+
+    const lookup={};
+
+    curve.rpmKeys.forEach((r,k)=>{lookup[r]=curve.powerCurve[k];});
+
+    const data=rpmKeys.map(r=>r in lookup?lookup[r]:null);
+
+    const color=COLORS[idx%COLORS.length];
+
+    return{
+      label:'Pull #'+(i+1),
+      data,
+      borderColor:color,
+      backgroundColor:color+'18',
+      borderWidth:2,
+      pointRadius:0,
+      tension:.2,
+      spanGaps:true,
+      yAxisID:'power'
+    };
+
+  });
+
+  return new Chart(canvas,{
+
+    type:'line',
+
+    data:{
+      labels:rpmKeys.map(String),
+      datasets
+    },
+
+    options:{
+
+      responsive:true,
+      maintainAspectRatio:false,
+      animation:false,
+
+      interaction:{mode:'index',intersect:false},
+
+      plugins:{
+
+        legend:{
+          display:true,
+          labels:{color:'#9aa4ab',boxWidth:14,font:{size:11}}
+        },
+
+        tooltip:{
+          callbacks:{
+            title:c=>c[0].label+' RPM'
+          }
+        }
+
+      },
+
+      scales:{
+
+        x:{
+          grid:{color:'#20262a'},
+          ticks:{color:'#667178',maxTicksLimit:10},
+          title:{display:true,text:'RPM',color:'#667178'}
+        },
+
+        power:{
+          position:'left',
+          grid:{color:'#20262a'},
+          ticks:{color:'#72d43c'},
+          title:{display:true,text:'hp',color:'#72d43c'}
         }
 
       }
@@ -7313,7 +7790,9 @@ function buildChart(d){
     knock:'#ff5c4d',
     lean:'#ffb627',
     boost:'#b88cff',
-    heat:'#ff8757'
+    heat:'#ff8757',
+    nitrousKnock:'#ff00c8',
+    nitrousLean:'#ff00c8'
   };
 
   let hasIssueMarkers=false;
