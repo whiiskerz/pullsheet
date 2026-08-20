@@ -963,7 +963,7 @@ tr:last-child td{border-bottom:0}
     <div class="logoMark">PS</div>
     <div>
       <h1>PULL<span>SHEET</span></h1>
-      <small>MAXXECU LOG INTELLIGENCE · v1.5 · @whiiskerzbuilt</small>
+      <small>MAXXECU LOG INTELLIGENCE · v1.6 · @whiiskerzbuilt</small>
     </div>
   </div>
 
@@ -1322,6 +1322,21 @@ tr:last-child td{border-bottom:0}
   <div class="configHeader">
     <h2>Recent fixes</h2>
     <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
+      v1.6 — Four more. (1) Power/torque curves: any pull with usable
+      power data now gets an expandable RPM-based chart (like a real
+      dyno sheet) instead of just one peak number — clearly labeled
+      as MaxxECU's engine-side fuel-flow estimate, not a wheel-HP
+      dyno reading. (2) Trend alerts: your log history now watches
+      for slow-building problems — knock, coolant/trans temp, health
+      score, or AFR drift worsening over several consecutive logs for
+      the same vehicle — and flags them on the History tab before
+      they're obvious. (3) Session card: one button now builds a
+      single shareable image summarizing the WHOLE session (best
+      pull, health, any PRs, issues flagged), not just one pull. (4)
+      Dashboard cards are now toggleable — only RPM, boost, power,
+      knock, and AFR show by default, with everything else (coolant,
+      injector duty, gear range, etc.) a single tap away instead of
+      an 18-card wall every time.<br><br>
       v1.5 — Three new features. (1) Flagged issues: every pull now
       gets auto-scanned for real knock events, lean spots vs. target
       AFR, boost spikes, and heat-soaked intake air — surfaced as a
@@ -1429,6 +1444,7 @@ let rawHeaders=[];
 let lastParsed=null;
 let lastFilename='';
 let chart=null;
+let dynoCharts=[];
 let historyChart=null;
 let historyChartMode='reliability';
 
@@ -1467,6 +1483,57 @@ let activeSeries={
   power:false,
   torque:false
 };
+
+/*
+  Same toggle pattern as activeSeries above, but for the "Smart
+  dashboard" card grid — defaults to only the 5 cards most people
+  actually care about when tuning (RPM, boost, power, knock, AFR),
+  with everything else one tap away instead of an 18-card wall on
+  first look. DASH_CARD_META gives each key the label used to
+  build its toggle chip; only keys with a card actually available
+  for the current log get shown as a chip (see render()).
+*/
+let activeDashCards={
+  rpm:true,
+  boost:true,
+  power:true,
+  knock:true,
+  afr:true,
+  iat:false,
+  ignTiming:false,
+  fuelPress:false,
+  oilPress:false,
+  coolant:false,
+  transTemp:false,
+  battery:false,
+  injDuty:false,
+  ethanol:false,
+  vss:false,
+  gear:false,
+  converterLockup:false,
+  linePress:false
+};
+
+const DASH_CARD_META=[
+  {key:'rpm',label:'RPM'},
+  {key:'boost',label:'Boost'},
+  {key:'power',label:'Power'},
+  {key:'knock',label:'Knock'},
+  {key:'afr',label:'AFR'},
+  {key:'iat',label:'IAT'},
+  {key:'ignTiming',label:'Timing'},
+  {key:'fuelPress',label:'Fuel PSI'},
+  {key:'oilPress',label:'Oil PSI'},
+  {key:'coolant',label:'Coolant'},
+  {key:'transTemp',label:'Trans temp'},
+  {key:'battery',label:'Battery'},
+  {key:'injDuty',label:'Inj duty'},
+  {key:'ethanol',label:'Ethanol'},
+  {key:'vss',label:'Speed'},
+  {key:'gear',label:'Gear range'},
+  {key:'converterLockup',label:'Converter'},
+  {key:'linePress',label:'Line PSI'}
+];
 
 const CONFIG_IDS=[
   'cfgFuel',
@@ -4936,6 +5003,16 @@ function render(d,filename,prBadges){
 
   lastParsed=d;
 
+  /*
+    Every render() rebuilds $('results').innerHTML from scratch, so
+    any dyno-curve Chart.js instances from the PREVIOUS render are
+    now attached to orphaned canvases — destroy them here rather
+    than leaking one Chart instance per re-render (unit toggle,
+    config change, etc. all call render() again on the same log).
+  */
+  dynoCharts.forEach(c=>{if(c)c.destroy();});
+  dynoCharts=[];
+
   $('status').style.display='none';
   $('results').style.display='block';
 
@@ -4989,6 +5066,10 @@ function render(d,filename,prBadges){
           SHARE
         </button>
 
+        <button class="btn" id="sessionCardBtn" title="Share a summary image of this whole session">
+          SESSION CARD
+        </button>
+
         <button class="btn" id="printReportBtn">
           PRINT / SAVE PDF
         </button>
@@ -5030,9 +5111,18 @@ function render(d,filename,prBadges){
       <div>Smart dashboard</div>
       <span>NO GENERIC LOG END VALUES</span>
     </div>
-
-    <div class="cards">
   `;
+
+  /*
+    Dashboard cards get collected into a lookup keyed by a stable
+    card key instead of concatenated straight into html — that's
+    what lets the toggle row further down show/hide them without
+    re-deriving which cards are even available for this log.
+    activeDashCards (declared near activeSeries) defaults to just
+    the 5 most tuning-relevant cards so this isn't a wall of 18
+    cards on first look; anything else is one tap away.
+  */
+  const dashCardHTML={};
 
 
   if(d.rpm){
@@ -5073,7 +5163,7 @@ function render(d,filename,prBadges){
 
     }
 
-    html+=card({
+    dashCardHTML.rpm=card({
       label:'RPM (in gear)',
       value:fmtRpm(peakInGear),
       stat:'PEAK WHILE DRIVING',
@@ -5104,7 +5194,7 @@ function render(d,filename,prBadges){
 
     const peakBoost=max(d.mapPsi);
 
-    html+=card({
+    dashCardHTML.boost=card({
       label:'Boost (MAP)',
       value:(peakBoost>=0?'+':'')+fmtPsi(peakBoost),
       stat:'PEAK, EST. GAUGE',
@@ -5118,7 +5208,7 @@ function render(d,filename,prBadges){
 
   if(d.iatF && d.iatF.some(Number.isFinite)){
 
-    html+=card({
+    dashCardHTML.iat=card({
       label:'Intake air temp',
       value:fmtTemp(avg(d.iatF)),
       stat:'AVERAGE',
@@ -5132,7 +5222,7 @@ function render(d,filename,prBadges){
 
   if(d.ignTiming && d.ignTiming.some(Number.isFinite)){
 
-    html+=card({
+    dashCardHTML.ignTiming=card({
       label:'Ignition timing',
       value:Math.round(max(d.ignTiming))+'°',
       stat:'PEAK ADVANCE',
@@ -5148,7 +5238,7 @@ function render(d,filename,prBadges){
 
     const peakRetard=peakAbs(d.knockRetard);
 
-    html+=card({
+    dashCardHTML.knock=card({
       label:'Knock retard',
       value:Math.round(peakRetard)+'°',
       stat:'PEAK PULLED',
@@ -5169,7 +5259,7 @@ function render(d,filename,prBadges){
       ?max(d.torqueLbFt)
       :null;
 
-    html+=card({
+    dashCardHTML.power=card({
       label:'Peak power',
       value:Math.round(peakPower)+' hp',
       stat:'MAXXECU CALCULATED',
@@ -5188,7 +5278,7 @@ function render(d,filename,prBadges){
 
   if(wa){
 
-    html+=card({
+    dashCardHTML.afr=card({
       label:waInfo.scope==='WOT'?'WOT AFR':'AFR (full log)',
       value:fmtAfr(wa.average),
       stat:'SPIKE FILTERED',
@@ -5208,7 +5298,7 @@ function render(d,filename,prBadges){
 
     if(fp){
 
-      html+=card({
+      dashCardHTML.fuelPress=card({
         label:mismatch?'Fuel pressure \u26a0':'Fuel pressure',
         value:mismatch?'UNRELIABLE':fmtPsi(fp.average),
         stat:mismatch?'CALIBRATION MISMATCH':`AUTO-DETECTED ${d.fuelPressSourceUnit?d.fuelPressSourceUnit.toUpperCase():''} SOURCE`,
@@ -5228,7 +5318,7 @@ function render(d,filename,prBadges){
 
     const oilMismatch=calibrationMismatch(d,'oilPress','cfgOil');
 
-    html+=card({
+    dashCardHTML.oilPress=card({
       label:oilMismatch?'Oil pressure \u26a0':'Oil pressure',
       value:oilMismatch?'UNRELIABLE':fmtPsi(avg(d.oilPressPsi)),
       stat:oilMismatch?'CALIBRATION MISMATCH':`AUTO-DETECTED ${d.oilPressSourceUnit?d.oilPressSourceUnit.toUpperCase():''} SOURCE`,
@@ -5244,7 +5334,7 @@ function render(d,filename,prBadges){
 
   if(d.coolantF){
 
-    html+=card({
+    dashCardHTML.coolant=card({
       label:'Coolant',
       value:fmtTemp(avg(d.coolantF)),
       stat:'AVERAGE',
@@ -5258,7 +5348,7 @@ function render(d,filename,prBadges){
 
   if(d.transTempF){
 
-    html+=card({
+    dashCardHTML.transTemp=card({
       label:'Transmission',
       value:fmtTemp(avg(d.transTempF)),
       stat:'AVERAGE',
@@ -5272,7 +5362,7 @@ function render(d,filename,prBadges){
 
   if(d.battery){
 
-    html+=card({
+    dashCardHTML.battery=card({
       label:'Battery',
       value:fmtVolt(avg(d.battery)),
       stat:'AVERAGE',
@@ -5293,7 +5383,7 @@ function render(d,filename,prBadges){
 
     const peakDuty=max(d.fuelDuty);
 
-    html+=card({
+    dashCardHTML.injDuty=card({
       label:'Injector duty',
       value:fmtPct(peakDuty),
       stat:'PEAK',
@@ -5309,7 +5399,7 @@ function render(d,filename,prBadges){
 
   if(d.ethanol){
 
-    html+=card({
+    dashCardHTML.ethanol=card({
       label:'Ethanol',
       value:fmtPct(avg(d.ethanol)),
       stat:'AVERAGE',
@@ -5323,7 +5413,7 @@ function render(d,filename,prBadges){
 
   if(d.vss){
 
-    html+=card({
+    dashCardHTML.vss=card({
       label:'Vehicle speed',
       value:fmtSpeed(max(d.vss)),
       stat:'PEAK',
@@ -5337,7 +5427,7 @@ function render(d,filename,prBadges){
 
   if(d.gear && d.gear.some(Number.isFinite)){
 
-    html+=card({
+    dashCardHTML.gear=card({
       label:'Gear range',
       value:`${Math.round(min(d.gear))}–${Math.round(max(d.gear))}`,
       stat:'ACTUAL GEAR',
@@ -5354,7 +5444,7 @@ function render(d,filename,prBadges){
     const engaged=d.converterLockup.filter(Number.isFinite);
     const pct=engaged.filter(v=>v>0).length/engaged.length*100;
 
-    html+=card({
+    dashCardHTML.converterLockup=card({
       label:'Converter lockup',
       value:Math.round(pct)+'%',
       stat:'OF LOG ENGAGED',
@@ -5368,7 +5458,7 @@ function render(d,filename,prBadges){
 
   if(d.transLinePressPsi && d.transLinePressPsi.some(Number.isFinite)){
 
-    html+=card({
+    dashCardHTML.linePress=card({
       label:'Line pressure',
       value:fmtPsi(max(d.transLinePressPsi)),
       stat:'PEAK',
@@ -5380,7 +5470,45 @@ function render(d,filename,prBadges){
   }
 
 
-  html+=`</div>`;
+  {
+
+    const availableDash=DASH_CARD_META.filter(m=>dashCardHTML[m.key]);
+
+    if(availableDash.length){
+
+      html+=`<div class="actions" style="flex-wrap:wrap;margin-bottom:14px">`;
+
+      html+=availableDash.map(m=>`
+        <button
+          class="toggle dashToggle ${activeDashCards[m.key]?'on':''}"
+          data-dashkey="${m.key}"
+        >${escapeHTML(m.label)}</button>
+      `).join('');
+
+      html+=`</div>`;
+
+    }
+
+    html+=`<div class="cards">`;
+
+    let anyDashShown=false;
+
+    availableDash.forEach(m=>{
+
+      if(activeDashCards[m.key]){
+        html+=dashCardHTML[m.key];
+        anyDashShown=true;
+      }
+
+    });
+
+    html+=`</div>`;
+
+    if(availableDash.length && !anyDashShown){
+      html+=`<div class="empty" style="margin-bottom:20px">All dashboard cards are hidden — tap one above to show it.</div>`;
+    }
+
+  }
 
 
   const afrI=afrInfo(d);
@@ -5824,6 +5952,61 @@ function render(d,filename,prBadges){
   }
 
 
+  /*
+    Power/torque curve per pull — RPM on the x-axis instead of
+    time, so you can actually see WHERE in the rev range the
+    power is made instead of just a single peak number. Only
+    listed for pulls with real power-channel coverage; the
+    canvases are built AFTER $('results').innerHTML is set below
+    (a canvas can't be drawn on before it exists in the DOM).
+  */
+  const dynoPullIndices=d.power
+    ?d.pulls
+      .map((p,i)=>i)
+      .filter(i=>{
+        const p=d.pulls[i];
+        let count=0;
+        for(let k=p.start;k<=p.end;k++){
+          if(Number.isFinite(d.rpm?.[k]) && Number.isFinite(d.power[k]))count++;
+        }
+        return count>=5;
+      })
+    :[];
+
+  if(dynoPullIndices.length){
+
+    html+=`
+      <div class="sectionTitle">
+        <div>Power / torque curves</div>
+        <span>${dynoPullIndices.length} PULL${dynoPullIndices.length===1?'':'S'}</span>
+      </div>
+
+      <div style="font-size:11px;color:var(--dim);margin:-6px 0 12px">
+        Engine-side estimate from MaxxECU's fuel-flow calculation, not a wheel-HP
+        reading off a chassis dyno — no drivetrain loss is subtracted, so expect
+        this to read higher than what a dyno would show at the wheels.
+      </div>
+    `;
+
+    dynoPullIndices.forEach(i=>{
+
+      html+=`
+        <details style="margin-bottom:10px" ${dynoPullIndices.length===1?'open':''}>
+          <summary style="cursor:pointer;color:var(--dim);font-size:12px;padding:8px 0;font-weight:700;letter-spacing:.3px">
+            PULL #${i+1} — POWER/TORQUE VS RPM (tap to expand)
+          </summary>
+
+          <div class="chartPanel">
+            <canvas id="dynoChart-${i}" style="height:260px!important"></canvas>
+          </div>
+        </details>
+      `;
+
+    });
+
+  }
+
+
   /* DRIVETRAIN & INPUTS */
 
   const hasDrivetrainData=
@@ -6049,6 +6232,19 @@ function render(d,filename,prBadges){
   $('results').innerHTML=html;
 
 
+  document.querySelectorAll('.dashToggle').forEach(btn=>{
+
+    btn.onclick=()=>{
+
+      activeDashCards[btn.dataset.dashkey]=!activeDashCards[btn.dataset.dashkey];
+
+      render(d,filename,prBadges);
+
+    };
+
+  });
+
+
   $('resetBtn').onclick=()=>{
 
     $('results').style.display='none';
@@ -6065,6 +6261,9 @@ function render(d,filename,prBadges){
       chart.destroy();
       chart=null;
     }
+
+    dynoCharts.forEach(c=>{if(c)c.destroy();});
+    dynoCharts=[];
 
   };
 
@@ -6200,6 +6399,31 @@ function render(d,filename,prBadges){
     await shareOrDownloadImage(dataUrl,cleanName+'-chart.png');
 
   };
+
+
+  $('sessionCardBtn').onclick=async()=>{
+
+    const dataUrl=buildSessionCardImage(d,h,prBadges,d._issueEvents,filename);
+    const cleanName=filename.replace(/\.(MaxxECU-Zip-log|MaxxECU-Log|log|zip|csv)$/i,'');
+
+    await shareOrDownloadImage(dataUrl,cleanName+'-session-card.png');
+
+  };
+
+
+  /*
+    Power/torque-vs-RPM curve per pull. Built here rather than
+    inline where the <details> HTML was written, since the
+    canvases don't exist in the DOM until $('results').innerHTML
+    is actually set — which already happened above this point.
+  */
+  dynoPullIndices.forEach(i=>{
+
+    const c=buildDynoCurve(d,d.pulls[i],'dynoChart-'+i);
+
+    if(c)dynoCharts.push(c);
+
+  });
 
 
   /*
@@ -6431,6 +6655,376 @@ function buildPullCardImage(d,pc,filename){
   });
 
   /* footer */
+  ctx.strokeStyle=COL.line;
+  ctx.beginPath();
+  ctx.moveTo(64,H-120);
+  ctx.lineTo(W-64,H-120);
+  ctx.stroke();
+
+  ctx.fillStyle=COL.dim;
+  ctx.textAlign='left';
+  ctx.font='400 18px JetBrains Mono, monospace';
+  ctx.fillText('@whiiskerzbuilt · pullsheet-app.netlify.app',64,H-72);
+
+  ctx.textAlign='right';
+  ctx.fillText('LOCAL ANALYSIS · DATA NEVER LEAVES YOUR BROWSER',W-64,H-72);
+
+  return canvas.toDataURL('image/png',1);
+
+}
+
+
+/*
+  Dyno-style power/torque-vs-RPM curve for a single pull, drawn
+  onto an already-mounted canvas. Unlike the main timeline chart
+  (x = time), this puts RPM on the x-axis — the same layout a
+  real dyno sheet uses — so you can see where the powerband
+  actually falls instead of just a single peak-hp number.
+
+  Raw per-sample RPM/power pairs are noisy (log rate + normal
+  sensor jitter), so samples get bucketed into 100rpm bins and
+  averaged within each bin before plotting — smooths the curve
+  without needing a real signal-processing library.
+*/
+function buildDynoCurve(d,p,canvasId){
+
+  const canvas=$(canvasId);
+
+  if(!canvas)return null;
+
+  const BIN=100;
+  const bins={};
+
+  for(let i=p.start;i<=p.end;i++){
+
+    const rpm=d.rpm?.[i];
+    const power=d.power?.[i];
+
+    if(!Number.isFinite(rpm) || !Number.isFinite(power))continue;
+
+    const bin=Math.round(rpm/BIN)*BIN;
+
+    if(!bins[bin]){
+      bins[bin]={powerSum:0,powerCount:0,torqueSum:0,torqueCount:0};
+    }
+
+    bins[bin].powerSum+=power;
+    bins[bin].powerCount++;
+
+    const torque=d.torqueLbFt?.[i];
+
+    if(Number.isFinite(torque)){
+      bins[bin].torqueSum+=torque;
+      bins[bin].torqueCount++;
+    }
+
+  }
+
+  const rpmKeys=Object.keys(bins).map(Number).sort((a,b)=>a-b);
+
+  if(rpmKeys.length<3)return null;
+
+  const powerCurve=rpmKeys.map(r=>bins[r].powerSum/bins[r].powerCount);
+
+  const hasTorque=rpmKeys.some(r=>bins[r].torqueCount>0);
+
+  const torqueCurve=rpmKeys.map(r=>
+    bins[r].torqueCount?bins[r].torqueSum/bins[r].torqueCount:null
+  );
+
+  const datasets=[{
+    label:'Power (hp)',
+    data:powerCurve,
+    borderColor:'#72d43c',
+    backgroundColor:'#72d43c18',
+    borderWidth:2,
+    pointRadius:0,
+    tension:.2,
+    spanGaps:true,
+    yAxisID:'power'
+  }];
+
+  if(hasTorque){
+
+    datasets.push({
+      label:'Torque (lb-ft)',
+      data:torqueCurve,
+      borderColor:'#c48cff',
+      backgroundColor:'#c48cff18',
+      borderWidth:2,
+      borderDash:[5,5],
+      pointRadius:0,
+      tension:.2,
+      spanGaps:true,
+      yAxisID:'power'
+    });
+
+  }
+
+  return new Chart(canvas,{
+
+    type:'line',
+
+    data:{
+      labels:rpmKeys.map(String),
+      datasets
+    },
+
+    options:{
+
+      responsive:true,
+      maintainAspectRatio:false,
+      animation:false,
+
+      interaction:{mode:'index',intersect:false},
+
+      plugins:{
+
+        legend:{
+          display:true,
+          labels:{color:'#9aa4ab',boxWidth:14,font:{size:11}}
+        },
+
+        tooltip:{
+          callbacks:{
+            title:c=>c[0].label+' RPM'
+          }
+        }
+
+      },
+
+      scales:{
+
+        x:{
+          grid:{color:'#20262a'},
+          ticks:{color:'#667178',maxTicksLimit:10},
+          title:{display:true,text:'RPM',color:'#667178'}
+        },
+
+        power:{
+          position:'left',
+          grid:{color:'#20262a'},
+          ticks:{color:'#72d43c'},
+          title:{display:true,text:'hp / lb-ft',color:'#72d43c'}
+        }
+
+      }
+
+    }
+
+  });
+
+}
+
+
+/*
+  Draws a square, shareable summary of the WHOLE session — not
+  one pull. Leads with the most brag-worthy thing that happened
+  (a personal record beats everything else; otherwise the best
+  0-60/eighth-mile/power/boost in that order), then a stat row
+  covering health, peak boost, peak power, and how many issues
+  got flagged. Same Canvas 2D approach and visual language as
+  buildPullCardImage() so the two feel like one product.
+*/
+function buildSessionCardImage(d,h,prBadges,issueEvents,filename){
+
+  const W=1080,H=1080;
+
+  const canvas=document.createElement('canvas');
+  canvas.width=W;
+  canvas.height=H;
+
+  const ctx=canvas.getContext('2d');
+
+  const COL={
+    bg:'#080a0c',
+    panel:'#12161a',
+    line:'#293238',
+    text:'#edf1ef',
+    dim:'#7f8a91',
+    amber:'#ffb627',
+    green:'#72d43c',
+    red:'#ff5c4d',
+    blue:'#49a7ff'
+  };
+
+  ctx.fillStyle=COL.bg;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle=COL.amber;
+  ctx.fillRect(64,64,72,72);
+  ctx.fillStyle=COL.bg;
+  ctx.font='700 34px JetBrains Mono, monospace';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillText('PS',100,102);
+
+  ctx.fillStyle=COL.text;
+  ctx.textAlign='left';
+  ctx.textBaseline='alphabetic';
+  ctx.font='700 40px JetBrains Mono, monospace';
+  ctx.fillText('PULLSHEET',154,98);
+
+  ctx.fillStyle=COL.dim;
+  ctx.font='400 20px JetBrains Mono, monospace';
+  ctx.fillText('SESSION SUMMARY',154,128);
+
+  const vehicleOrFile=currentVehicleLabel||filename;
+  ctx.fillStyle=COL.dim;
+  ctx.textAlign='right';
+  ctx.font='400 20px JetBrains Mono, monospace';
+  ctx.fillText(
+    (vehicleOrFile.length>28?vehicleOrFile.slice(0,26)+'…':vehicleOrFile),
+    W-64,88
+  );
+  ctx.fillText(new Date().toLocaleDateString(),W-64,116);
+
+  ctx.strokeStyle=COL.line;
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(64,168);
+  ctx.lineTo(W-64,168);
+  ctx.stroke();
+
+  const peakBoost=d.mapPsi && d.mapPsi.some(Number.isFinite)?max(d.mapPsi):null;
+  const peakPower=d.power && d.power.some(Number.isFinite)?max(d.power):null;
+
+  let bestZeroToSixty=null,bestEighthMile=null;
+
+  (d.pulls||[]).forEach(p=>{
+
+    const accel=computeAccelStats(d,p);
+
+    if(!accel)return;
+
+    if(accel.zeroToSixty!=null && (bestZeroToSixty==null || accel.zeroToSixty<bestZeroToSixty)){
+      bestZeroToSixty=accel.zeroToSixty;
+    }
+
+    if(accel.eighthMile!=null && (bestEighthMile==null || accel.eighthMile<bestEighthMile)){
+      bestEighthMile=accel.eighthMile;
+    }
+
+  });
+
+  /* hero — a personal record beats everything else available */
+  let heroValue='—',heroLabel='HEALTH SCORE',heroIsRecord=false;
+
+  if(prBadges && prBadges.length){
+
+    heroValue=prBadges[0].display;
+    heroLabel='NEW PR — '+prBadges[0].label.toUpperCase();
+    heroIsRecord=true;
+
+  }else if(bestZeroToSixty!=null){
+
+    heroValue=bestZeroToSixty.toFixed(2)+'s';
+    heroLabel='BEST 0-60 MPH';
+
+  }else if(bestEighthMile!=null){
+
+    heroValue=bestEighthMile.toFixed(2)+'s';
+    heroLabel='BEST 1/8 MILE';
+
+  }else if(peakPower!=null){
+
+    heroValue=Math.round(peakPower)+' hp';
+    heroLabel='PEAK POWER';
+
+  }else if(h.score!=null){
+
+    heroValue=h.score+'/100';
+    heroLabel='HEALTH SCORE';
+
+  }
+
+  if(heroIsRecord){
+
+    ctx.fillStyle=COL.green;
+    ctx.textAlign='center';
+    ctx.font='700 24px JetBrains Mono, monospace';
+    ctx.fillText('\u{1F3C6} PERSONAL RECORD',W/2,220);
+
+  }
+
+  ctx.fillStyle=heroIsRecord?COL.green:COL.amber;
+  ctx.textAlign='center';
+  ctx.font='700 140px JetBrains Mono, monospace';
+  ctx.fillText(heroValue,W/2,410);
+
+  ctx.fillStyle=COL.dim;
+  ctx.font='700 26px JetBrains Mono, monospace';
+  ctx.fillText(heroLabel,W/2,460);
+
+  const issueCount=issueEvents?issueEvents.length:0;
+
+  const stats=[
+    {
+      label:'HEALTH',
+      value:h.score!=null?h.score+'/100':'—',
+      color:COL.blue
+    },
+    {
+      label:'PEAK BOOST',
+      value:peakBoost!=null?peakBoost.toFixed(1)+' psi':'—',
+      color:COL.blue
+    },
+    {
+      label:'PEAK POWER',
+      value:peakPower!=null?Math.round(peakPower)+' hp':'—',
+      color:COL.green
+    },
+    {
+      label:'ISSUES FLAGGED',
+      value:issueCount?String(issueCount):'CLEAN',
+      color:issueCount?COL.red:COL.green
+    }
+  ];
+
+  const boxW=(W-128-3*24)/4;
+  const boxY=530;
+  const boxH=200;
+
+  stats.forEach((s,idx)=>{
+
+    const x=64+idx*(boxW+24);
+
+    ctx.fillStyle=COL.panel;
+    ctx.fillRect(x,boxY,boxW,boxH);
+    ctx.strokeStyle=COL.line;
+    ctx.lineWidth=1;
+    ctx.strokeRect(x,boxY,boxW,boxH);
+
+    let fontSize=34;
+    ctx.font=`700 ${fontSize}px JetBrains Mono, monospace`;
+
+    while(ctx.measureText(s.value).width>boxW-20 && fontSize>16){
+      fontSize-=2;
+      ctx.font=`700 ${fontSize}px JetBrains Mono, monospace`;
+    }
+
+    ctx.fillStyle=s.color;
+    ctx.textAlign='center';
+    ctx.fillText(s.value,x+boxW/2,boxY+boxH/2+10);
+
+    ctx.fillStyle=COL.dim;
+    ctx.font='600 16px JetBrains Mono, monospace';
+    ctx.fillText(s.label,x+boxW/2,boxY+boxH-24);
+
+  });
+
+  /* pull count + duration strip */
+  ctx.fillStyle=COL.dim;
+  ctx.textAlign='left';
+  ctx.font='600 20px JetBrains Mono, monospace';
+
+  const pullCount=d.pulls?d.pulls.length:0;
+
+  ctx.fillText(
+    `${pullCount} WOT PULL${pullCount===1?'':'S'} DETECTED THIS SESSION`,
+    64,800
+  );
+
   ctx.strokeStyle=COL.line;
   ctx.beginPath();
   ctx.moveTo(64,H-120);
@@ -7506,6 +8100,117 @@ function saveHistory(d,filename){
 }
 
 
+/*
+  Looks for a problem building slowly across recent logs for ONE
+  vehicle — the kind of thing that's invisible log-to-log but
+  obvious once you look at a run of them. Only meaningful within
+  a single vehicle's history (mixing two different cars' knock
+  numbers together would be noise, not signal), so callers should
+  only run this against a vehicle-filtered history array.
+
+  Walks backward from the most recent entry counting consecutive
+  "this log is worse than the one before it" steps, requiring
+  every entry in the window to actually have that metric logged
+  (a run with gaps doesn't count as a trend). A streak of 2+
+  worsening steps (3+ logs) triggers an alert — short enough to
+  catch a real problem early, long enough that normal log-to-log
+  noise mostly won't false-positive.
+*/
+function detectTrendAlerts(history){
+
+  const WINDOW=5;
+  const recent=history.slice(-WINDOW);
+
+  if(recent.length<3)return [];
+
+  const alerts=[];
+
+  function checkMetric(key,label,direction,minStep,fmt){
+
+    const vals=recent.map(h=>h[key]);
+
+    if(!vals.every(Number.isFinite))return;
+
+    let streak=0;
+
+    for(let i=vals.length-1;i>0;i--){
+
+      const delta=vals[i]-vals[i-1];
+      const worsened=direction==='up'?delta>=minStep:delta<=-minStep;
+
+      if(worsened){
+        streak++;
+      }else{
+        break;
+      }
+
+    }
+
+    if(streak>=2){
+
+      const first=vals[vals.length-1-streak];
+      const last=vals[vals.length-1];
+
+      alerts.push({
+        key,
+        message:`${label} has been trending ${direction==='up'?'up':'down'} over your last ${streak+1} logs for this vehicle: ${fmt(first)} → ${fmt(last)}.`
+      });
+
+    }
+
+  }
+
+  checkMetric('knock','Knock retard','up',0.5,v=>Math.abs(v).toFixed(1)+'°');
+  checkMetric('coolant','Coolant temp','up',3,v=>Math.round(v)+'°F');
+  checkMetric('trans','Trans temp','up',3,v=>Math.round(v)+'°F');
+  checkMetric('health','Health score','down',3,v=>Math.round(v));
+
+  /*
+    AFR gets its own check — the SIGNED delta (not magnitude)
+    decides whether to call it "lean" or "rich", but the trend
+    itself is measured on magnitude (distance from target
+    growing), since drifting either direction is the problem.
+  */
+  {
+
+    const vals=recent.map(h=>h.afrDelta);
+
+    if(vals.every(Number.isFinite)){
+
+      const magnitudes=vals.map(Math.abs);
+
+      let streak=0;
+
+      for(let i=magnitudes.length-1;i>0;i--){
+
+        if(magnitudes[i]-magnitudes[i-1]>=.15){
+          streak++;
+        }else{
+          break;
+        }
+
+      }
+
+      if(streak>=2){
+
+        const dirWord=vals[vals.length-1]>0?'lean':'rich';
+
+        alerts.push({
+          key:'afrDelta',
+          message:`AFR has been drifting ${dirWord} vs. target over your last ${streak+1} logs for this vehicle — worth a look at fueling.`
+        });
+
+      }
+
+    }
+
+  }
+
+  return alerts;
+
+}
+
+
 function renderHistory(){
 
   const el=$('historyContent');
@@ -7566,6 +8271,34 @@ function renderHistory(){
     historyVehicleFilter==='__all__'
       ?allHistory
       :allHistory.filter(h=>(h.vehicle||'Unlabeled')===historyVehicleFilter);
+
+
+  /*
+    Only meaningful for one specific vehicle at a time — with
+    "ALL VEHICLES" selected, two different cars' knock numbers
+    would get compared against each other, which is noise, not
+    a trend. Only shows once a vehicle is actually picked.
+  */
+  const trendAlerts=
+    historyVehicleFilter==='__all__'
+      ?[]
+      :detectTrendAlerts(history);
+
+  const alertsBar=trendAlerts.length?`
+    <div style="background:linear-gradient(135deg,#241a12,#1a120f);border:1px solid var(--red);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px">
+
+      <div style="font-size:13px;font-weight:700;color:var(--red);letter-spacing:.5px;margin-bottom:10px">
+        ⚠ TREND ALERT${trendAlerts.length>1?'S':''}
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${trendAlerts.map(a=>`
+          <div style="font-size:13px;color:var(--text)">${escapeHTML(a.message)}</div>
+        `).join('')}
+      </div>
+
+    </div>
+  `:'';
 
 
   let filterBar='';
@@ -7634,7 +8367,7 @@ function renderHistory(){
 
   }
 
-  html=vehicleLabelBar+filterBar+html;
+  html=vehicleLabelBar+filterBar+alertsBar+html;
 
 
   [...history].reverse().forEach(h=>{
