@@ -963,7 +963,7 @@ tr:last-child td{border-bottom:0}
     <div class="logoMark">PS</div>
     <div>
       <h1>PULL<span>SHEET</span></h1>
-      <small>MAXXECU LOG INTELLIGENCE · v1.7 · @whiiskerzbuilt</small>
+      <small>MAXXECU LOG INTELLIGENCE · v1.8 · @whiiskerzbuilt</small>
     </div>
   </div>
 
@@ -1329,6 +1329,18 @@ tr:last-child td{border-bottom:0}
   <div class="configHeader">
     <h2>Recent fixes</h2>
     <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
+      v1.8 — The shareable pull/session card images got a rework:
+      each one now includes a small power-vs-RPM graph (session card
+      blends every pull into one curve, pull cards show that pull's
+      own), peak power AND peak torque as their own stat boxes, an
+      estimated fuel burned figure, and a one-line reminder of how
+      MaxxECU derives the power number (fuel flow ÷ assumed BSFC).
+      Estimated fuel burned also got its own dashboard card (off by
+      default, toggle it on same as any other card). The fuel number
+      is a second-order estimate — it's back-calculated from the
+      power channel using an assumed BSFC constant, since there's no
+      reliable raw fuel-flow channel to read directly, so treat it as
+      a rough figure, same spirit as the power estimate itself.<br><br>
       v1.7 — Three more. (1) Dyno curve overlay: 2+ pulls in the same
       log now get an extra chart overlaying every pull's power curve
       on one graph — actually see if a tune change made more power,
@@ -1522,6 +1534,7 @@ let activeDashCards={
   knock:true,
   afr:true,
   nitrous:true,
+  fuelBurned:false,
   iat:false,
   ignTiming:false,
   fuelPress:false,
@@ -1544,6 +1557,7 @@ const DASH_CARD_META=[
   {key:'knock',label:'Knock'},
   {key:'afr',label:'AFR'},
   {key:'nitrous',label:'Nitrous'},
+  {key:'fuelBurned',label:'Fuel burned'},
   {key:'iat',label:'IAT'},
   {key:'ignTiming',label:'Timing'},
   {key:'fuelPress',label:'Fuel PSI'},
@@ -5468,6 +5482,25 @@ function render(d,filename,prBadges){
       accent:'var(--green)'
     });
 
+    if(d.pulls && d.pulls.length){
+
+      const fuelLb=estimateFuelBurnedLb(d,d.pulls);
+
+      if(fuelLb!=null){
+
+        dashCardHTML.fuelBurned=card({
+          label:'Est. fuel burned',
+          value:fuelLb.toFixed(2)+' lb',
+          stat:'ACROSS ALL WOT PULLS',
+          range:`≈ ${(fuelLb/6.1).toFixed(2)} gal gasoline · back-calculated from power, assumed BSFC ${ASSUMED_BSFC}`,
+          icon:'⛽',
+          accent:'var(--amber)'
+        });
+
+      }
+
+    }
+
   }
 
 
@@ -6011,6 +6044,11 @@ function render(d,filename,prBadges){
           ?max(valuesAtIndices(d.power,p.start,p.end))
           :null;
 
+      const pullTorque=
+        d.torqueLbFt
+          ?max(valuesAtIndices(d.torqueLbFt,p.start,p.end))
+          :null;
+
       const pullRpm=
         d.rpm
           ?max(valuesAtIndices(d.rpm,p.start,p.end))
@@ -6021,7 +6059,7 @@ function render(d,filename,prBadges){
           ?max(valuesAtIndices(d.vss,p.start,p.end))
           :null;
 
-      pullCardData.push({p,i,a,t,delta,accel,pullBoost,pullKnock,pullPower,pullRpm,pullSpeed});
+      pullCardData.push({p,i,a,t,delta,accel,pullBoost,pullKnock,pullPower,pullTorque,pullRpm,pullSpeed});
 
       html+=`
 
@@ -6842,6 +6880,113 @@ async function shareOrDownloadImage(dataUrl,imgFilename){
 
 
 /*
+  Draws a small power-vs-RPM curve straight onto an existing
+  Canvas 2D context — used inside the shareable pull/session
+  card images (buildPullCardImage / buildSessionCardImage),
+  which are hand-drawn Canvas 2D art already, not Chart.js.
+  Torque is deliberately left off this mini version: sharing one
+  y-axis with power at card-thumbnail size makes the power curve
+  look flatter than it is (torque's raw numbers usually run
+  higher than power's below ~5252 RPM), and there's no room for
+  a second axis at this scale — torque still gets its own number
+  in the stat boxes around this graph.
+
+  curveData is computeDynoCurveData()'s return shape, or null —
+  drawn as a "not enough data" placeholder rather than skipped
+  outright, so the card's layout doesn't shift depending on
+  what a given pull happened to log.
+*/
+function drawMiniPowerCurve(ctx,x,y,w,h,curveData,COL){
+
+  ctx.fillStyle=COL.panel;
+  ctx.fillRect(x,y,w,h);
+  ctx.strokeStyle=COL.line;
+  ctx.lineWidth=1;
+  ctx.strokeRect(x,y,w,h);
+
+  ctx.fillStyle=COL.dim;
+  ctx.textAlign='left';
+  ctx.textBaseline='alphabetic';
+  ctx.font='700 16px JetBrains Mono, monospace';
+  ctx.fillText('POWER (HP) vs RPM',x+16,y+28);
+
+  if(!curveData || curveData.powerCurve.length<3){
+
+    ctx.fillStyle=COL.dim;
+    ctx.textAlign='center';
+    ctx.font='400 18px JetBrains Mono, monospace';
+    ctx.fillText('NOT ENOUGH RPM SPREAD TO PLOT',x+w/2,y+h/2);
+
+    return;
+
+  }
+
+  const{rpmKeys,powerCurve}=curveData;
+
+  const leftPad=16,rightPad=16,topPad=44,bottomPad=34;
+
+  const px0=x+leftPad,px1=x+w-rightPad;
+  const py0=y+topPad,py1=y+h-bottomPad;
+
+  const rpmMin=rpmKeys[0],rpmMax=rpmKeys[rpmKeys.length-1];
+  const powerMax=Math.max(...powerCurve)*1.12;
+  const rpmSpan=Math.max(1,rpmMax-rpmMin);
+
+  const mapX=r=>px0+(r-rpmMin)/rpmSpan*(px1-px0);
+  const mapY=p=>py1-Math.max(0,p)/powerMax*(py1-py0);
+
+  /* filled area under the curve */
+  ctx.beginPath();
+  ctx.moveTo(mapX(rpmKeys[0]),py1);
+  rpmKeys.forEach((r,i)=>ctx.lineTo(mapX(r),mapY(powerCurve[i])));
+  ctx.lineTo(mapX(rpmKeys[rpmKeys.length-1]),py1);
+  ctx.closePath();
+  ctx.fillStyle=COL.green+'26';
+  ctx.fill();
+
+  /* the curve itself */
+  ctx.beginPath();
+  rpmKeys.forEach((r,i)=>{
+    const px=mapX(r),py=mapY(powerCurve[i]);
+    i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  });
+  ctx.strokeStyle=COL.green;
+  ctx.lineWidth=3;
+  ctx.stroke();
+
+  /* peak marker */
+  let peakIdx=0;
+  powerCurve.forEach((v,i)=>{if(v>powerCurve[peakIdx])peakIdx=i;});
+
+  const peakX=mapX(rpmKeys[peakIdx]);
+  const peakY=mapY(powerCurve[peakIdx]);
+
+  ctx.beginPath();
+  ctx.arc(peakX,peakY,5,0,Math.PI*2);
+  ctx.fillStyle=COL.amber;
+  ctx.fill();
+
+  ctx.fillStyle=COL.amber;
+  ctx.textAlign='center';
+  ctx.font='700 15px JetBrains Mono, monospace';
+  ctx.fillText(
+    Math.round(powerCurve[peakIdx])+' hp @ '+rpmKeys[peakIdx],
+    Math.min(Math.max(peakX,px0+60),px1-60),
+    peakY-14
+  );
+
+  /* x-axis RPM range labels */
+  ctx.fillStyle=COL.dim;
+  ctx.font='400 14px JetBrains Mono, monospace';
+  ctx.textAlign='left';
+  ctx.fillText(rpmMin+' rpm',px0,py1+22);
+  ctx.textAlign='right';
+  ctx.fillText(rpmMax+' rpm',px1,py1+22);
+
+}
+
+
+/*
   Draws a square, screenshot/text-friendly summary card for one
   WOT pull — the kind of thing that's actually shareable in a
   group chat, as opposed to the full tuner report (too long) or
@@ -6929,19 +7074,34 @@ function buildPullCardImage(d,pc,filename){
 
   ctx.fillStyle=COL.amber;
   ctx.textAlign='center';
-  ctx.font='700 160px JetBrains Mono, monospace';
-  ctx.fillText(heroValue,W/2,440);
+  ctx.font='700 92px JetBrains Mono, monospace';
+  ctx.fillText(heroValue,W/2,272);
 
   ctx.fillStyle=COL.dim;
-  ctx.font='700 28px JetBrains Mono, monospace';
-  ctx.fillText(heroLabel,W/2,490);
+  ctx.font='700 24px JetBrains Mono, monospace';
+  ctx.fillText(heroLabel,W/2,306);
+
+  /* mini dyno curve — power only, see drawMiniPowerCurve() for why */
+  const curveData=computeDynoCurveData(d,[pc.p]);
+
+  drawMiniPowerCurve(ctx,64,336,W-128,268,curveData,COL);
 
   /* secondary stat row */
   const stats=[
     {
+      label:'PEAK POWER',
+      value:Number.isFinite(pc.pullPower)?Math.round(pc.pullPower)+' hp':'—',
+      color:COL.green
+    },
+    {
+      label:'PEAK TORQUE',
+      value:Number.isFinite(pc.pullTorque)?Math.round(pc.pullTorque)+' lb-ft':'—',
+      color:COL.blue
+    },
+    {
       label:'PEAK BOOST',
       value:Number.isFinite(pc.pullBoost)?pc.pullBoost.toFixed(1)+' psi':'—',
-      color:COL.blue
+      color:COL.amber
     },
     {
       label:'KNOCK',
@@ -6949,22 +7109,12 @@ function buildPullCardImage(d,pc,filename){
         ?(pc.pullKnock>0?Math.round(pc.pullKnock)+'°':'CLEAN')
         :'—',
       color:Number.isFinite(pc.pullKnock) && pc.pullKnock>2?COL.red:COL.green
-    },
-    {
-      label:'PEAK POWER',
-      value:Number.isFinite(pc.pullPower)?Math.round(pc.pullPower)+' hp':'—',
-      color:COL.green
-    },
-    {
-      label:'PEAK RPM',
-      value:Number.isFinite(pc.pullRpm)?Math.round(pc.pullRpm):'—',
-      color:COL.amber
     }
   ];
 
   const boxW=(W-128-3*24)/4;
-  const boxY=560;
-  const boxH=200;
+  const boxY=632;
+  const boxH=150;
 
   stats.forEach((s,idx)=>{
 
@@ -6978,23 +7128,38 @@ function buildPullCardImage(d,pc,filename){
 
     ctx.fillStyle=s.color;
     ctx.textAlign='center';
-    ctx.font='700 34px JetBrains Mono, monospace';
 
     /* shrink to fit rather than overflow the box on longer values */
-    let fontSize=34;
+    let fontSize=28;
     ctx.font=`700 ${fontSize}px JetBrains Mono, monospace`;
-    while(ctx.measureText(s.value).width>boxW-20 && fontSize>18){
+    while(ctx.measureText(s.value).width>boxW-16 && fontSize>15){
       fontSize-=2;
       ctx.font=`700 ${fontSize}px JetBrains Mono, monospace`;
     }
 
-    ctx.fillText(s.value,x+boxW/2,boxY+boxH/2+10);
+    ctx.fillText(s.value,x+boxW/2,boxY+boxH/2+8);
 
     ctx.fillStyle=COL.dim;
-    ctx.font='600 16px JetBrains Mono, monospace';
-    ctx.fillText(s.label,x+boxW/2,boxY+boxH-24);
+    ctx.font='600 14px JetBrains Mono, monospace';
+    ctx.fillText(s.label,x+boxW/2,boxY+boxH-18);
 
   });
+
+  /* estimated fuel burned + a one-line reminder of how the hp number is derived */
+  const fuelLb=estimateFuelBurnedLb(d,[pc.p]);
+
+  ctx.fillStyle=COL.text;
+  ctx.textAlign='left';
+  ctx.font='700 18px JetBrains Mono, monospace';
+  ctx.fillText(
+    'EST. FUEL BURNED THIS PULL: '+(fuelLb!=null?fuelLb.toFixed(2)+' lb':'—'),
+    64,824
+  );
+
+  ctx.fillStyle=COL.dim;
+  ctx.font='400 15px JetBrains Mono, monospace';
+  ctx.fillText('HOW: power = fuel flow ÷ assumed BSFC · torque = power × 5252 ÷ RPM',64,850);
+  ctx.fillText('MaxxECU-calculated, engine-side estimate — not a chassis dyno reading',64,872);
 
   /* footer */
   ctx.strokeStyle=COL.line;
@@ -7017,44 +7182,52 @@ function buildPullCardImage(d,pc,filename){
 
 
 /*
-  Bins one pull's raw per-sample RPM/power/torque pairs into
-  100rpm buckets and averages within each bucket — shared by the
-  single-pull dyno curve and the multi-pull overlay below, so
-  both smooth the same way. Raw samples are noisy (log rate +
-  normal sensor jitter); this is what turns them into a curve
-  worth looking at without needing a real signal-processing
-  library. Returns null when there isn't enough RPM spread in
-  this pull to plot anything meaningful.
+  Bins raw per-sample RPM/power/torque pairs into 100rpm buckets
+  and averages within each bucket — shared by the single-pull
+  dyno curve, the multi-pull overlay, and the mini graphs drawn
+  onto the shareable card images, so all four smooth the same
+  way. Takes an ARRAY of {start,end} ranges rather than a single
+  pull — pass [onePull] for a single-pull curve, or d.pulls (or
+  any subset) to blend multiple pulls into one session-wide
+  curve. Raw samples are noisy (log rate + normal sensor jitter);
+  this is what turns them into a curve worth looking at without
+  needing a real signal-processing library. Returns null when
+  there isn't enough RPM spread across the given ranges to plot
+  anything meaningful.
 */
-function computeDynoCurveData(d,p){
+function computeDynoCurveData(d,ranges){
 
   const BIN=100;
   const bins={};
 
-  for(let i=p.start;i<=p.end;i++){
+  ranges.forEach(p=>{
 
-    const rpm=d.rpm?.[i];
-    const power=d.power?.[i];
+    for(let i=p.start;i<=p.end;i++){
 
-    if(!Number.isFinite(rpm) || !Number.isFinite(power))continue;
+      const rpm=d.rpm?.[i];
+      const power=d.power?.[i];
 
-    const bin=Math.round(rpm/BIN)*BIN;
+      if(!Number.isFinite(rpm) || !Number.isFinite(power))continue;
 
-    if(!bins[bin]){
-      bins[bin]={powerSum:0,powerCount:0,torqueSum:0,torqueCount:0};
+      const bin=Math.round(rpm/BIN)*BIN;
+
+      if(!bins[bin]){
+        bins[bin]={powerSum:0,powerCount:0,torqueSum:0,torqueCount:0};
+      }
+
+      bins[bin].powerSum+=power;
+      bins[bin].powerCount++;
+
+      const torque=d.torqueLbFt?.[i];
+
+      if(Number.isFinite(torque)){
+        bins[bin].torqueSum+=torque;
+        bins[bin].torqueCount++;
+      }
+
     }
 
-    bins[bin].powerSum+=power;
-    bins[bin].powerCount++;
-
-    const torque=d.torqueLbFt?.[i];
-
-    if(Number.isFinite(torque)){
-      bins[bin].torqueSum+=torque;
-      bins[bin].torqueCount++;
-    }
-
-  }
+  });
 
   const rpmKeys=Object.keys(bins).map(Number).sort((a,b)=>a-b);
 
@@ -7074,6 +7247,59 @@ function computeDynoCurveData(d,p){
 
 
 /*
+  Estimated fuel burned, in pounds, over a set of index ranges.
+  There's no confirmed, reliably-named raw fuel-flow channel to
+  read directly (MaxxECU's own power/torque channels are already
+  the output of ITS internal fuel-flow math, not the flow rate
+  itself), so this works BACKWARDS from the power channel using
+  the same assumed BSFC constant documented below — consistent
+  with the same "engine-side estimate, not a lab measurement"
+  honesty as the power number itself. Integrated with a simple
+  trapezoidal sum over d.runtime so it accounts for the real
+  (uneven) sample spacing rather than assuming a fixed log rate.
+*/
+const ASSUMED_BSFC=0.55; // lb fuel per hp per hour — typical for a boosted, safely-rich tune
+
+function estimateFuelBurnedLb(d,ranges){
+
+  if(!d.power || !d.runtime)return null;
+
+  let totalLb=0;
+  let sawAny=false;
+
+  ranges.forEach(p=>{
+
+    for(let i=p.start;i<p.end;i++){
+
+      const p0=d.power[i];
+      const p1=d.power[i+1];
+      const t0=d.runtime[i];
+      const t1=d.runtime[i+1];
+
+      if(!Number.isFinite(p0) || !Number.isFinite(p1)){
+        continue;
+      }
+
+      if(!Number.isFinite(t0) || !Number.isFinite(t1) || t1<=t0){
+        continue;
+      }
+
+      const dtHours=(t1-t0)/3600;
+      const avgPower=Math.max(0,(p0+p1)/2);
+
+      totalLb+=avgPower*ASSUMED_BSFC*dtHours;
+      sawAny=true;
+
+    }
+
+  });
+
+  return sawAny?totalLb:null;
+
+}
+
+
+/*
   Dyno-style power/torque-vs-RPM curve for a single pull, drawn
   onto an already-mounted canvas. Unlike the main timeline chart
   (x = time), this puts RPM on the x-axis — the same layout a
@@ -7086,7 +7312,7 @@ function buildDynoCurve(d,p,canvasId){
 
   if(!canvas)return null;
 
-  const curveData=computeDynoCurveData(d,p);
+  const curveData=computeDynoCurveData(d,[p]);
 
   if(!curveData)return null;
 
@@ -7194,7 +7420,7 @@ function buildDynoOverlayChart(d,pullIndices,canvasId){
   const COLORS=['#72d43c','#49a7ff','#ffb627','#c48cff','#ff5c4d','#42dada','#ff8757','#f5d76e'];
 
   const curves=pullIndices
-    .map(i=>({i,curve:computeDynoCurveData(d,d.pulls[i])}))
+    .map(i=>({i,curve:computeDynoCurveData(d,[d.pulls[i]])}))
     .filter(x=>x.curve);
 
   if(curves.length<2)return null;
@@ -7363,7 +7589,6 @@ function buildSessionCardImage(d,h,prBadges,issueEvents,filename){
   ctx.lineTo(W-64,168);
   ctx.stroke();
 
-  const peakBoost=d.mapPsi && d.mapPsi.some(Number.isFinite)?max(d.mapPsi):null;
   const peakPower=d.power && d.power.some(Number.isFinite)?max(d.power):null;
 
   let bestZeroToSixty=null,bestEighthMile=null;
@@ -7419,37 +7644,46 @@ function buildSessionCardImage(d,h,prBadges,issueEvents,filename){
 
     ctx.fillStyle=COL.green;
     ctx.textAlign='center';
-    ctx.font='700 24px JetBrains Mono, monospace';
-    ctx.fillText('\u{1F3C6} PERSONAL RECORD',W/2,220);
+    ctx.font='700 22px JetBrains Mono, monospace';
+    ctx.fillText('\u{1F3C6} PERSONAL RECORD',W/2,200);
 
   }
 
   ctx.fillStyle=heroIsRecord?COL.green:COL.amber;
   ctx.textAlign='center';
-  ctx.font='700 140px JetBrains Mono, monospace';
-  ctx.fillText(heroValue,W/2,410);
+  ctx.font='700 90px JetBrains Mono, monospace';
+  ctx.fillText(heroValue,W/2,272);
 
   ctx.fillStyle=COL.dim;
-  ctx.font='700 26px JetBrains Mono, monospace';
-  ctx.fillText(heroLabel,W/2,460);
+  ctx.font='700 24px JetBrains Mono, monospace';
+  ctx.fillText(heroLabel,W/2,306);
+
+  /* mini dyno curve — blends every pull in the session into one
+     power-vs-RPM curve, see drawMiniPowerCurve() for why torque
+     isn't also plotted here */
+  const sessionCurve=d.pulls && d.pulls.length?computeDynoCurveData(d,d.pulls):null;
+
+  drawMiniPowerCurve(ctx,64,336,W-128,268,sessionCurve,COL);
 
   const issueCount=issueEvents?issueEvents.length:0;
 
+  const peakTorque=d.torqueLbFt && d.torqueLbFt.some(Number.isFinite)?max(d.torqueLbFt):null;
+
   const stats=[
-    {
-      label:'HEALTH',
-      value:h.score!=null?h.score+'/100':'—',
-      color:COL.blue
-    },
-    {
-      label:'PEAK BOOST',
-      value:peakBoost!=null?peakBoost.toFixed(1)+' psi':'—',
-      color:COL.blue
-    },
     {
       label:'PEAK POWER',
       value:peakPower!=null?Math.round(peakPower)+' hp':'—',
       color:COL.green
+    },
+    {
+      label:'PEAK TORQUE',
+      value:peakTorque!=null?Math.round(peakTorque)+' lb-ft':'—',
+      color:COL.blue
+    },
+    {
+      label:'HEALTH',
+      value:h.score!=null?h.score+'/100':'—',
+      color:COL.amber
     },
     {
       label:'ISSUES FLAGGED',
@@ -7459,8 +7693,8 @@ function buildSessionCardImage(d,h,prBadges,issueEvents,filename){
   ];
 
   const boxW=(W-128-3*24)/4;
-  const boxY=530;
-  const boxH=200;
+  const boxY=632;
+  const boxH=150;
 
   stats.forEach((s,idx)=>{
 
@@ -7472,34 +7706,50 @@ function buildSessionCardImage(d,h,prBadges,issueEvents,filename){
     ctx.lineWidth=1;
     ctx.strokeRect(x,boxY,boxW,boxH);
 
-    let fontSize=34;
+    let fontSize=28;
     ctx.font=`700 ${fontSize}px JetBrains Mono, monospace`;
 
-    while(ctx.measureText(s.value).width>boxW-20 && fontSize>16){
+    while(ctx.measureText(s.value).width>boxW-16 && fontSize>15){
       fontSize-=2;
       ctx.font=`700 ${fontSize}px JetBrains Mono, monospace`;
     }
 
     ctx.fillStyle=s.color;
     ctx.textAlign='center';
-    ctx.fillText(s.value,x+boxW/2,boxY+boxH/2+10);
+    ctx.fillText(s.value,x+boxW/2,boxY+boxH/2+8);
 
     ctx.fillStyle=COL.dim;
-    ctx.font='600 16px JetBrains Mono, monospace';
-    ctx.fillText(s.label,x+boxW/2,boxY+boxH-24);
+    ctx.font='600 14px JetBrains Mono, monospace';
+    ctx.fillText(s.label,x+boxW/2,boxY+boxH-18);
 
   });
 
-  /* pull count + duration strip */
+  /* estimated fuel burned across every pull this session + how-calculated reminder */
+  const fuelLb=d.pulls && d.pulls.length?estimateFuelBurnedLb(d,d.pulls):null;
+
+  ctx.fillStyle=COL.text;
+  ctx.textAlign='left';
+  ctx.font='700 18px JetBrains Mono, monospace';
+  ctx.fillText(
+    'EST. FUEL BURNED THIS SESSION: '+(fuelLb!=null?fuelLb.toFixed(2)+' lb':'—'),
+    64,808
+  );
+
+  ctx.fillStyle=COL.dim;
+  ctx.font='400 15px JetBrains Mono, monospace';
+  ctx.fillText('HOW: power = fuel flow ÷ assumed BSFC · torque = power × 5252 ÷ RPM',64,834);
+  ctx.fillText('MaxxECU-calculated, engine-side estimate — not a chassis dyno reading',64,856);
+
+  /* pull count strip */
   ctx.fillStyle=COL.dim;
   ctx.textAlign='left';
-  ctx.font='600 20px JetBrains Mono, monospace';
+  ctx.font='600 18px JetBrains Mono, monospace';
 
   const pullCount=d.pulls?d.pulls.length:0;
 
   ctx.fillText(
     `${pullCount} WOT PULL${pullCount===1?'':'S'} DETECTED THIS SESSION`,
-    64,800
+    64,884
   );
 
   ctx.strokeStyle=COL.line;
