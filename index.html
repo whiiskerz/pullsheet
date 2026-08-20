@@ -1,0 +1,6878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PullSheet">
+<meta name="theme-color" content="#080a0c">
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+
+<!--
+  iOS splash screens shown briefly while the installed (Add to Home
+  Screen) app launches, before the page itself paints — without
+  these it's just a white flash. Apple requires an exact pixel-size
+  match per device via media queries; there's no way to give it one
+  image and have it scale. This covers current-generation iPhones;
+  a device not listed here just gets the white-flash default, which
+  is the same as before this existed.
+-->
+<link rel="apple-touch-startup-image" href="splash/splash-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="splash/splash-1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="splash/splash-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="splash/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="splash/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="splash/splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="splash/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+
+<title>PULLSHEET — MaxxECU Log Intelligence</title>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg:#080a0c;
+  --panel:#101417;
+  --panel2:#161b1f;
+  --panel3:#1c2328;
+  --line:#293238;
+  --text:#edf1ef;
+  --dim:#7f8a91;
+  --muted:#505b61;
+  --amber:#ffb627;
+  --green:#72d43c;
+  --red:#ff5c4d;
+  --blue:#49a7ff;
+  --purple:#b88cff;
+  --cyan:#42dada;
+  --orange:#ff8757;
+  --radius:14px;
+}
+
+*{box-sizing:border-box}
+
+html,body{
+  margin:0;
+  min-height:100%;
+  background:
+    radial-gradient(circle at 50% -15%,#20292e 0,#080a0c 46%);
+  color:var(--text);
+  font-family:Inter,sans-serif;
+}
+
+body{min-height:100vh}
+
+button,input,select{font:inherit}
+button{cursor:pointer}
+
+.wrap{
+  width:min(1220px,calc(100% - 28px));
+  margin:auto;
+  padding:22px 0 80px;
+}
+
+.top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:20px;
+  padding-bottom:18px;
+  border-bottom:1px solid var(--line);
+  flex-wrap:wrap;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:13px;
+}
+
+.logoMark{
+  width:40px;
+  height:40px;
+  border-radius:10px;
+  background:var(--amber);
+  color:#07090a;
+  display:grid;
+  place-items:center;
+  font:900 15px JetBrains Mono;
+  transform:skew(-8deg);
+  box-shadow:0 0 25px rgba(255,182,39,.15);
+}
+
+.brand h1{
+  margin:0;
+  font:700 23px "Space Grotesk";
+  letter-spacing:.04em;
+}
+
+.brand h1 span{color:var(--amber)}
+
+.brand small{
+  display:block;
+  margin-top:2px;
+  color:var(--dim);
+  font:9px JetBrains Mono;
+  letter-spacing:.1em;
+}
+
+.tabs{
+  display:flex;
+  gap:3px;
+  padding:3px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  border-radius:30px;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+
+.tabs::-webkit-scrollbar{display:none}
+
+.tabs button{
+  border:0;
+  background:none;
+  color:var(--dim);
+  padding:8px 15px;
+  border-radius:22px;
+  font:600 10px JetBrains Mono;
+  text-transform:uppercase;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+
+.tabs button.active{
+  background:var(--amber);
+  color:#090b0d;
+}
+
+.view{display:none}
+.view.active{display:block}
+
+.drop{
+  margin-top:25px;
+  min-height:290px;
+  border:1px dashed #3a454b;
+  border-radius:19px;
+  background:
+    linear-gradient(145deg,rgba(255,182,39,.035),transparent 48%),
+    var(--panel);
+  display:grid;
+  place-items:center;
+  text-align:center;
+  padding:40px;
+  transition:.2s;
+}
+
+.drop.drag{
+  border-color:var(--amber);
+  background:var(--panel2);
+  transform:scale(1.005);
+  box-shadow:0 0 40px rgba(255,182,39,.08);
+}
+
+.dropIcon{
+  font:32px JetBrains Mono;
+  color:var(--amber);
+  margin-bottom:13px;
+}
+
+.drop h2{
+  margin:0 0 7px;
+  font:600 21px "Space Grotesk";
+}
+
+.drop p{
+  margin:0;
+  color:var(--dim);
+  font-size:12px;
+}
+
+.dropHint{
+  margin-top:16px;
+  display:inline-block;
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:7px 12px;
+  color:var(--dim);
+  font:9px JetBrains Mono;
+}
+
+.tune-pill{
+  margin-top:12px;
+  display:inline-block;
+  border:1px solid var(--green);
+  background:rgba(114,212,60,.08);
+  border-radius:14px;
+  padding:8px 14px;
+  color:var(--green);
+  font:9.5px/1.6 JetBrains Mono;
+  text-align:left;
+}
+
+#fileInput{display:none}
+
+.status{
+  display:none;
+  text-align:center;
+  padding:75px 0;
+  color:var(--dim);
+  font:11px JetBrains Mono;
+}
+
+.progress{
+  width:240px;
+  height:3px;
+  background:var(--line);
+  border-radius:3px;
+  overflow:hidden;
+  margin:15px auto;
+}
+
+.progress i{
+  display:block;
+  width:35%;
+  height:100%;
+  background:var(--amber);
+  animation:load 1s infinite ease-in-out;
+}
+
+@keyframes load{
+  from{transform:translateX(-120%)}
+  to{transform:translateX(400%)}
+}
+
+.summary{
+  margin-top:25px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:20px;
+  flex-wrap:wrap;
+}
+
+.filename{
+  font:600 21px "Space Grotesk";
+}
+
+.meta{
+  margin-top:5px;
+  color:var(--dim);
+  font:9px JetBrains Mono;
+}
+
+.meta b{color:var(--amber)}
+
+.actions{
+  display:flex;
+  gap:7px;
+  flex-wrap:wrap;
+}
+
+.btn{
+  border:1px solid var(--line);
+  background:var(--panel);
+  color:var(--dim);
+  padding:8px 12px;
+  border-radius:20px;
+  font:10px JetBrains Mono;
+  transition:.15s;
+}
+
+.btn:hover{
+  border-color:var(--amber);
+  color:var(--amber);
+}
+
+.btn.primary{
+  background:var(--amber);
+  color:#080a0c;
+  border-color:var(--amber);
+  font-weight:700;
+}
+
+.unitGroup{
+  display:flex;
+  gap:5px;
+  align-items:center;
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:3px;
+  background:var(--panel);
+}
+
+.unitGroup span{
+  color:var(--muted);
+  font:8px JetBrains Mono;
+  padding-left:6px;
+}
+
+.unitGroup button{
+  border:0;
+  background:none;
+  color:var(--dim);
+  padding:5px 9px;
+  border-radius:16px;
+  font:9px JetBrains Mono;
+}
+
+.unitGroup button.active{
+  background:var(--amber);
+  color:#080a0c;
+  font-weight:700;
+}
+
+.heroGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:11px;
+  margin-top:20px;
+}
+
+.healthHero,
+.confidenceHero{
+  background:
+    linear-gradient(135deg,rgba(255,182,39,.07),transparent 55%),
+    var(--panel);
+  border:1px solid var(--line);
+  border-radius:17px;
+  padding:20px;
+  display:flex;
+  align-items:center;
+  gap:20px;
+}
+
+.confidenceHero{
+  background:
+    linear-gradient(135deg,rgba(73,167,255,.07),transparent 55%),
+    var(--panel);
+}
+
+.healthRing{
+  width:96px;
+  height:96px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  flex-shrink:0;
+  position:relative;
+}
+
+.healthRing:before{
+  content:"";
+  position:absolute;
+  inset:8px;
+  background:var(--panel);
+  border-radius:50%;
+}
+
+.healthNum{
+  position:relative;
+  z-index:2;
+  font:700 26px "Space Grotesk";
+}
+
+.healthText h2{
+  margin:0 0 5px;
+  font:600 17px "Space Grotesk";
+}
+
+.healthText p{
+  margin:0;
+  color:var(--dim);
+  font-size:11px;
+  line-height:1.55;
+}
+
+.confidenceNum{
+  min-width:90px;
+  font:700 31px "Space Grotesk";
+  color:var(--blue);
+}
+
+.confidenceBar{
+  height:4px;
+  background:var(--line);
+  border-radius:5px;
+  margin-top:9px;
+  overflow:hidden;
+}
+
+.confidenceBar i{
+  display:block;
+  height:100%;
+  background:var(--blue);
+}
+
+.sectionTitle{
+  margin:27px 0 10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  color:var(--dim);
+  font:600 11px "Space Grotesk";
+  text-transform:uppercase;
+  letter-spacing:.12em;
+}
+
+.sectionTitle span{
+  color:var(--muted);
+  font:9px JetBrains Mono;
+}
+
+.cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(175px,1fr));
+  gap:10px;
+}
+
+.card{
+  position:relative;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  overflow:hidden;
+}
+
+.card:after{
+  content:"";
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:2px;
+  background:var(--accent,var(--line));
+}
+
+.cardHead{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.cardLabel{
+  color:var(--dim);
+  font:9px JetBrains Mono;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+
+.cardIcon{
+  width:23px;
+  height:23px;
+  border-radius:7px;
+  display:grid;
+  place-items:center;
+  background:var(--panel3);
+  color:var(--accent,var(--amber));
+  font-size:10px;
+}
+
+.cardValue{
+  margin-top:12px;
+  font:700 24px "Space Grotesk";
+  letter-spacing:-.03em;
+}
+
+.cardStat{
+  margin-top:4px;
+  color:var(--accent,var(--amber));
+  font:9px JetBrains Mono;
+}
+
+.cardRange{
+  margin-top:9px;
+  padding-top:8px;
+  border-top:1px solid var(--line);
+  color:var(--dim);
+  font:8px JetBrains Mono;
+  line-height:1.5;
+}
+
+.targetGrid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+  gap:10px;
+}
+
+.targetBox{
+  border:1px solid var(--line);
+  border-radius:13px;
+  background:var(--panel);
+  padding:14px;
+}
+
+.targetLabel{
+  color:var(--dim);
+  font:9px JetBrains Mono;
+  text-transform:uppercase;
+}
+
+.targetMain{
+  margin-top:8px;
+  font:700 22px "Space Grotesk";
+}
+
+.targetSub{
+  margin-top:4px;
+  color:var(--dim);
+  font:9px JetBrains Mono;
+}
+
+.delta.good{color:var(--green)}
+.delta.warn{color:var(--amber)}
+.delta.bad{color:var(--red)}
+
+.chartPanel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:15px;
+  padding:14px;
+}
+
+.chartTop{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+}
+
+.toggles{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+}
+
+.toggle{
+  border:1px solid var(--line);
+  background:none;
+  color:var(--dim);
+  border-radius:15px;
+  padding:5px 10px;
+  font:9px JetBrains Mono;
+}
+
+.toggle.on{
+  background:var(--accent,var(--amber));
+  color:#090b0d;
+  border-color:var(--accent,var(--amber));
+}
+
+canvas{
+  width:100%!important;
+  height:340px!important;
+}
+
+.hint{
+  text-align:center;
+  color:var(--muted);
+  font:9px JetBrains Mono;
+  padding-top:7px;
+}
+
+.checklist{
+  border:1px solid var(--line);
+  border-radius:14px;
+  overflow:hidden;
+}
+
+.check{
+  display:flex;
+  align-items:flex-start;
+  gap:11px;
+  padding:12px 14px;
+  background:var(--panel);
+  border-bottom:1px solid var(--line);
+}
+
+.check:last-child{border-bottom:0}
+
+.dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  margin-top:5px;
+  flex-shrink:0;
+}
+
+.dot.pass{
+  background:var(--green);
+  box-shadow:0 0 9px rgba(114,212,60,.65);
+}
+
+.dot.warn{
+  background:var(--amber);
+  box-shadow:0 0 9px rgba(255,182,39,.65);
+}
+
+.dot.bad{
+  background:var(--red);
+  box-shadow:0 0 9px rgba(255,92,77,.65);
+}
+
+.dot.info{
+  background:var(--blue);
+}
+
+.check b{font-size:11px}
+
+.check small{
+  display:block;
+  margin-top:3px;
+  color:var(--dim);
+  font-size:9px;
+  line-height:1.5;
+}
+
+.tableWrap{
+  border:1px solid var(--line);
+  border-radius:14px;
+  overflow:auto;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:700px;
+}
+
+th{
+  text-align:left;
+  padding:9px;
+  color:var(--dim);
+  font:9px JetBrains Mono;
+  text-transform:uppercase;
+  border-bottom:1px solid var(--line);
+}
+
+td{
+  padding:10px 9px;
+  font:10px JetBrains Mono;
+  border-bottom:1px solid var(--line);
+}
+
+tr:last-child td{border-bottom:0}
+
+.configHeader{
+  margin-top:25px;
+  padding:18px;
+  border:1px solid var(--line);
+  border-radius:15px;
+  background:
+    linear-gradient(135deg,rgba(255,182,39,.06),transparent),
+    var(--panel);
+}
+
+.configHeader h2{
+  margin:0 0 5px;
+  font:600 18px "Space Grotesk";
+}
+
+.configHeader p{
+  margin:0;
+  color:var(--dim);
+  font:10px/1.5 JetBrains Mono;
+}
+
+.configGrid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:10px;
+  margin-top:12px;
+}
+
+.configItem{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px;
+}
+
+.configItem label{
+  display:block;
+  color:var(--dim);
+  font:9px JetBrains Mono;
+  text-transform:uppercase;
+  margin-bottom:7px;
+}
+
+.configItem select{
+  width:100%;
+  background:var(--panel2);
+  color:var(--text);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:8px;
+  outline:none;
+}
+
+.configItem select:focus{
+  border-color:var(--amber);
+}
+
+.configItem select.selected{
+  border-color:var(--green);
+  box-shadow:0 0 0 1px rgba(114,212,60,.12);
+}
+
+.configNote{
+  margin-top:10px;
+  padding:11px 12px;
+  background:rgba(255,182,39,.045);
+  border:1px solid rgba(255,182,39,.14);
+  border-radius:10px;
+  color:var(--dim);
+  font:9px/1.6 JetBrains Mono;
+}
+
+.detected{
+  margin-top:12px;
+  padding:13px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:12px;
+}
+
+.detectedTitle{
+  color:var(--dim);
+  font:9px JetBrains Mono;
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+
+.detectedList{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+.channelChip{
+  border:1px solid var(--line);
+  background:var(--panel2);
+  color:var(--dim);
+  border-radius:20px;
+  padding:5px 8px;
+  font:8px JetBrains Mono;
+}
+
+.historyList{
+  margin-top:18px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  overflow:hidden;
+}
+
+.historyRow{
+  padding:12px 14px;
+  display:flex;
+  justify-content:space-between;
+  gap:15px;
+  flex-wrap:wrap;
+  background:var(--panel);
+  border-bottom:1px solid var(--line);
+}
+
+.historyRow:last-child{border-bottom:0}
+
+.historyName{
+  font:600 12px "Space Grotesk";
+}
+
+.historyDate{
+  margin-top:3px;
+  color:var(--dim);
+  font:9px JetBrains Mono;
+}
+
+.historyStats{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  color:var(--dim);
+  font:9px JetBrains Mono;
+}
+
+.historyStats b{color:var(--text)}
+
+.empty{
+  text-align:center;
+  padding:60px 20px;
+  color:var(--dim);
+  font:11px JetBrains Mono;
+}
+
+.report{
+  white-space:pre-wrap;
+  background:#07090a;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:15px;
+  font:10px/1.65 JetBrains Mono;
+  color:#c8d0d4;
+  max-height:520px;
+  overflow:auto;
+}
+
+#printArea{display:none}
+
+/*
+  Printing the report: everything on the page is hidden except
+  #printArea, which is populated with the plain-text tuner report
+  right before window.print() is called. This is what lets
+  "PRINT / SAVE PDF" work as a real PDF export on iOS Safari —
+  the OS print sheet has its own "Save to Files as PDF" option,
+  no PDF library needed.
+*/
+@media print{
+  body *{visibility:hidden}
+  #printArea,#printArea *{visibility:visible}
+  #printArea{
+    display:block;
+    position:absolute;
+    left:0;
+    top:0;
+    width:100%;
+    white-space:pre-wrap;
+    font-family:monospace;
+    font-size:11px;
+    color:#000;
+    padding:20px;
+  }
+}
+
+@media(max-width:800px){
+  .heroGrid{grid-template-columns:1fr}
+}
+
+@media(max-width:650px){
+  .wrap{width:calc(100% - 18px)}
+  .cards{grid-template-columns:repeat(2,1fr)}
+  .healthHero,.confidenceHero{align-items:flex-start}
+}
+
+@media(max-width:430px){
+  .cards{grid-template-columns:1fr}
+}
+
+/*
+  Phone touch-target hardening. The desktop UI intentionally
+  runs small/dense (this is a dashboard, not a form), but sub-
+  30px buttons are genuinely hard to hit accurately with a
+  thumb — Apple/Google both recommend ~44-48px minimum. This
+  block only changes tap surfaces and spacing on narrow
+  viewports; it doesn't touch the desktop layout.
+*/
+@media(max-width:600px){
+
+  .top{gap:14px}
+
+  .brand h1{font-size:20px}
+
+  .btn{
+    padding:11px 14px;
+    font-size:11px;
+  }
+
+  .unitGroup button{
+    padding:10px 12px;
+    font-size:10px;
+  }
+
+  .tabs button{
+    padding:12px 16px;
+    font-size:10.5px;
+  }
+
+  .toggle{
+    padding:9px 12px;
+    font-size:10px;
+  }
+
+  .actions{
+    width:100%;
+    gap:8px;
+  }
+
+  .actions .btn,
+  .actions .unitGroup{
+    flex:1 1 auto;
+  }
+
+  .configGrid{
+    grid-template-columns:1fr;
+  }
+
+  .targetGrid{
+    grid-template-columns:1fr;
+  }
+
+  .healthRing{
+    width:110px;
+    height:110px;
+  }
+
+  .healthNum{font-size:30px}
+
+  canvas{
+    height:280px!important;
+  }
+
+  .chartTop{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .chartTop .btn{
+    width:100%;
+    text-align:center;
+  }
+
+  table{min-width:560px}
+
+  th,td{
+    padding:8px 6px;
+    font-size:9px;
+  }
+
+  .drop{
+    padding:28px 18px;
+    min-height:240px;
+  }
+
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrap">
+
+<header class="top">
+
+  <div class="brand">
+    <div class="logoMark">PS</div>
+    <div>
+      <h1>PULL<span>SHEET</span></h1>
+      <small>MAXXECU LOG INTELLIGENCE · v1.2 · @whiiskerzbuilt</small>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="active" data-tab="analyze">Analyze</button>
+    <button data-tab="compare">Compare</button>
+    <button data-tab="history">History</button>
+    <button data-tab="config">I/O Config</button>
+    <button data-tab="about">About</button>
+  </div>
+
+</header>
+
+<section id="view-analyze" class="view active">
+
+  <div id="drop" class="drop">
+
+    <div>
+      <div class="dropIcon">⌁ ⌁ ⌁</div>
+
+      <h2>Drop or tap to pick your log</h2>
+
+      <p>.MaxxECU-Zip-log · .MaxxECU-Log · .log · .csv · .zip</p>
+      <p style="margin-top:4px">
+        Built for MaxxECU, but plain CSV exports from other
+        loggers (Holley EFI, Haltech, AEM, Link) work too — map
+        any channel by hand in I/O Config if auto-detect misses one.
+      </p>
+      <p style="margin-top:4px">
+        Add your .MaxxECU-save tune file too — it'll auto-map
+        your fuel/oil pressure AINs instead of guessing.
+      </p>
+
+      <div class="dropHint">
+        LOCAL ANALYSIS · NOTHING UPLOADED
+      </div>
+
+      <div id="tunePill" class="tune-pill" style="display:none"></div>
+
+      <!--
+        No `accept` filter here on purpose. iOS has no registered file
+        type (UTI) for custom extensions like .MaxxECU-Log or
+        .MaxxECU-save, so when accept listed them explicitly, Safari's
+        Files-app picker couldn't tell what to show and greyed the
+        files out / hid them. All real filtering already happens in
+        JS (handleFiles below), so the OS picker is left wide open.
+      -->
+      <input
+        id="fileInput"
+        type="file"
+        multiple
+      >
+    </div>
+
+  </div>
+
+  <div id="status" class="status">
+    <div id="statusText">ANALYZING DATA…</div>
+    <div class="progress"><i></i></div>
+  </div>
+
+  <div id="results" style="display:none"></div>
+
+</section>
+
+<section id="view-compare" class="view">
+
+  <div class="sectionTitle">
+    <div>Compare two logs</div>
+    <span>BEFORE / AFTER A TUNE CHANGE</span>
+  </div>
+
+  <div class="heroGrid">
+
+    <div id="dropA" class="drop" style="min-height:190px">
+      <div>
+        <div class="dropIcon">A</div>
+        <h2 id="dropALabel">Drop or tap for log A</h2>
+        <p>The baseline / "before" log</p>
+        <input id="fileInputA" type="file" multiple style="display:none">
+      </div>
+    </div>
+
+    <div id="dropB" class="drop" style="min-height:190px">
+      <div>
+        <div class="dropIcon">B</div>
+        <h2 id="dropBLabel">Drop or tap for log B</h2>
+        <p>The "after" log to compare against A</p>
+        <input id="fileInputB" type="file" multiple style="display:none">
+      </div>
+    </div>
+
+  </div>
+
+  <div id="compareResults" style="margin-top:20px"></div>
+
+</section>
+
+<section id="view-history" class="view">
+  <div id="historyContent"></div>
+</section>
+
+<section id="view-config" class="view">
+
+  <div class="configHeader">
+    <h2>Modular I/O Configuration</h2>
+    <p>
+      Pick the actual MaxxECU channel for each sensor.
+      Changes automatically re-analyze the currently loaded log.
+      AUTO only runs when no manual channel is selected.
+    </p>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn" id="exportConfigBtn">EXPORT CONFIG</button>
+      <button class="btn" id="importConfigBtn">IMPORT CONFIG</button>
+      <input type="file" id="importConfigInput" accept=".json" style="display:none">
+    </div>
+    <p style="margin-top:10px">
+      Export saves your channel picks by name (not by position), so a
+      friend with a different AIN/DIN layout can import it as a starting
+      point and only needs to fix what doesn't auto-match. Config lives
+      in this browser only — export it before switching devices.
+    </p>
+  </div>
+
+  <div class="configGrid">
+
+    <div class="configItem">
+      <label>Fuel pressure</label>
+      <select id="cfgFuel">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>Oil pressure</label>
+      <select id="cfgOil">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>A/C pressure</label>
+      <select id="cfgAC">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>Coolant temperature</label>
+      <select id="cfgCoolant">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>Transmission temperature</label>
+      <select id="cfgTrans">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>AFR</label>
+      <select id="cfgAFR">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>Target AFR</label>
+      <select id="cfgTargetAFR">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>Lambda</label>
+      <select id="cfgLambda">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>Target Lambda</label>
+      <select id="cfgTargetLambda">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>Ethanol</label>
+      <select id="cfgEthanol">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>Battery voltage</label>
+      <select id="cfgBattery">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>RPM</label>
+      <select id="cfgRPM">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>TPS</label>
+      <select id="cfgTPS">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>Vehicle speed</label>
+      <select id="cfgVSS">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>MAP / boost pressure</label>
+      <select id="cfgMAP">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>Intake air temperature</label>
+      <select id="cfgIAT">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>Ignition timing</label>
+      <select id="cfgTiming">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+    <div class="configItem">
+      <label>Knock retard</label>
+      <select id="cfgKnockRetard">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
+  </div>
+
+  <div id="detectedChannels" class="detected" style="display:none"></div>
+
+  <div class="configNote">
+    <b>Conversions:</b>
+    Fuel pressure = KPA → PSI.
+    Oil pressure = BAR → PSI.
+    MAP/boost = KPA → PSI (gauge, minus 14.7 psi sea-level baseline).
+    Temperature = °C → °F.
+    TPS/Ethanol = %.
+    Battery = V.
+    Speed = km/h → mph.
+    Ignition timing/knock retard = degrees, unconverted.
+  </div>
+
+</section>
+
+<section id="view-about" class="view">
+
+  <div class="configHeader">
+    <h2>What this is</h2>
+    <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
+      PULLSHEET reads MaxxECU M-Tune log exports (.MaxxECU-Zip-log or
+      .MaxxECU-Log) entirely in your browser — nothing is uploaded
+      anywhere, ever. Drop a log to get a health check, a zoomable
+      trace of every channel, WOT pull breakdowns, and a copyable
+      report you can hand to a tuner. Plain CSV exports from other
+      standalone ECUs work too, since channel detection matches on
+      plain header text as well as MaxxECU's own convention — Holley
+      EFI's datalog viewer has a CSV export button for exactly this
+      (Holley's native .dl/.dlz files are a different binary format
+      and can't be dropped in directly). Auto-detect won't be perfect
+      on a non-MaxxECU log, so check the I/O Config tab and fix
+      anything it missed by hand.
+    </p>
+  </div>
+
+  <div class="configHeader">
+    <h2>Getting the most out of it</h2>
+    <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
+      Drop a <b>.MaxxECU-Zip-log</b> rather than a plain .MaxxECU-Log
+      when you can — the zip bundles your tune save file inside it,
+      which this tool reads automatically to auto-map your fuel/oil/AC
+      pressure sensors by the names you actually gave them in MaxxECU,
+      pull your real rev limiter and warning thresholds, and catch
+      sensor calibration mistakes before they show you a wrong number.
+      If a channel doesn't auto-detect right, the I/O Config tab lets
+      you point any sensor at any column in the log by hand — that
+      choice is saved in this browser and can be exported/imported as
+      a starting point for someone else's car.
+    </p>
+  </div>
+
+  <div class="configHeader">
+    <h2>Using this on your phone</h2>
+    <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
+      This is a single HTML file, not an app — get it onto your
+      phone however's easiest (AirDrop, Google Drive, iCloud,
+      email it to yourself) and open it from your Files app or
+      cloud storage app using "Open in browser" if that option
+      shows up, or just tap it and pick your browser when prompted.
+      Once it's open, use the browser's <b>Share → Add to Home
+      Screen</b> option — it'll launch full-screen from an icon
+      like a real app afterward, no browser address bar. Your
+      config picks, saved drive history, and unit preferences all
+      live in that browser only, so use the same browser/device
+      each time if you want them to stick — export your I/O
+      config from the Config tab first if you're switching
+      phones or browsers.
+    </p>
+  </div>
+
+  <div class="configHeader">
+    <h2>Known limitations</h2>
+    <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
+      The ZF8HP70 TCU's own "Drive Mode" channel isn't decoded to a
+      name — MaxxECU doesn't store a text label for it the way it does
+      for the engine tune-map selector, so it shows as a raw number.
+      Health scoring only grades a channel when the numbers look
+      physically plausible against that session's own sensor
+      calibration — if they don't, the tool says so instead of
+      guessing. This is built and tested against a MaxxECU + ZF8HP70
+      LS-swap setup specifically; other transmissions or ECUs will
+      still get the universal channels (RPM, AFR, temps, fuel/oil
+      pressure) but not the 8HP-specific extras.
+    </p>
+  </div>
+
+  <div class="configHeader">
+    <h2>Recent fixes</h2>
+    <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
+      v1.2 — Works fully offline after the first load (JSZip/Chart.js/
+      the zoom plugin are bundled locally now instead of loaded from a
+      CDN, plus a service worker caches the app itself — useful with
+      no signal at the track). Channel auto-detect now also recognizes
+      plainer CSV header styles, so exports from other standalone ECUs
+      (Holley EFI's CSV export, Haltech, AEM, Link) can be dropped in,
+      not just MaxxECU's own convention. History entries can be tagged
+      by vehicle and filtered, for anyone logging more than one car.
+      Added iOS splash screens and a clearer error when a file picked
+      from Files is an undownloaded iCloud placeholder.<br><br>
+      v1.1 — MAP/boost, intake air temp, ignition timing and knock
+      retard are now parsed and shown on the dashboard, chart, and
+      report; WOT pulls table adds estimated 0-60/eighth-mile times
+      (integrated from the logged speed trace, only shown for pulls
+      that actually start near a stop), plus peak boost and knock per
+      pull; new Compare tab for a side-by-side delta between two logs;
+      Share button (native share sheet on iOS) and Print/Save PDF
+      alongside Copy Report; file picker no longer restricts by
+      extension, fixing it being unable to see MaxxECU log files on
+      iOS.<br><br>
+      v1.0 — WOT/AFR stats now exclude neutral throttle blips from
+      driving pulls; automatic calibration-mismatch detection for
+      fuel/oil/AC pressure; tune-file engine map names (e.g. "Drag")
+      read directly from the tune instead of a raw slot number;
+      shift-button and traction-control counts use debounced event
+      detection instead of raw sample counts, which were overcounting
+      by 5-6x.
+    </p>
+  </div>
+
+</section>
+
+<footer style="text-align:center;margin-top:45px;color:var(--muted);font:9px JetBrains Mono">
+  PULLSHEET · LOCAL ANALYSIS · DATA NEVER LEAVES YOUR BROWSER · @whiiskerzbuilt
+</footer>
+
+<div id="printArea"></div>
+
+</div>
+
+<!--
+  Bundled locally (vendor/) instead of loaded from cdnjs — these
+  were previously fetched from a CDN on every load, which meant the
+  app was completely dead with zero signal even though the actual
+  log analysis is 100% local. Pinned to the exact same versions
+  that were already in use, so behavior is unchanged.
+-->
+<script src="vendor/jszip.min.js"></script>
+<script src="vendor/chart.umd.js"></script>
+<script src="vendor/hammer.min.js"></script>
+<script src="vendor/chartjs-plugin-zoom.min.js"></script>
+
+<script>
+
+const $=id=>document.getElementById(id);
+
+let rawLogText=null;
+let rawHeaders=[];
+let lastParsed=null;
+let lastFilename='';
+let chart=null;
+let historyChart=null;
+
+let compareA=null;
+let compareB=null;
+
+/*
+  History has no concept of "which car" a session belongs to —
+  everything just piles into one list. This label tags new history
+  entries so the History tab can separate/filter by vehicle if
+  someone logs more than one car. Persisted per-browser like
+  everything else here; old entries saved before this existed just
+  show up under "Unlabeled".
+*/
+let currentVehicleLabel=localStorage.getItem('logbook-vehicle')||'';
+let historyVehicleFilter='__all__';
+
+let units={
+  temp:'F',
+  press:'psi'
+};
+
+let activeSeries={
+  rpm:true,
+  tps:true,
+  afr:true,
+  targetAfr:true,
+  fuelPress:false,
+  oilPress:false,
+  coolant:false,
+  transTemp:false,
+  map:false,
+  iat:false,
+  ignTiming:false,
+  knockRetard:false
+};
+
+const CONFIG_IDS=[
+  'cfgFuel',
+  'cfgOil',
+  'cfgAC',
+  'cfgCoolant',
+  'cfgTrans',
+  'cfgAFR',
+  'cfgTargetAFR',
+  'cfgLambda',
+  'cfgTargetLambda',
+  'cfgEthanol',
+  'cfgBattery',
+  'cfgRPM',
+  'cfgTPS',
+  'cfgVSS',
+  'cfgMAP',
+  'cfgIAT',
+  'cfgTiming',
+  'cfgKnockRetard'
+];
+
+document.querySelectorAll('.tabs button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tabs button')
+      .forEach(x=>x.classList.remove('active'));
+
+    document.querySelectorAll('.view')
+      .forEach(x=>x.classList.remove('active'));
+
+    btn.classList.add('active');
+    $('view-'+btn.dataset.tab).classList.add('active');
+
+    if(btn.dataset.tab==='history') renderHistory();
+    if(btn.dataset.tab==='config') refreshConfigUI();
+    if(btn.dataset.tab==='compare') renderCompare();
+  });
+});
+
+const drop=$('drop');
+const fileInput=$('fileInput');
+
+drop.addEventListener('click',e=>{
+  if(e.target!==fileInput) fileInput.click();
+});
+
+['dragenter','dragover'].forEach(ev=>{
+  drop.addEventListener(ev,e=>{
+    e.preventDefault();
+    drop.classList.add('drag');
+  });
+});
+
+['dragleave','drop'].forEach(ev=>{
+  drop.addEventListener(ev,e=>{
+    e.preventDefault();
+    drop.classList.remove('drag');
+  });
+});
+
+drop.addEventListener('drop',e=>{
+  if(e.dataTransfer.files.length){
+    handleFiles([...e.dataTransfer.files]);
+  }
+});
+
+fileInput.addEventListener('change',e=>{
+  if(e.target.files.length){
+    handleFiles([...e.target.files]);
+  }
+});
+
+
+/*
+  COMPARE TAB — two independent drop zones, each parsed with
+  parseLog() using whatever I/O config is currently active (same
+  config the Analyze tab uses), so a comparison is apples-to-apples
+  with how the rest of the app reads this car. Deliberately doesn't
+  touch the main analyze state (rawLogText/lastParsed/tune mapping)
+  — dropping a log here has no effect on the Analyze tab.
+*/
+
+function wireCompareDrop(dropId,inputId,slot){
+
+  const zone=$(dropId);
+  const input=$(inputId);
+
+  zone.addEventListener('click',e=>{
+    if(e.target!==input)input.click();
+  });
+
+  ['dragenter','dragover'].forEach(ev=>{
+    zone.addEventListener(ev,e=>{
+      e.preventDefault();
+      zone.classList.add('drag');
+    });
+  });
+
+  ['dragleave','drop'].forEach(ev=>{
+    zone.addEventListener(ev,e=>{
+      e.preventDefault();
+      zone.classList.remove('drag');
+    });
+  });
+
+  zone.addEventListener('drop',e=>{
+    if(e.dataTransfer.files.length){
+      handleCompareFile([...e.dataTransfer.files],slot);
+    }
+  });
+
+  input.addEventListener('change',e=>{
+    if(e.target.files.length){
+      handleCompareFile([...e.target.files],slot);
+    }
+  });
+
+}
+
+wireCompareDrop('dropA','fileInputA','A');
+wireCompareDrop('dropB','fileInputB','B');
+
+
+async function handleCompareFile(files,slot){
+
+  const file=files.find(f=>
+    /\.(MaxxECU-Zip-log|MaxxECU-Log|log|zip|csv)$/i.test(f.name)
+  );
+
+  if(!file){
+    alert('Drop a MaxxECU log file.');
+    return;
+  }
+
+  if(file.size===0){
+    alert(
+      '"'+file.name+'" is 0 bytes — if it\'s stored in iCloud, open '+
+      'it once in the Files app so it fully downloads, then try again.'
+    );
+    return;
+  }
+
+  const label=$('drop'+slot+'Label');
+  const originalLabel=label.textContent;
+  label.textContent='READING…';
+
+  try{
+
+    const extracted=await extractLogText(file);
+    const parsed=parseLog(extracted.logText);
+
+    if(slot==='A'){
+      compareA={d:parsed,filename:file.name};
+    }else{
+      compareB={d:parsed,filename:file.name};
+    }
+
+    label.textContent=file.name;
+
+    renderCompare();
+
+  }catch(err){
+
+    console.error(err);
+    label.textContent=originalLabel;
+    alert('Could not read log '+slot+': '+err.message);
+
+  }
+
+}
+
+
+function fmtTempDelta(fDelta){
+
+  if(fDelta==null || !Number.isFinite(fDelta))return'—';
+
+  const val=units.temp==='C'?fDelta*5/9:fDelta;
+  const rounded=Math.round(val*10)/10;
+
+  return (rounded>0?'+':'')+rounded+'°'+units.temp;
+
+}
+
+
+function compareRow(label,aCell,bCell,deltaCell,deltaClass){
+
+  return`
+    <tr>
+      <td>${label}</td>
+      <td>${aCell}</td>
+      <td>${bCell}</td>
+      <td class="${deltaClass||''}">${deltaCell}</td>
+    </tr>
+  `;
+
+}
+
+
+function renderCompare(){
+
+  const box=$('compareResults');
+
+  if(!compareA && !compareB){
+    box.innerHTML='';
+    return;
+  }
+
+  if(!compareA || !compareB){
+
+    box.innerHTML=`
+      <div class="empty">
+        Drop a log into both A and B to see a comparison.
+      </div>
+    `;
+
+    return;
+
+  }
+
+  const dA=compareA.d;
+  const dB=compareB.d;
+
+  const hA=healthScore(dA);
+  const hB=healthScore(dB);
+
+  let rows='';
+
+  /* Health score — higher is unambiguously better */
+  {
+    const aVal=hA.score;
+    const bVal=hB.score;
+    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
+
+    rows+=compareRow(
+      'Health score',
+      aVal==null?'—':aVal+'/100',
+      bVal==null?'—':bVal+'/100',
+      delta==null?'—':(delta>0?'+':'')+delta,
+      delta==null?'':(delta>0?'delta good':delta<0?'delta bad':'')
+    );
+  }
+
+  /* Confidence — informational only, no good/bad judgment */
+  {
+    const aVal=hA.confidence;
+    const bVal=hB.confidence;
+    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
+
+    rows+=compareRow(
+      'Confidence',
+      aVal==null?'—':aVal+'%',
+      bVal==null?'—':bVal+'%',
+      delta==null?'—':(delta>0?'+':'')+delta+'%',
+      ''
+    );
+  }
+
+  /* WOT AFR average */
+  {
+    const aInfo=afrInfo(dA).stats;
+    const bInfo=afrInfo(dB).stats;
+    const aVal=aInfo?aInfo.average:null;
+    const bVal=bInfo?bInfo.average:null;
+    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
+
+    rows+=compareRow(
+      'WOT AFR avg',
+      aVal==null?'—':fmtAfr(aVal),
+      bVal==null?'—':fmtAfr(bVal),
+      delta==null?'—':(delta>0?'+':'')+fmtAfr(delta),
+      ''
+    );
+  }
+
+  /* AFR delta vs target — direction is a tuning judgment call, no color */
+  {
+    const aVal=afrDelta(dA);
+    const bVal=afrDelta(dB);
+    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
+
+    rows+=compareRow(
+      'AFR delta vs target',
+      aVal==null?'—':(aVal>0?'+':'')+aVal.toFixed(2),
+      bVal==null?'—':(bVal>0?'+':'')+bVal.toFixed(2),
+      delta==null?'—':(delta>0?'+':'')+delta.toFixed(2),
+      ''
+    );
+  }
+
+  /* Coolant / trans temps */
+  {
+    const aVal=dA.coolantF?avg(dA.coolantF):null;
+    const bVal=dB.coolantF?avg(dB.coolantF):null;
+    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
+
+    rows+=compareRow(
+      'Coolant avg',
+      aVal==null?'—':fmtTemp(aVal),
+      bVal==null?'—':fmtTemp(bVal),
+      fmtTempDelta(delta),
+      ''
+    );
+  }
+
+  {
+    const aVal=dA.transTempF?avg(dA.transTempF):null;
+    const bVal=dB.transTempF?avg(dB.transTempF):null;
+    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
+
+    rows+=compareRow(
+      'Trans avg',
+      aVal==null?'—':fmtTemp(aVal),
+      bVal==null?'—':fmtTemp(bVal),
+      fmtTempDelta(delta),
+      ''
+    );
+  }
+
+  /* Fuel / oil pressure */
+  {
+    const aVal=dA.fuelPressPsi?stabilizedFuelPressure(dA.fuelPressPsi).average:null;
+    const bVal=dB.fuelPressPsi?stabilizedFuelPressure(dB.fuelPressPsi).average:null;
+    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
+
+    rows+=compareRow(
+      'Fuel pressure avg',
+      aVal==null?'—':fmtPsi(aVal),
+      bVal==null?'—':fmtPsi(bVal),
+      delta==null?'—':(delta>0?'+':'')+fmtPsi(delta),
+      ''
+    );
+  }
+
+  {
+    const aVal=dA.oilPressPsi?avg(dA.oilPressPsi):null;
+    const bVal=dB.oilPressPsi?avg(dB.oilPressPsi):null;
+    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
+
+    rows+=compareRow(
+      'Oil pressure avg',
+      aVal==null?'—':fmtPsi(aVal),
+      bVal==null?'—':fmtPsi(bVal),
+      delta==null?'—':(delta>0?'+':'')+fmtPsi(delta),
+      ''
+    );
+  }
+
+  /* Battery */
+  {
+    const aVal=dA.battery?avg(dA.battery):null;
+    const bVal=dB.battery?avg(dB.battery):null;
+    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
+
+    rows+=compareRow(
+      'Battery avg',
+      aVal==null?'—':fmtVolt(aVal),
+      bVal==null?'—':fmtVolt(bVal),
+      delta==null?'—':(delta>0?'+':'')+fmtVolt(delta),
+      ''
+    );
+  }
+
+  /* Boost peak — informational, no color (more boost isn't inherently "good") */
+  {
+    const aVal=dA.mapPsi && dA.mapPsi.some(Number.isFinite)?max(dA.mapPsi):null;
+    const bVal=dB.mapPsi && dB.mapPsi.some(Number.isFinite)?max(dB.mapPsi):null;
+    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
+
+    rows+=compareRow(
+      'Boost peak',
+      aVal==null?'—':fmtPsi(aVal),
+      bVal==null?'—':fmtPsi(bVal),
+      delta==null?'—':(delta>0?'+':'')+fmtPsi(delta),
+      ''
+    );
+  }
+
+  /* Knock retard peak — lower is unambiguously better */
+  {
+    const aVal=dA.knockRetard && dA.knockRetard.some(Number.isFinite)?max(dA.knockRetard):null;
+    const bVal=dB.knockRetard && dB.knockRetard.some(Number.isFinite)?max(dB.knockRetard):null;
+    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
+
+    rows+=compareRow(
+      'Knock retard peak',
+      aVal==null?'—':Math.round(aVal)+'°',
+      bVal==null?'—':Math.round(bVal)+'°',
+      delta==null?'—':(delta>0?'+':'')+Math.round(delta)+'°',
+      delta==null?'':(delta<0?'delta good':delta>0?'delta bad':'')
+    );
+  }
+
+  /* WOT pulls + best 0-60 */
+  {
+    const aVal=dA.pulls?dA.pulls.length:null;
+    const bVal=dB.pulls?dB.pulls.length:null;
+    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
+
+    rows+=compareRow(
+      'WOT pulls',
+      aVal==null?'—':aVal,
+      bVal==null?'—':bVal,
+      delta==null?'—':(delta>0?'+':'')+delta,
+      ''
+    );
+  }
+
+  {
+    const accelA=(dA.pulls||[]).map(p=>computeAccelStats(dA,p)).filter(a=>a && a.zeroToSixty!=null);
+    const accelB=(dB.pulls||[]).map(p=>computeAccelStats(dB,p)).filter(a=>a && a.zeroToSixty!=null);
+
+    const aVal=accelA.length?Math.min(...accelA.map(a=>a.zeroToSixty)):null;
+    const bVal=accelB.length?Math.min(...accelB.map(a=>a.zeroToSixty)):null;
+    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
+
+    rows+=compareRow(
+      'Best 0-60 (est.)',
+      aVal==null?'—':aVal.toFixed(2)+'s',
+      bVal==null?'—':bVal.toFixed(2)+'s',
+      delta==null?'—':(delta>0?'+':'')+delta.toFixed(2)+'s',
+      delta==null?'':(delta<0?'delta good':delta>0?'delta bad':'')
+    );
+  }
+
+  box.innerHTML=`
+
+    <div class="summary" style="margin-top:0">
+      <div>
+        <div class="filename">A vs B</div>
+        <div class="meta">
+          A: ${escapeHTML(compareA.filename)} · B: ${escapeHTML(compareB.filename)}
+        </div>
+      </div>
+    </div>
+
+    <div class="tableWrap" style="margin-top:14px">
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>A</th>
+            <th>B</th>
+            <th>Δ (B−A)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="hint">
+      Δ colored only where the "better" direction is unambiguous (health score, knock retard, 0-60). Everything else is shown plain — you know your tune goals better than this app does.
+    </div>
+  `;
+
+}
+
+
+async function handleFiles(files){
+
+  const tuneFile=files.find(f=>/\.MaxxECU-save$/i.test(f.name));
+
+  const logFiles=files.filter(f=>
+    /\.(MaxxECU-Zip-log|MaxxECU-Log|log|zip|csv)$/i.test(f.name)
+    && f!==tuneFile
+  );
+
+  /*
+    A tune file dropped explicitly (on its own, or alongside a
+    log) always wins over whatever might be embedded in a
+    Zip-log — it's the more deliberate signal.
+  */
+
+  if(tuneFile){
+
+    try{
+
+      const text=await tuneFile.text();
+      applyTuneText(text);
+
+    }catch(err){
+
+      console.error(err);
+      alert('Could not read that tune file: '+err.message);
+
+    }
+
+  }
+
+  if(!logFiles.length){
+
+    if(tuneFile)return;
+
+    alert('Drop a MaxxECU log file.');
+    return;
+
+  }
+
+  /*
+    A 0-byte file picked from iOS Files is almost always an
+    iCloud-only placeholder that hasn't actually downloaded to the
+    device yet — reading it will just produce an empty result, and
+    the generic "log appears empty" parse error is misleading here
+    since the real fix is different (open it once in Files first).
+  */
+
+  if(logFiles[0].size===0){
+
+    alert(
+      '"'+logFiles[0].name+'" is 0 bytes — if it\'s stored in '+
+      'iCloud (not downloaded to this device), open it once in the '+
+      'Files app so it fully downloads, then try dropping it here again.'
+    );
+
+    return;
+
+  }
+
+  drop.style.display='none';
+  $('status').style.display='block';
+
+  /*
+    iCloud files that ARE present locally but large can still take
+    a few seconds for Safari to hand over — update the status text
+    so it doesn't look hung on slow connections/large files.
+  */
+
+  const slowReadTimer=setTimeout(()=>{
+    $('statusText').textContent='STILL READING… large files or iCloud downloads can take a moment';
+  },4000);
+
+  try{
+
+    $('statusText').textContent='READING MAXXECU LOG…';
+
+    const extracted=await extractLogText(logFiles[0]);
+
+    clearTimeout(slowReadTimer);
+
+    rawLogText=extracted.logText;
+
+    if(!tuneFile && extracted.tuneText){
+
+      /*
+        MaxxECU-Zip-log bundles the tune save inside the
+        archive — use it automatically, no separate drop
+        needed, unless the person already gave us one above.
+      */
+
+      applyTuneText(extracted.tuneText);
+
+    }
+
+    $('statusText').textContent='BUILDING CHANNEL MAP…';
+
+    lastFilename=logFiles[0].name;
+
+    const base=parseLog(rawLogText);
+
+    rawHeaders=base.headers;
+
+    populateConfigOptions(rawHeaders);
+
+    applyTuneMapping();
+
+    $('statusText').textContent='ANALYZING CHANNELS…';
+
+    const parsed=parseLog(rawLogText);
+
+    render(parsed,lastFilename);
+
+    saveHistory(parsed,lastFilename);
+
+  }catch(err){
+
+    clearTimeout(slowReadTimer);
+
+    console.error(err);
+
+    $('status').style.display='none';
+    drop.style.display='grid';
+
+
+    alert('Could not read log: '+err.message);
+
+  }
+}
+
+
+async function extractLogText(file){
+
+  const buf=await file.arrayBuffer();
+  const bytes=new Uint8Array(buf.slice(0,4));
+
+  const isZip=
+    bytes[0]===0x50 &&
+    bytes[1]===0x4B;
+
+  if(!isZip){
+    return{logText:await file.text(),tuneText:null};
+  }
+
+  const archive=await JSZip.loadAsync(buf);
+
+  let best=null;
+  let tuneEntry=null;
+
+  archive.forEach((path,entry)=>{
+
+    if(entry.dir)return;
+
+    if(
+      /\.MaxxECU-Log$/i.test(path) ||
+      /\.log$/i.test(path) ||
+      /\.csv$/i.test(path)
+    ){
+      best=entry;
+    }
+
+    /*
+      MaxxECU-Zip-log archives bundle the tune save file
+      alongside the log — no separate drop needed to get
+      I/O names and warning thresholds.
+    */
+
+    if(/\.MaxxECU-save$/i.test(path)){
+      tuneEntry=entry;
+    }
+
+  });
+
+  if(!best){
+    throw new Error('No MaxxECU log found inside archive.');
+  }
+
+  const logText=await best.async('string');
+  const tuneText=tuneEntry?await tuneEntry.async('string'):null;
+
+  return{logText,tuneText};
+}
+
+
+
+function selected(id){
+
+  const el=$(id);
+  return el ? el.value : 'auto';
+}
+
+
+function saveConfig(){
+
+  CONFIG_IDS.forEach(id=>{
+    const el=$(id);
+    if(el){
+      localStorage.setItem('logbook-'+id,el.value);
+    }
+  });
+
+}
+
+
+function restoreConfig(){
+
+  CONFIG_IDS.forEach(id=>{
+
+    const el=$(id);
+    if(!el)return;
+
+    const saved=localStorage.getItem('logbook-'+id);
+
+    if(saved){
+      el.dataset.saved=saved;
+    }
+
+  });
+
+}
+
+
+function populateConfigOptions(headers){
+
+  CONFIG_IDS.forEach(id=>{
+
+    const el=$(id);
+    if(!el)return;
+
+    const previous=
+      el.value!=='auto'
+        ?el.value
+        :(el.dataset.saved||'auto');
+
+    el.innerHTML='';
+
+    const auto=document.createElement('option');
+    auto.value='auto';
+    auto.textContent='AUTO DETECT';
+    el.appendChild(auto);
+
+    headers.forEach((h,i)=>{
+
+      const clean=String(h).trim();
+
+      if(!clean)return;
+
+      const option=document.createElement('option');
+
+      option.value='__INDEX__'+i;
+      option.textContent=`${i} — ${clean}`;
+
+      el.appendChild(option);
+
+    });
+
+    if([...el.options].some(o=>o.value===previous)){
+      el.value=previous;
+    }else{
+      el.value='auto';
+    }
+
+    el.classList.toggle('selected',el.value!=='auto');
+
+  });
+
+  refreshDetectedChannels();
+
+  applyImportedNames();
+
+}
+
+
+let pendingImportNames=null;
+let pendingTuneMapping=null;
+
+
+/*
+  TUNE-FILE I/O AUTO-DETECT
+
+  MaxxECU's .MaxxECU-save file stores a human-readable "Name"
+  for each USERAIN slot (whatever the person typed in when they
+  wired up their sensor — e.g. "Fuel Pressure", "OilPress",
+  "AC Pressure"). We read those labels directly instead of
+  guessing from generic channel-name patterns, so this works
+  correctly on someone else's completely different AIN layout,
+  not just this specific build.
+*/
+
+function parseTuneFile(text){
+
+  const ains=[];
+
+  for(let i=1;i<=16;i++){
+
+    const nameMatch=text.match(
+      new RegExp('<ECUSettingsItem name="USERAIN '+i+' Name">([^<]*)</ECUSettingsItem>')
+    );
+
+    if(!nameMatch || !nameMatch[1].trim())continue;
+
+    const unitMatch=text.match(
+      new RegExp('<ECUSettingsItem name="USERAIN '+i+' Unit">([^<]*)</ECUSettingsItem>')
+    );
+
+    /*
+      The calibration table's own max value is a cheap sanity
+      check: if what actually gets logged on this channel goes
+      above this ceiling, the calibration doesn't match what's
+      really wired up (confirmed on a real car — a session
+      whose logged values ran ~76% over its own tune's
+      calibration ceiling turned out to read 2.5x off versus a
+      manual gauge, while a session that stayed within its own
+      calibration matched the gauge almost exactly).
+    */
+
+    const tableValueMatch=text.match(
+      new RegExp('<ECUSettingsItem name="USERAIN '+i+' Table Value">([^<]*)</ECUSettingsItem>')
+    );
+
+    let tableMax=null;
+
+    if(tableValueMatch){
+
+      const nums=tableValueMatch[1].split(',').map(parseFloat).filter(Number.isFinite);
+
+      if(nums.length)tableMax=Math.max(...nums);
+
+    }
+
+    ains.push({
+      ain:i,
+      name:nameMatch[1].trim(),
+      unit:unitMatch?unitMatch[1].trim():null,
+      tableMax
+    });
+
+  }
+
+  const getSetting=name=>{
+
+    const m=text.match(
+      new RegExp('<ECUSettingsItem name="'+name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'">([^<]*)</ECUSettingsItem>')
+    );
+
+    return m?parseFloat(m[1]):null;
+
+  };
+
+  const tuneSelectorNames={};
+
+  for(let i=1;i<=16;i++){
+
+    const m=text.match(
+      new RegExp('<ECUSettingsItem name="Tune Selector Textname '+i+'">([^<]*)</ECUSettingsItem>')
+    );
+
+    if(m && m[1].trim()){
+      tuneSelectorNames[i]=m[1].trim();
+    }
+
+  }
+
+  return{
+    ains,
+    revLimit:getSetting('Revlimit RPM'),
+    warnRPM:getSetting('Warning RPM'),
+    warnVBat:getSetting('Warning VBat'),
+    warnCLT:getSetting('Warning CLT'),
+    warnMAP:getSetting('Warning MAP'),
+    warnDuty:getSetting('Warning Duty'),
+    tuneSelectorNames
+  };
+}
+
+
+let tuneWarnings=null;
+
+
+function applyTuneText(text){
+
+  const tune=parseTuneFile(text);
+
+  pendingTuneMapping=mapTuneAinsToConfig(tune.ains);
+
+  tuneWarnings=tune;
+
+  renderTunePill(pendingTuneMapping,tune.ains,tune);
+
+  applyTuneMapping();
+
+}
+
+
+const AIN_KEYWORD_MAP=[
+  {cfgId:'cfgFuel',patterns:['fuel pressure','fuel press','fuelpress']},
+  {cfgId:'cfgOil',patterns:['oil pressure','oil press','oilpress']},
+  {cfgId:'cfgAC',patterns:['ac pressure','a/c pressure','aircon']},
+  {cfgId:'cfgCoolant',patterns:['coolant temp','coolant','clt']},
+  {cfgId:'cfgTrans',patterns:['trans temp','transmission temp','trans oil temp']},
+  {cfgId:'cfgBattery',patterns:['battery','vbat']},
+  {cfgId:'cfgEthanol',patterns:['ethanol','flex fuel']},
+  {cfgId:'cfgTargetLambda',patterns:['lambda target','target lambda']},
+  {cfgId:'cfgLambda',patterns:['lambda']},
+  {cfgId:'cfgTargetAFR',patterns:['target afr','afr target']},
+  {cfgId:'cfgAFR',patterns:['afr','wideband']}
+];
+
+
+function mapTuneAinsToConfig(ains){
+
+  const mapping={};
+  const used=new Set();
+
+  ains.forEach(a=>{
+
+    const lname=a.name.toLowerCase();
+
+    for(const entry of AIN_KEYWORD_MAP){
+
+      if(used.has(entry.cfgId))continue;
+
+      if(entry.patterns.some(p=>lname.includes(p))){
+
+        mapping[entry.cfgId]=a;
+        used.add(entry.cfgId);
+        break;
+
+      }
+
+    }
+
+  });
+
+  return mapping;
+}
+
+
+function calibrationMismatch(d,rawKey,cfgId){
+
+  if(!pendingTuneMapping || !pendingTuneMapping[cfgId])return null;
+
+  const info=pendingTuneMapping[cfgId];
+
+  if(info.tableMax==null)return null;
+
+  if(!d[rawKey] || !d[rawKey].some(Number.isFinite))return null;
+
+  const observedMax=max(d[rawKey]);
+
+  if(observedMax==null)return null;
+
+  /*
+    5% headroom for normal calibration-table overshoot/rounding.
+    Beyond that, confirmed on a real car: a session whose values
+    ran well past its own tune's calibration ceiling read 2.5x
+    off versus a manual gauge, while a session that stayed
+    within its own ceiling matched the gauge almost exactly.
+  */
+
+  if(observedMax>info.tableMax*1.05){
+
+    return{
+      ain:info.ain,
+      observedMax,
+      tableMax:info.tableMax
+    };
+
+  }
+
+  return null;
+
+}
+
+
+function applyTuneMapping(){
+
+  if(!pendingTuneMapping || !rawHeaders.length)return;
+
+  let anyMatched=false;
+
+  Object.keys(pendingTuneMapping).forEach(cfgId=>{
+
+    const info=pendingTuneMapping[cfgId];
+    const el=$(cfgId);
+
+    if(!el)return;
+
+    /*
+      MaxxECU's log header convention is
+      "User AINn (Name) [id]" — matching just
+      "AINn (" is enough to find the right column
+      without depending on the free-text Name
+      matching exactly (spacing/casing varies).
+    */
+
+    const idx=rawHeaders.findIndex(h=>
+      h.toLowerCase().includes('ain'+info.ain+' (')
+    );
+
+    if(idx>=0){
+
+      const val='__INDEX__'+idx;
+
+      if([...el.options].some(o=>o.value===val)){
+
+        el.value=val;
+        el.title='auto-mapped from tune file: AIN'+info.ain+' "'+info.name+'"';
+        anyMatched=true;
+
+      }
+
+    }
+
+    el.classList.toggle('selected',el.value!=='auto');
+
+  });
+
+  if(anyMatched){
+
+    saveConfig();
+
+    if(rawLogText){
+
+      const parsed=parseLog(rawLogText);
+      lastParsed=parsed;
+      render(parsed,lastFilename);
+
+    }
+
+  }
+
+}
+
+
+function renderTunePill(mapping,ains,tune){
+
+  const pill=$('tunePill');
+
+  if(!pill)return;
+
+  const mapped=Object.keys(mapping);
+
+  const warnLine=
+    tune && tune.revLimit
+      ?'Rev limit '+tune.revLimit+' RPM'+
+        (tune.warnCLT?' \u00b7 CLT warn '+tune.warnCLT+'\u00b0C':'')+
+        (tune.warnVBat?' \u00b7 VBat warn '+tune.warnVBat+'V':'')+
+        (tune.warnDuty?' \u00b7 duty warn '+tune.warnDuty+'%':'')
+      :'';
+
+  if(!mapped.length){
+
+    pill.style.display='block';
+
+    pill.innerHTML=
+      'Tune file loaded — found '+ains.length+' labeled AIN(s), '+
+      'but none matched a known sensor type. Map channels manually in I/O Config.'+
+      (warnLine?'<br>'+warnLine:'');
+
+    return;
+
+  }
+
+  const lines=mapped.map(cfgId=>{
+
+    const info=mapping[cfgId];
+    const label=cfgId.replace(/^cfg/,'');
+
+    return label+' \u2192 AIN'+info.ain+' ("'+info.name+'")';
+
+  });
+
+  pill.style.display='block';
+  pill.innerHTML='<b>Tune file loaded</b><br>'+lines.join('<br>')+
+    (warnLine?'<br>'+warnLine:'');
+
+}
+
+
+
+
+
+function exportConfig(){
+
+  const data={};
+
+  CONFIG_IDS.forEach(id=>{
+
+    const el=$(id);
+
+    if(el && el.value!=='auto'){
+
+      const opt=el.options[el.selectedIndex];
+
+      data[id]=opt
+        ?opt.textContent.replace(/^\d+\s*—\s*/,'').trim()
+        :null;
+
+    }
+
+  });
+
+  if(!Object.keys(data).length){
+    alert('Nothing manually configured yet — pick at least one channel first.');
+    return;
+  }
+
+  const blob=new Blob(
+    [JSON.stringify(data,null,2)],
+    {type:'application/json'}
+  );
+
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+
+  a.href=url;
+  a.download='logbook-io-config.json';
+  a.click();
+
+  URL.revokeObjectURL(url);
+
+}
+
+
+function importConfigFile(file){
+
+  const reader=new FileReader();
+
+  reader.onload=()=>{
+
+    try{
+
+      pendingImportNames=JSON.parse(reader.result);
+
+      applyImportedNames();
+
+      alert(
+        rawHeaders.length
+          ?'I/O config imported and applied to the current log.'
+          :'I/O config imported — it will apply as soon as you drop a log.'
+      );
+
+    }catch(e){
+
+      alert('Could not read that config file.');
+
+    }
+
+  };
+
+  reader.readAsText(file);
+
+}
+
+
+function applyImportedNames(){
+
+  if(!pendingImportNames || !rawHeaders.length)return;
+
+  let anyMatched=false;
+
+  CONFIG_IDS.forEach(id=>{
+
+    const name=pendingImportNames[id];
+
+    if(!name)return;
+
+    const el=$(id);
+
+    if(!el)return;
+
+    const idx=rawHeaders.findIndex(h=>
+      String(h).trim().toLowerCase()===
+      String(name).trim().toLowerCase()
+    );
+
+    if(idx>=0){
+
+      const val='__INDEX__'+idx;
+
+      if([...el.options].some(o=>o.value===val)){
+        el.value=val;
+        anyMatched=true;
+      }
+
+    }
+
+    el.classList.toggle('selected',el.value!=='auto');
+
+  });
+
+  if(anyMatched){
+
+    saveConfig();
+
+    if(rawLogText){
+
+      const parsed=parseLog(rawLogText);
+      lastParsed=parsed;
+      render(parsed,lastFilename);
+
+    }
+
+  }
+
+}
+
+
+function refreshConfigUI(){
+
+  CONFIG_IDS.forEach(id=>{
+    const el=$(id);
+    if(el){
+      el.classList.toggle('selected',el.value!=='auto');
+    }
+  });
+
+  refreshDetectedChannels();
+
+}
+
+
+function refreshDetectedChannels(){
+
+  const box=$('detectedChannels');
+
+  if(!rawHeaders.length){
+    box.style.display='none';
+    return;
+  }
+
+  box.style.display='block';
+
+  let html=`
+    <div class="detectedTitle">
+      ${rawHeaders.length} CHANNELS FOUND IN CURRENT LOG
+    </div>
+    <div class="detectedList">
+  `;
+
+  rawHeaders.forEach((h,i)=>{
+
+    html+=`
+      <div class="channelChip">
+        ${i}: ${escapeHTML(String(h).trim())}
+      </div>
+    `;
+
+  });
+
+  html+='</div>';
+
+  box.innerHTML=html;
+}
+
+
+CONFIG_IDS.forEach(id=>{
+
+  const el=$(id);
+
+  el.addEventListener('change',()=>{
+
+    el.classList.toggle('selected',el.value!=='auto');
+
+    saveConfig();
+
+    if(rawLogText){
+
+      $('status').style.display='block';
+      $('statusText').textContent='REBUILDING FROM SELECTED I/O…';
+
+      setTimeout(()=>{
+
+        try{
+
+          const parsed=parseLog(rawLogText);
+
+          lastParsed=parsed;
+
+          $('status').style.display='none';
+
+          render(parsed,lastFilename);
+
+        }catch(err){
+
+          $('status').style.display='none';
+          alert('Could not reparse log: '+err.message);
+
+        }
+
+      },30);
+
+    }
+
+  });
+
+});
+
+
+function manualIndex(value){
+
+  if(!value || value==='auto')return -1;
+
+  if(value.startsWith('__INDEX__')){
+    return Number(value.replace('__INDEX__',''));
+  }
+
+  return -1;
+}
+
+
+function findColumn(headers,configured,fallbacks){
+
+  const manual=manualIndex(configured);
+
+  if(manual>=0 && manual<headers.length){
+    return manual;
+  }
+
+  if(configured && configured!=='auto'){
+
+    const exact=headers.findIndex(h=>
+      String(h).trim().toLowerCase()===
+      String(configured).trim().toLowerCase()
+    );
+
+    if(exact>=0)return exact;
+
+    const includes=headers.findIndex(h=>
+      String(h).toLowerCase().includes(
+        String(configured).toLowerCase()
+      )
+    );
+
+    if(includes>=0)return includes;
+  }
+
+  for(const needle of fallbacks){
+
+    const i=headers.findIndex(h=>
+      String(h).toLowerCase().includes(
+        needle.toLowerCase()
+      )
+    );
+
+    if(i>=0)return i;
+  }
+
+  return -1;
+}
+
+
+function detectDelimiter(line){
+
+  if(line.includes('\t'))return '\t';
+  if(line.includes(';'))return ';';
+  return ',';
+}
+
+
+function parseLog(text){
+
+  const lines=text
+    .split(/\r?\n/)
+    .filter(x=>x.trim().length);
+
+  if(lines.length<2){
+    throw new Error('Log appears empty.');
+  }
+
+  const delimiter=detectDelimiter(lines[0]);
+
+  const headers=lines[0]
+    .split(delimiter)
+    .map(x=>x.trim());
+
+  const rows=[];
+
+  for(let i=1;i<lines.length;i++){
+
+    const row=lines[i].split(delimiter);
+
+    rows.push(row);
+
+  }
+
+  const cfg={
+
+    runtime:findColumn(headers,'auto',[
+      'Engine runtime [',
+      'Runtime [',
+      'Elapsed Time [',
+      'Elapsed Time'
+    ]),
+
+    /*
+      Each of these tries the exact MaxxECU convention first
+      ("Name [unit]") and falls back to plainer, brand-agnostic
+      patterns after it — other loggers (Holley EFI's CSV export,
+      Haltech, AEM, Link) tend to use parentheses, no unit suffix
+      at all, or slightly different wording. Order matters: more
+      specific patterns are tried first so an exact MaxxECU header
+      is never shadowed by a looser generic one. Anything that
+      still doesn't auto-detect can always be pointed at the right
+      column by hand in I/O Config.
+    */
+
+    rpm:findColumn(headers,selected('cfgRPM'),[
+      'RPM [',
+      'RPM'
+    ]),
+
+    tps:findColumn(headers,selected('cfgTPS'),[
+      'Throttle position [',
+      'TPS [',
+      'Throttle Position',
+      'TPS'
+    ]),
+
+    coolant:findColumn(headers,selected('cfgCoolant'),[
+      'Coolant temp [',
+      'Coolant temperature [',
+      'Coolant Temp',
+      'ECT',
+      'CTS'
+    ]),
+
+    transTemp:findColumn(headers,selected('cfgTrans'),[
+      'Transmission Oil Temp [',
+      'Transmission oil temp [',
+      'Trans Temp',
+      'Transmission Temp'
+    ]),
+
+    oilPress:findColumn(headers,selected('cfgOil'),[
+      'OilPress',
+      'Oil pressure',
+      'Oil Pressure',
+      'Oil Press'
+    ]),
+
+    fuelPress:findColumn(headers,selected('cfgFuel'),[
+      'FuelPressure',
+      'Fuel pressure',
+      'Primary fuel pressure [',
+      'Secondary fuel pressure [',
+      'Fuel Press'
+    ]),
+
+    ethanol:findColumn(headers,selected('cfgEthanol'),[
+      'Ethanol concentration used',
+      'Ethanol concentration',
+      'Ethanol [%',
+      'Ethanol',
+      'Flex Fuel',
+      'E85'
+    ]),
+
+    battery:findColumn(headers,selected('cfgBattery'),[
+      'Battery voltage [',
+      'Battery Voltage',
+      'VBat',
+      'Battery'
+    ]),
+
+    vss:findColumn(headers,selected('cfgVSS'),[
+      'VSS Speed [',
+      'Vehicle speed [',
+      'Vehicle Speed',
+      'VSS'
+    ]),
+
+    afr:findColumn(headers,selected('cfgAFR'),[
+      'AFR [',
+      'Air/Fuel Ratio',
+      'AFR',
+      'Wideband'
+    ]),
+
+    targetAfr:findColumn(headers,selected('cfgTargetAFR'),[
+      'Target AFR [',
+      'AFR target',
+      'Target air/fuel',
+      'AFR Target',
+      'Commanded AFR'
+    ]),
+
+    lambda:findColumn(headers,selected('cfgLambda'),[
+      'Lambda [',
+      'Lambda'
+    ]),
+
+    targetLambda:findColumn(headers,selected('cfgTargetLambda'),[
+      'Target Lambda [',
+      'Lambda target',
+      'Lambda Target'
+    ]),
+
+    stoichAfr:findColumn(headers,'auto',[
+      'Fuel Stoich AFR [',
+      'Stoich AFR ['
+    ]),
+
+    gear:findColumn(headers,'auto',[
+      'Delayed Gear [',
+      'Current gear [',
+      'Gear [',
+      'Gear'
+    ]),
+
+    gearCmd:findColumn(headers,'auto',[
+      'Commanded gear ['
+    ]),
+
+    errors:findColumn(headers,'auto',[
+      'Error code count [',
+      'Error count ['
+    ]),
+
+    knock:findColumn(headers,'auto',[
+      'Knock Detected [',
+      'Knock detection ['
+    ]),
+
+    warnings:findColumn(headers,'auto',[
+      'Warning System Active ['
+    ]),
+
+    revLimit:findColumn(headers,'auto',[
+      'Rev-limit RPM ['
+    ]),
+
+    fuelDuty:findColumn(headers,'auto',[
+      'Fuel duty primary ['
+    ]),
+
+    targetGearDodge:findColumn(headers,'auto',[
+      'Dodge 8HP Target Gear ['
+    ]),
+
+    converterLockup:findColumn(headers,'auto',[
+      'Dodge 8HP Converter Lockup ['
+    ]),
+
+    transLinePress:findColumn(headers,'auto',[
+      'Transmission Line Pressure ['
+    ]),
+
+    transFaultDodge:findColumn(headers,'auto',[
+      'Dodge 8HP Trans fault ['
+    ]),
+
+    limpHome:findColumn(headers,'auto',[
+      'Dodge 8HP Limp Home Mode ['
+    ]),
+
+    transTempWarnDodge:findColumn(headers,'auto',[
+      'Dodge 8HP Temp warning ['
+    ]),
+
+    canLoad1:findColumn(headers,'auto',[
+      'CANbus Load Bus 1 ['
+    ]),
+
+    bsdErrors:findColumn(headers,'auto',[
+      'BSD Errors ['
+    ]),
+
+    upshift:findColumn(headers,'auto',[
+      'DIN 4 Active (UPSHIFT 8HP)',
+      'DIN 4 Active (UPSHIFT',
+      'UPSHIFT ['
+    ]),
+
+    downshift:findColumn(headers,'auto',[
+      'DIN 2 Active (DOWNSHIFT 8HP)',
+      'DIN 2 Active (DOWNSHIFT',
+      'DOWNSHIFT ['
+    ]),
+
+    brakeSwitch:findColumn(headers,'auto',[
+      'DIN 1 Active (Brake Switch)',
+      'Brake Switch ['
+    ]),
+
+    acPressure:findColumn(headers,selected('cfgAC'),[
+      'AC Pressure [',
+      'AIN7 (AC Pressure)'
+    ]),
+
+    map:findColumn(headers,selected('cfgMAP'),[
+      'MAP [',
+      'Manifold pressure [',
+      'Boost pressure [',
+      'MAP',
+      'Manifold Absolute Pressure',
+      'Boost'
+    ]),
+
+    iat:findColumn(headers,selected('cfgIAT'),[
+      'IAT [',
+      'Intake air temp',
+      'Air temperature [',
+      'Inlet air temp',
+      'IAT',
+      'Air Temp'
+    ]),
+
+    ignTiming:findColumn(headers,selected('cfgTiming'),[
+      'Ignition timing [',
+      'Ignition advance [',
+      'Total timing [',
+      'Ignition Timing',
+      'Spark Advance',
+      'Timing Advance'
+    ]),
+
+    knockRetard:findColumn(headers,selected('cfgKnockRetard'),[
+      'Knock retard [',
+      'Ignition correction knock [',
+      'Knock timing [',
+      'Knock Retard',
+      'Retard'
+    ]),
+
+    driveMode:findColumn(headers,'auto',[
+      'Dodge 8HP Drive Mode ['
+    ]),
+
+    tuneSelector:findColumn(headers,'auto',[
+      'Tune Selector Raw [',
+      'CAN5 (Tune Selector)',
+      'Tune Selector ['
+    ]),
+
+    selectorPosition:findColumn(headers,'auto',[
+      'Selector position ['
+    ]),
+
+    tractionEnabled:findColumn(headers,'auto',[
+      'Tractioncontrol Enabled ['
+    ]),
+
+    tractionCorrection:findColumn(headers,'auto',[
+      'Traction ctrl. correction ['
+    ])
+
+  };
+
+  /*
+    Sanity check for "wrong file dropped entirely" — RPM and
+    Engine runtime are present in essentially every MaxxECU log
+    export regardless of build. If NEITHER is found, this isn't
+    a MaxxECU log (or it's badly corrupted), and rendering a
+    near-blank dashboard with zero explanation is worse than
+    just saying so up front.
+  */
+
+  if(cfg.rpm<0 && cfg.runtime<0){
+
+    throw new Error(
+      "This doesn't look like a MaxxECU log — couldn't find RPM or Engine "+
+      "runtime channels, which are in almost every MaxxECU export. "+
+      "Double-check you dropped the right file."
+    );
+
+  }
+
+  const out={
+    headers,
+    rows,
+    rowCount:rows.length,
+    runtime:[],
+    rpm:[],
+    tps:[],
+    coolant:[],
+    transTemp:[],
+    oilPress:[],
+    fuelPress:[],
+    ethanol:[],
+    battery:[],
+    vss:[],
+    afr:[],
+    targetAfr:[],
+    lambda:[],
+    targetLambda:[],
+    stoichAfr:[],
+    gear:[],
+    gearCmd:[],
+    errors:[],
+    knock:[],
+    warnings:[],
+    revLimit:[],
+    fuelDuty:[],
+    targetGearDodge:[],
+    converterLockup:[],
+    transLinePress:[],
+    transFaultDodge:[],
+    limpHome:[],
+    transTempWarnDodge:[],
+    canLoad1:[],
+    bsdErrors:[],
+    upshift:[],
+    downshift:[],
+    brakeSwitch:[],
+    acPressure:[],
+    map:[],
+    iat:[],
+    ignTiming:[],
+    knockRetard:[],
+    driveMode:[],
+    tuneSelector:[],
+    selectorPosition:[],
+    tractionEnabled:[],
+    tractionCorrection:[],
+    sourceColumns:cfg
+  };
+
+
+  for(let i=0;i<rows.length;i++){
+
+    const row=rows[i];
+
+    Object.keys(cfg).forEach(key=>{
+
+      const col=cfg[key];
+
+      if(col<0)return;
+
+      const v=parseFloat(row[col]);
+
+      out[key].push(
+        Number.isFinite(v) ? v : NaN
+      );
+
+    });
+
+  }
+
+
+  if(out.fuelPress.some(Number.isFinite)){
+
+    const conv=detectPressureConversion(out.fuelPress,20,100);
+
+    out.fuelPressSourceUnit=conv.unit;
+    out.fuelPressConfidence=conv.confidence;
+
+    out.fuelPressPsi=out.fuelPress.map(v=>
+      Number.isFinite(v) ? v*conv.factor : NaN
+    );
+
+  }
+
+  if(out.oilPress.some(Number.isFinite)){
+
+    const conv=detectPressureConversion(out.oilPress,10,100);
+
+    out.oilPressSourceUnit=conv.unit;
+    out.oilPressConfidence=conv.confidence;
+
+    out.oilPressPsi=out.oilPress.map(v=>
+      Number.isFinite(v) ? v*conv.factor : NaN
+    );
+
+  }
+
+  if(out.transLinePress.some(Number.isFinite)){
+
+    const conv=detectPressureConversion(out.transLinePress,30,450);
+
+    out.transLinePressSourceUnit=conv.unit;
+
+    out.transLinePressPsi=out.transLinePress.map(v=>
+      Number.isFinite(v) ? v*conv.factor : NaN
+    );
+
+  }
+
+  if(out.acPressure && out.acPressure.some(Number.isFinite)){
+
+    const conv=detectPressureConversion(out.acPressure,5,400);
+
+    out.acPressureSourceUnit=conv.unit;
+    out.acPressureConfidence=conv.confidence;
+
+    out.acPressurePsi=out.acPressure.map(v=>
+      Number.isFinite(v) ? v*conv.factor : NaN
+    );
+
+  }
+
+
+  /*
+    MAP is a channel the ECU itself computes (not a user-wired AIN
+    with an arbitrary calibration table), so unlike fuel/oil/AC
+    pressure this doesn't need detectPressureConversion — MaxxECU
+    always logs it in kPa absolute. Converted to a gauge "boost"
+    reading in PSI using a fixed 14.7psi/101.3kPa sea-level baseline
+    (not corrected for altitude or weather, so treat it as approximate).
+  */
+
+  if(out.map.some(Number.isFinite)){
+    out.mapPsi=out.map.map(v=>
+      Number.isFinite(v) ? v*0.145038-14.7 : NaN
+    );
+  }
+
+
+  if(out.iat.some(Number.isFinite)){
+    out.iatF=out.iat.map(v=>
+      Number.isFinite(v)?c2f(v):NaN
+    );
+  }
+
+
+  if(out.coolant.some(Number.isFinite)){
+    out.coolantF=out.coolant.map(v=>
+      Number.isFinite(v)?c2f(v):NaN
+    );
+  }
+
+  if(out.transTemp.some(Number.isFinite)){
+    out.transTempF=out.transTemp.map(v=>
+      Number.isFinite(v)?c2f(v):NaN
+    );
+  }
+
+
+  out.pulls=detectWotPulls(out);
+
+  out.upshiftEvents=detectButtonEvents(out,'upshift');
+  out.downshiftEvents=detectButtonEvents(out,'downshift');
+  out.tractionEvents=detectButtonEvents(out,'tractionCorrection',v=>v<0);
+
+  return out;
+}
+
+
+function clean(a){
+  return Array.isArray(a)
+    ?a.filter(Number.isFinite)
+    :[];
+}
+
+function avg(a){
+  const x=clean(a);
+  return x.length
+    ?x.reduce((s,v)=>s+v,0)/x.length
+    :null;
+}
+
+function min(a){
+  const x=clean(a);
+  return x.length?Math.min(...x):null;
+}
+
+function max(a){
+  const x=clean(a);
+  return x.length?Math.max(...x):null;
+}
+
+
+function detectPressureConversion(rawArr,minPsi,maxPsi){
+
+  /*
+    Guesses whether a raw pressure channel is scaled in bar,
+    kPa, or already psi, purely from the magnitude of the
+    values — no unit label from the tune file is trusted here,
+    since we've directly confirmed on a real car that those
+    labels can be wrong. Tries each interpretation and keeps
+    whichever lands inside a physically plausible psi range
+    for that type of sensor.
+
+    Validated against a real car with a manual gauge: a fuel
+    pressure channel with typical raw value ~407 correctly
+    detects as kPa and lands at 58.1 psi (gauge read 58-62).
+    An oil pressure channel with typical raw value ~3.1
+    correctly detects as bar and lands at ~45 psi, matching
+    what the person who wired the sensor said it was.
+
+    This is independent of calibrationMismatch() — a session
+    with a genuinely broken calibration can still "successfully"
+    match one of these interpretations by pure coincidence, so
+    the mismatch check still has final say on trustworthiness.
+  */
+
+  const vals=clean(rawArr).filter(v=>v>1);
+
+  if(!vals.length)return{factor:1,unit:'psi',confidence:'none',typical:null};
+
+  const typical=avg(vals);
+
+  const candidates=[
+    {unit:'bar',factor:14.5038,result:typical*14.5038},
+    {unit:'kpa',factor:0.145038,result:typical*0.145038},
+    {unit:'psi',factor:1,result:typical}
+  ];
+
+  const inRange=candidates.filter(c=>c.result>=minPsi && c.result<=maxPsi);
+
+  if(inRange.length===1){
+    return{...inRange[0],confidence:'high',typical};
+  }
+
+  if(inRange.length>1){
+
+    /*
+      Ambiguous — more than one interpretation lands in range.
+      Small raw magnitudes are conventionally bar for
+      automotive sensors; larger ones are conventionally kPa.
+    */
+
+    if(typical<15)return{unit:'bar',factor:14.5038,confidence:'medium',typical};
+    return{unit:'kpa',factor:0.145038,confidence:'medium',typical};
+
+  }
+
+  if(typical<15)return{unit:'bar',factor:14.5038,confidence:'low',typical};
+  if(typical<150)return{unit:'psi',factor:1,confidence:'low',typical};
+  return{unit:'kpa',factor:0.145038,confidence:'low',typical};
+
+}
+
+function percentile(a,p){
+
+  const x=clean(a).sort((a,b)=>a-b);
+
+  if(!x.length)return null;
+
+  const idx=(x.length-1)*p;
+  const lo=Math.floor(idx);
+  const hi=Math.ceil(idx);
+
+  if(lo===hi)return x[lo];
+
+  return x[lo]+(x[hi]-x[lo])*(idx-lo);
+}
+
+
+function valuesAtIndices(arr,start,end){
+
+  if(!arr)return [];
+
+  const result=[];
+
+  for(let i=start;i<=end;i++){
+
+    const v=arr[i];
+
+    if(Number.isFinite(v))result.push(v);
+
+  }
+
+  return result;
+}
+
+
+function stabilizedFuelPressure(a){
+
+  const x=clean(a);
+
+  if(!x.length)return null;
+
+  if(x.length<12){
+
+    return{
+      average:avg(x),
+      min:min(x),
+      max:max(x),
+      excluded:0
+    };
+
+  }
+
+  const p75=percentile(x,.75);
+  const threshold=Math.max(20,p75*.72);
+
+  let startIndex=0;
+
+  for(let i=0;i<a.length-6;i++){
+
+    if(!Number.isFinite(a[i]))continue;
+
+    if(a[i]>=threshold){
+
+      let count=0;
+
+      for(let j=i;j<i+6 && j<a.length;j++){
+
+        if(Number.isFinite(a[j]) && a[j]>=threshold){
+          count++;
+        }
+
+      }
+
+      if(count>=4){
+
+        startIndex=i;
+        break;
+
+      }
+
+    }
+
+  }
+
+  const operating=[];
+
+  for(let i=startIndex;i<a.length;i++){
+
+    if(Number.isFinite(a[i])){
+      operating.push(a[i]);
+    }
+
+  }
+
+  return{
+    average:avg(operating),
+    min:min(operating),
+    max:max(operating),
+    excluded:startIndex
+  };
+}
+
+
+function smartAfr(a){
+
+  /*
+    AFR-scale bounds (5-25). Do NOT reuse this for lambda
+    values (0.5-1.5 range) — they'd all get filtered out
+    before the percentile trim ever runs. Use smartStats()
+    with lambda-appropriate bounds instead.
+  */
+
+  return smartStats(a,5,25);
+}
+
+
+function smartStats(a,lo,hi){
+
+  const x=clean(a)
+    .filter(v=>v>lo && v<hi);
+
+  if(!x.length)return null;
+
+  const p5=percentile(x,.05);
+  const p95=percentile(x,.95);
+
+  const stable=x.filter(v=>v>=p5 && v<=p95);
+
+  return{
+    average:avg(stable),
+    min:min(stable),
+    max:max(stable)
+  };
+}
+
+
+function wotValues(d,key){
+
+  const result=[];
+
+  if(!d.tps || !d[key])return result;
+
+  /*
+    "WOT" means wide-open-throttle WHILE ACTUALLY DRIVING.
+    Revving to 88% TPS in neutral (gear 0) is a real thing
+    people do — warmup, checking response, whatever — but it
+    has zero load on the engine and will read leaner/different
+    than a real driving pull. Confirmed on a real log: a TPS
+    spike to 88% with gear=0 the whole time was a neutral rev,
+    not a driving WOT event, and was previously getting mixed
+    into AFR/health stats as if it were one.
+
+    Only excludes when gear data exists and reads exactly 0
+    (neutral/park convention on this TCU). If gear isn't
+    logged at all, falls back to TPS-only like before.
+  */
+
+  const hasGear=!!d.gear;
+
+  const n=Math.min(d.tps.length,d[key].length);
+
+  for(let i=0;i<n;i++){
+
+    const inNeutral=hasGear && d.gear[i]===0;
+
+    if(
+      d.tps[i]>=80 &&
+      !inNeutral &&
+      Number.isFinite(d[key][i])
+    ){
+
+      result.push(d[key][i]);
+
+    }
+
+  }
+
+  return result;
+}
+
+
+function fullValues(d,key){
+
+  if(!d[key])return [];
+
+  return d[key].filter(Number.isFinite);
+}
+
+
+/*
+  WOT-only stats silently returned nothing (and made the whole
+  "fueling target" panel disappear) whenever a log had no
+  sustained full-throttle pull. These *Info() wrappers fall back
+  to whole-log data instead, and report which scope was actually
+  used so the UI can label it honestly rather than pretend it's
+  still a WOT number.
+*/
+
+function afrInfo(d){
+
+  const wot=wotValues(d,'afr');
+
+  if(wot.length>=8){
+    return{stats:smartAfr(wot),scope:'WOT'};
+  }
+
+  const full=fullValues(d,'afr');
+
+  if(full.length){
+    return{stats:smartAfr(full),scope:'FULL LOG'};
+  }
+
+  return{stats:null,scope:null};
+}
+
+
+function derivedTargetAfr(d){
+
+  /*
+    This MaxxECU build doesn't log a literal "Target AFR"
+    channel — it logs Lambda target and a live Stoich AFR
+    reference (which itself shifts with ethanol blend on a
+    flex-fuel setup). Target AFR = Lambda target × Stoich AFR
+    reconstructs the real number instead of just saying
+    "not logged".
+  */
+
+  if(!d.targetLambda || !d.stoichAfr)return null;
+
+  const n=Math.min(d.targetLambda.length,d.stoichAfr.length);
+  const out=new Array(n);
+
+  for(let i=0;i<n;i++){
+
+    const l=d.targetLambda[i];
+    const s=d.stoichAfr[i];
+
+    out[i]=(Number.isFinite(l) && Number.isFinite(s))
+      ?l*s
+      :NaN;
+
+  }
+
+  return out;
+}
+
+
+function targetAfrInfo(d){
+
+  const wot=wotValues(d,'targetAfr');
+
+  if(wot.length>=8){
+    return{stats:smartAfr(wot),scope:'WOT',computed:false};
+  }
+
+  const full=fullValues(d,'targetAfr');
+
+  if(full.length){
+    return{stats:smartAfr(full),scope:'FULL LOG',computed:false};
+  }
+
+  /*
+    Raw channel not logged on this build — fall back to the
+    computed value.
+  */
+
+  const derived=derivedTargetAfr(d);
+
+  if(derived){
+
+    const derivedObj={afrDerived:derived};
+
+    const wotD=wotValues(
+      {tps:d.tps,afrDerived:derived},
+      'afrDerived'
+    );
+
+    if(wotD.length>=8){
+      return{stats:smartAfr(wotD),scope:'WOT',computed:true};
+    }
+
+    const fullD=fullValues(derivedObj,'afrDerived');
+
+    if(fullD.length){
+      return{stats:smartAfr(fullD),scope:'FULL LOG',computed:true};
+    }
+
+  }
+
+  return{stats:null,scope:null,computed:false};
+}
+
+
+function lambdaInfo(d){
+
+  const wot=wotValues(d,'lambda').filter(v=>v>.5 && v<1.5);
+
+  if(wot.length>=8){
+    return{stats:smartStats(wot,.5,1.5),scope:'WOT'};
+  }
+
+  const full=fullValues(d,'lambda').filter(v=>v>.5 && v<1.5);
+
+  if(full.length){
+    return{stats:smartStats(full,.5,1.5),scope:'FULL LOG'};
+  }
+
+  return{stats:null,scope:null};
+}
+
+
+function targetLambdaInfo(d){
+
+  const wot=wotValues(d,'targetLambda').filter(v=>v>.5 && v<1.5);
+
+  if(wot.length>=8){
+    return{stats:smartStats(wot,.5,1.5),scope:'WOT'};
+  }
+
+  const full=fullValues(d,'targetLambda').filter(v=>v>.5 && v<1.5);
+
+  if(full.length){
+    return{stats:smartStats(full,.5,1.5),scope:'FULL LOG'};
+  }
+
+  return{stats:null,scope:null};
+}
+
+
+function wotAfr(d){
+
+  return afrInfo(d).stats;
+}
+
+
+function wotTargetAfr(d){
+
+  return targetAfrInfo(d).stats;
+}
+
+
+function wotLambda(d){
+
+  return lambdaInfo(d).stats;
+}
+
+
+function wotTargetLambda(d){
+
+  return targetLambdaInfo(d).stats;
+}
+
+
+function afrDelta(d){
+
+  const actual=wotAfr(d);
+  const target=wotTargetAfr(d);
+
+  if(!actual || !target)return null;
+
+  return actual.average-target.average;
+}
+
+
+function lambdaDelta(d){
+
+  const actual=wotLambda(d);
+  const target=wotTargetLambda(d);
+
+  if(!actual || !target)return null;
+
+  return actual.average-target.average;
+}
+
+
+function detectWotPulls(d){
+
+  if(!d.tps)return [];
+
+  const pulls=[];
+  let start=-1;
+
+  for(let i=0;i<d.tps.length;i++){
+
+    /*
+      Same neutral-rev exclusion as wotValues() — a throttle
+      blip in neutral shouldn't show up in the WOT pulls table
+      as if it were a real driving pull.
+    */
+
+    const inNeutral=d.gear && d.gear[i]===0;
+
+    const wot=
+      Number.isFinite(d.tps[i]) &&
+      d.tps[i]>=80 &&
+      !inNeutral;
+
+    if(wot && start<0){
+      start=i;
+    }
+
+    if(!wot && start>=0){
+
+      const end=i-1;
+
+      let duration=0;
+
+      if(
+        d.runtime &&
+        Number.isFinite(d.runtime[start]) &&
+        Number.isFinite(d.runtime[end])
+      ){
+        duration=d.runtime[end]-d.runtime[start];
+      }
+
+      if(duration>=.5 || end-start>=10){
+
+        pulls.push({
+          start,
+          end,
+          duration
+        });
+
+      }
+
+      start=-1;
+    }
+
+  }
+
+  if(start>=0){
+
+    const end=d.tps.length-1;
+
+    pulls.push({
+      start,
+      end,
+      duration:
+        d.runtime &&
+        Number.isFinite(d.runtime[end]) &&
+        Number.isFinite(d.runtime[start])
+          ?d.runtime[end]-d.runtime[start]
+          :0
+    });
+
+  }
+
+  return pulls;
+}
+
+
+/*
+  Estimated acceleration times for a single WOT pull, computed
+  straight from the logged VSS + runtime samples — no assumed
+  drivetrain/tire numbers, just trapezoidal integration of the
+  actual speed trace to get distance over time.
+
+  Deliberately returns null for anything that isn't a real
+  standing-start pull (VSS above ~5mph at the moment WOT begins) —
+  a 3rd-gear roll-on pull isn't a "0-60" and showing a number for
+  one would just be wrong, in keeping with this app's rule of
+  saying "not available" instead of guessing.
+*/
+
+function computeAccelStats(d,pull){
+
+  if(!d.vss || !d.runtime)return null;
+
+  const idx=[];
+
+  for(let i=pull.start;i<=pull.end;i++){
+    if(Number.isFinite(d.vss[i]) && Number.isFinite(d.runtime[i])){
+      idx.push(i);
+    }
+  }
+
+  if(idx.length<3)return null;
+
+  const mph=i=>d.vss[i]/1.609;
+  const t0=d.runtime[idx[0]];
+
+  if(mph(idx[0])>5)return null;
+
+  const dist=[0];
+  let distMiles=0;
+
+  for(let k=1;k<idx.length;k++){
+
+    const i0=idx[k-1];
+    const i1=idx[k];
+
+    const dtHours=(d.runtime[i1]-d.runtime[i0])/3600;
+    const avgMph=(mph(i0)+mph(i1))/2;
+
+    distMiles+=Math.max(0,avgMph*dtHours);
+    dist.push(distMiles);
+
+  }
+
+  function timeToSpeed(target){
+
+    for(let k=1;k<idx.length;k++){
+
+      const s0=mph(idx[k-1]);
+      const s1=mph(idx[k]);
+
+      if(s0<target && s1>=target){
+
+        const frac=(target-s0)/(s1-s0);
+        const tt=d.runtime[idx[k-1]]+frac*(d.runtime[idx[k]]-d.runtime[idx[k-1]]);
+
+        return tt-t0;
+
+      }
+
+    }
+
+    return null;
+
+  }
+
+  function timeToDistance(targetMiles){
+
+    for(let k=1;k<dist.length;k++){
+
+      if(dist[k-1]<targetMiles && dist[k]>=targetMiles){
+
+        const frac=(targetMiles-dist[k-1])/(dist[k]-dist[k-1]);
+        const tt=d.runtime[idx[k-1]]+frac*(d.runtime[idx[k]]-d.runtime[idx[k-1]]);
+
+        return tt-t0;
+
+      }
+
+    }
+
+    return null;
+
+  }
+
+  return{
+    zeroToSixty:timeToSpeed(60),
+    eighthMile:timeToDistance(0.125)
+  };
+
+}
+
+
+function detectButtonEvents(d,key,predicate){
+
+  /*
+    Finds rising edges on a channel — e.g. a digital input
+    going active, or a correction value dipping below zero —
+    and records the RPM, gear, and time at each event.
+    Debounces by requiring at least 3 samples "off" since the
+    last event before counting a new one, so a single event
+    that spans several consecutive log samples (very common —
+    a button press or a TC intervention easily outlasts one
+    ~16Hz sample) doesn't get counted many times over. Verified
+    on a real log: this cut a naive sample count from 66 down
+    to the actual 12 discrete traction-control interventions.
+
+    predicate defaults to "value > 0" (digital input active);
+    pass v=>v<0 for something like a correction/pullback value.
+  */
+
+  const arr=d[key];
+
+  if(!arr)return [];
+
+  const test=predicate || (v=>v>0);
+
+  const events=[];
+
+  let wasActive=false;
+  let offStreak=99;
+
+  for(let i=0;i<arr.length;i++){
+
+    const active=Number.isFinite(arr[i]) && test(arr[i]);
+
+    if(active && !wasActive && offStreak>=3){
+
+      events.push({
+        index:i,
+        time:
+          d.runtime && Number.isFinite(d.runtime[i])
+            ?d.runtime[i]
+            :null,
+        rpm:
+          d.rpm && Number.isFinite(d.rpm[i])
+            ?d.rpm[i]
+            :null,
+        gear:
+          d.gear && Number.isFinite(d.gear[i])
+            ?d.gear[i]
+            :null,
+        value:arr[i]
+      });
+
+      offStreak=0;
+
+    }else if(!active){
+
+      offStreak++;
+
+    }
+
+    wasActive=active;
+
+  }
+
+  return events;
+}
+
+
+function c2f(c){
+  return c*9/5+32;
+}
+
+function fmtTemp(fahrenheit){
+
+  if(fahrenheit==null || !Number.isFinite(fahrenheit))return'N/A';
+
+  if(units.temp==='C'){
+
+    const c=(fahrenheit-32)*5/9;
+    return Math.round(c)+'°C';
+
+  }
+
+  return Math.round(fahrenheit)+'°F';
+}
+
+function fmtPsi(psi){
+
+  if(psi==null || !Number.isFinite(psi))return'N/A';
+
+  if(units.press==='bar'){
+
+    const bar=psi/14.5038;
+    return (Math.round(bar*100)/100)+' bar';
+
+  }
+
+  return (Math.round(psi*10)/10)+' psi';
+}
+
+function fmtPct(v){
+
+  if(v==null || !Number.isFinite(v))return'N/A';
+
+  return (Math.round(v*10)/10)+'%';
+}
+
+function fmtVolt(v){
+
+  if(v==null || !Number.isFinite(v))return'N/A';
+
+  return v.toFixed(2)+' V';
+}
+
+function fmtAfr(v){
+
+  if(v==null || !Number.isFinite(v))return'N/A';
+
+  return v.toFixed(2);
+}
+
+function fmtLambda(v){
+
+  if(v==null || !Number.isFinite(v))return'N/A';
+
+  return v.toFixed(3);
+}
+
+function fmtRpm(v){
+
+  if(v==null || !Number.isFinite(v))return'N/A';
+
+  return Math.round(v).toLocaleString()+' RPM';
+}
+
+function fmtSpeed(v){
+
+  if(v==null || !Number.isFinite(v))return'N/A';
+
+  return Math.round(v/1.609)+' mph';
+}
+
+function fmtTime(sec){
+
+  if(sec==null || !Number.isFinite(sec))return'N/A';
+
+  const m=Math.floor(sec/60);
+  const s=Math.round(sec%60);
+
+  return m?`${m}m ${s}s`:`${s}s`;
+}
+
+
+function card({
+  label,
+  value,
+  stat,
+  range,
+  icon,
+  accent='var(--amber)'
+}){
+
+  return`
+    <div class="card" style="--accent:${accent}">
+      <div class="cardHead">
+        <div class="cardLabel">${label}</div>
+        <div class="cardIcon">${icon||'•'}</div>
+      </div>
+
+      <div class="cardValue">${value}</div>
+
+      <div class="cardStat">${stat||''}</div>
+
+      <div class="cardRange">${range||''}</div>
+    </div>
+  `;
+
+}
+
+
+function healthScore(d){
+
+  const checks=[];
+  let weighted=0;
+  let totalWeight=0;
+
+  function add(name,score,weight,reason){
+
+    if(score==null)return;
+
+    weighted+=score*weight;
+    totalWeight+=weight;
+
+    checks.push({
+      name,
+      score,
+      weight,
+      reason
+    });
+
+  }
+
+
+  const afr=wotAfr(d);
+  const afrTarget=wotTargetAfr(d);
+
+  if(afr){
+
+    if(afrTarget){
+
+      const delta=Math.abs(afr.average-afrTarget.average);
+
+      let s;
+
+      if(delta<=.25)s=100;
+      else if(delta<=.5)s=92;
+      else if(delta<=.75)s=82;
+      else if(delta<=1.25)s=68;
+      else s=45;
+
+      add(
+        'WOT AFR',
+        s,
+        25,
+        `actual ${fmtAfr(afr.average)} vs target ${fmtAfr(afrTarget.average)}`
+      );
+
+    }else{
+
+      let s=100;
+
+      if(afr.average>15)s=55;
+      else if(afr.average>14.7)s=75;
+      else if(afr.average<10.5)s=70;
+      else if(afr.average<11)s=85;
+
+      add(
+        'WOT AFR',
+        s,
+        25,
+        'no logged AFR target found'
+      );
+
+    }
+
+  }
+
+
+  if(d.fuelPressPsi){
+
+    const fp=stabilizedFuelPressure(d.fuelPressPsi);
+
+    const mismatch=calibrationMismatch(d,'fuelPress','cfgFuel');
+
+    if(mismatch){
+
+      /*
+        Weight 0 — this shows up in the checklist for
+        visibility but deliberately doesn't move the score or
+        confidence number, since we can't trust the reading
+        enough to grade it either way.
+      */
+
+      add(
+        'Fuel pressure',
+        100,
+        0,
+        `raw reading exceeds this tune's AIN${mismatch.ain} calibration ceiling \u2014 numbers on this channel can't be trusted for this session, verify with a manual gauge`
+      );
+
+    }else if(fp){
+
+      let s=100;
+
+      if(fp.average<35)s=40;
+      else if(fp.average<40)s=65;
+      else if(fp.average<45)s=82;
+
+      const spread=fp.max-fp.min;
+
+      if(spread>20)s-=20;
+      else if(spread>12)s-=10;
+
+      s=Math.max(0,s);
+
+      add(
+        'Fuel pressure',
+        s,
+        20,
+        `${fmtPsi(fp.average)} stabilized`
+      );
+
+    }
+
+  }
+
+
+  if(d.oilPressPsi){
+
+    const oilMismatch=calibrationMismatch(d,'oilPress','cfgOil');
+
+    if(oilMismatch){
+
+      add(
+        'Oil pressure',
+        100,
+        0,
+        `raw reading exceeds this tune's AIN${oilMismatch.ain} calibration ceiling \u2014 numbers on this channel can't be trusted for this session, verify with a manual gauge`
+      );
+
+    }else{
+
+      const op=avg(d.oilPressPsi);
+
+      let s=100;
+
+      if(op<15)s=40;
+      else if(op<20)s=65;
+      else if(op<25)s=85;
+
+      add(
+        'Oil pressure',
+        s,
+        20,
+        `${fmtPsi(op)} average`
+      );
+
+    }
+
+  }
+
+
+  if(d.coolantF){
+
+    const mx=max(d.coolantF);
+
+    /*
+      Use the real tune-configured warning point when we have
+      it, instead of a generic guess. Graduated breakpoints are
+      built relative to that real number.
+    */
+
+    const warnF=
+      tuneWarnings && tuneWarnings.warnCLT
+        ?c2f(tuneWarnings.warnCLT)
+        :215;
+
+    let s=100;
+
+    if(mx>warnF+15)s=30;
+    else if(mx>warnF+5)s=55;
+    else if(mx>warnF-5)s=75;
+    else if(mx>warnF-10)s=90;
+
+    add(
+      'Coolant',
+      s,
+      10,
+      tuneWarnings && tuneWarnings.warnCLT
+        ?`${fmtTemp(mx)} peak vs your tune's ${fmtTemp(warnF)} warning point`
+        :`${fmtTemp(mx)} peak`
+    );
+
+  }
+
+
+  if(d.battery){
+
+    const mn=min(d.battery);
+    const av=avg(d.battery);
+
+    const warnV=
+      tuneWarnings && tuneWarnings.warnVBat
+        ?tuneWarnings.warnVBat
+        :15.2;
+
+    let s=100;
+
+    if(mn<11.5)s=35;
+    else if(mn<11.8)s=55;
+    else if(mn<12.0)s=70;
+    else if(av<12.5)s=85;
+    else if(max(d.battery)>=warnV)s=70;
+
+    add(
+      'Battery',
+      s,
+      10,
+      max(d.battery)>=warnV
+        ?`peaked at ${fmtVolt(max(d.battery))}, at or above your tune's ${warnV}V warning point`
+        :`${fmtVolt(av)} average`
+    );
+
+  }
+
+
+  if(d.transTempF){
+
+    const mx=max(d.transTempF);
+
+    let s=100;
+
+    if(mx>230)s=30;
+    else if(mx>220)s=55;
+    else if(mx>210)s=75;
+    else if(mx>200)s=90;
+
+    add(
+      'Transmission',
+      s,
+      5,
+      `${fmtTemp(mx)} peak`
+    );
+
+  }
+
+
+  if(d.knock){
+
+    const mx=max(d.knock);
+
+    add(
+      'Knock',
+      mx>0?20:100,
+      5,
+      mx>0?'knock activity detected':'no knock activity'
+    );
+
+  }
+
+
+  if(d.knockRetard && d.knockRetard.some(Number.isFinite)){
+
+    const mx=max(d.knockRetard);
+
+    let s=100;
+
+    if(mx>6)s=25;
+    else if(mx>3)s=55;
+    else if(mx>1)s=80;
+
+    add(
+      'Knock retard',
+      s,
+      5,
+      mx>0?`up to ${Math.round(mx)}° of timing pulled for knock`:'no timing pulled for knock'
+    );
+
+  }
+
+
+  if(d.fuelDuty && d.fuelDuty.some(Number.isFinite)){
+
+    const mx=max(d.fuelDuty);
+
+    const warnDuty=
+      tuneWarnings && tuneWarnings.warnDuty
+        ?tuneWarnings.warnDuty
+        :85;
+
+    let s=100;
+
+    if(mx>=warnDuty+10)s=40;
+    else if(mx>=warnDuty)s=65;
+    else if(mx>=warnDuty-15)s=85;
+
+    add(
+      'Injector duty',
+      s,
+      5,
+      tuneWarnings && tuneWarnings.warnDuty
+        ?`peak ${fmtPct(mx)} vs your tune's ${warnDuty}% warning point`
+        :`peak ${fmtPct(mx)}`
+    );
+
+  }
+
+
+  if(d.errors){
+
+    const mx=max(d.errors);
+
+    add(
+      'ECU errors',
+      mx>0?45:100,
+      5,
+      mx>0?'ECU errors recorded':'no ECU errors'
+    );
+
+  }
+
+
+  /*
+    Transmission fault flags — critical safety data.
+    Weighted heavily and NOT part of the base 100
+    possibleWeight total, since these are pass/fail
+    safety flags rather than graduated sensor scores.
+    They only apply (and only lower confidence's
+    denominator) when the car actually has these
+    TCU channels logged.
+  */
+
+  if(d.limpHome && d.limpHome.some(Number.isFinite)){
+
+    const mx=max(d.limpHome);
+
+    add(
+      'Limp-home mode',
+      mx>0?10:100,
+      15,
+      mx>0?'transmission entered limp-home during this log':'never triggered'
+    );
+
+  }
+
+  if(d.transFaultDodge && d.transFaultDodge.some(Number.isFinite)){
+
+    const mx=max(d.transFaultDodge);
+
+    add(
+      'TCU fault flag',
+      mx>0?25:100,
+      12,
+      mx>0?'a transmission fault code was set':'clean, no fault flags'
+    );
+
+  }
+
+  if(d.transTempWarnDodge && d.transTempWarnDodge.some(Number.isFinite)){
+
+    const mx=max(d.transTempWarnDodge);
+
+    add(
+      'TCU temp warning',
+      mx>0?55:100,
+      6,
+      mx>0?"the TCU's own temperature warning was active":'never triggered'
+    );
+
+  }
+
+  if(d.bsdErrors && d.bsdErrors.some(Number.isFinite)){
+
+    const mx=max(d.bsdErrors);
+
+    add(
+      'BSD / CAN errors',
+      mx>0?55:100,
+      5,
+      mx>0?`${Math.round(mx)} error(s) logged`:'no errors logged'
+    );
+
+  }
+
+
+  if(!totalWeight){
+
+    return{
+      score:null,
+      confidence:0,
+      checks:[],
+      reasons:['Not enough recognized sensor data.']
+    };
+
+  }
+
+
+  const score=Math.round(weighted/totalWeight);
+
+  /*
+    AFR(25) + Fuel(20) + Oil(20) + Coolant(10) + Battery(10) +
+    Trans(5) + Knock(5) + Knock retard(5) + Injector duty(5) +
+    Errors(5) = 110.
+    Transmission fault/limp-home flags are intentionally NOT
+    counted here — they're rare safety flags, not routine
+    sensor coverage, so they'd distort "how much of the car
+    did we actually measure" if included in the denominator.
+  */
+
+  const possibleWeight=110;
+  const confidence=Math.round(
+    Math.min(100,(totalWeight/possibleWeight)*100)
+  );
+
+  const reasons=checks
+    .filter(x=>x.score<85)
+    .sort((a,b)=>a.score-b.score)
+    .map(x=>`${x.name}: ${x.reason}`);
+
+  return{
+    score:Math.max(0,Math.min(100,score)),
+    confidence,
+    checks,
+    reasons
+  };
+}
+
+
+function healthUI(h){
+
+  if(h.score==null){
+
+    return`
+      <div class="heroGrid">
+
+        <div class="healthHero">
+
+          <div class="healthRing"
+            style="background:conic-gradient(var(--muted) 0deg,#242a2e 0deg)">
+
+            <div class="healthNum">—</div>
+
+          </div>
+
+          <div class="healthText">
+            <h2>INSUFFICIENT DATA</h2>
+            <p>
+              Not enough recognized channels were available
+              to calculate a meaningful health score.
+            </p>
+          </div>
+
+        </div>
+
+        <div class="confidenceHero">
+
+          <div class="confidenceNum">0%</div>
+
+          <div class="healthText">
+            <h2>LOW CONFIDENCE</h2>
+            <p>
+              Configure your I/O channels or use a log with
+              more sensor coverage.
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+    `;
+
+  }
+
+  const score=h.score;
+
+  let color='var(--green)';
+
+  if(score<60)color='var(--red)';
+  else if(score<75)color='var(--orange)';
+  else if(score<90)color='var(--amber)';
+
+  const deg=score*3.6;
+
+  let title=
+    score>=90?'EXCELLENT':
+    score>=80?'GOOD':
+    score>=70?'WATCH':
+    score>=60?'CONCERNING':
+    'ATTENTION REQUIRED';
+
+  const description=h.reasons.length
+    ?h.reasons.slice(0,3).join(' · ')
+    :'No major issues detected from the evaluated channels.';
+
+  return`
+    <div class="heroGrid">
+
+      <div class="healthHero">
+
+        <div class="healthRing"
+          style="background:conic-gradient(${color} ${deg}deg,#242a2e ${deg}deg)">
+
+          <div class="healthNum">${score}</div>
+
+        </div>
+
+        <div class="healthText">
+          <h2>${title}</h2>
+          <p>${escapeHTML(description)}</p>
+        </div>
+
+      </div>
+
+      <div class="confidenceHero">
+
+        <div class="confidenceNum">${h.confidence}%</div>
+
+        <div class="healthText">
+
+          <h2>ANALYSIS CONFIDENCE</h2>
+
+          <p>
+            Confidence reflects how much weighted sensor data
+            was actually available. It is separate from health.
+          </p>
+
+          <div class="confidenceBar">
+            <i style="width:${h.confidence}%"></i>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+}
+
+
+function render(d,filename){
+
+  lastParsed=d;
+
+  $('status').style.display='none';
+  $('results').style.display='block';
+
+  const h=healthScore(d);
+
+  const duration=
+    d.runtime && d.runtime.length
+      ?d.runtime.filter(Number.isFinite).length
+        ?max(d.runtime)-min(d.runtime)
+        :null
+      :null;
+
+  let html=`
+
+    <div class="summary">
+
+      <div>
+
+        <div class="filename">
+          ${escapeHTML(filename.replace(/\.(MaxxECU-Zip-log|MaxxECU-Log|log|zip|csv)$/i,''))}
+        </div>
+
+        <div class="meta">
+          ${d.rowCount.toLocaleString()} rows
+          · ${fmtTime(duration)}
+          · ${d.headers.length} CHANNELS
+          · LIVE CONFIG
+        </div>
+
+      </div>
+
+      <div class="actions">
+
+        <div class="unitGroup">
+          <span>TEMP</span>
+          <button data-unit="tempF" class="${units.temp==='F'?'active':''}">°F</button>
+          <button data-unit="tempC" class="${units.temp==='C'?'active':''}">°C</button>
+        </div>
+
+        <div class="unitGroup">
+          <span>PRESS</span>
+          <button data-unit="pressPsi" class="${units.press==='psi'?'active':''}">PSI</button>
+          <button data-unit="pressBar" class="${units.press==='bar'?'active':''}">BAR</button>
+        </div>
+
+        <button class="btn primary" id="copyReportBtn">
+          COPY TUNER REPORT
+        </button>
+
+        <button class="btn" id="shareReportBtn">
+          SHARE
+        </button>
+
+        <button class="btn" id="printReportBtn">
+          PRINT / SAVE PDF
+        </button>
+
+        <button class="btn" id="configBtn">
+          CONFIG I/O
+        </button>
+
+        <button class="btn" id="resetBtn">
+          NEW LOG
+        </button>
+
+      </div>
+
+    </div>
+
+    ${healthUI(h)}
+
+    <div class="sectionTitle">
+      <div>Smart dashboard</div>
+      <span>NO GENERIC LOG END VALUES</span>
+    </div>
+
+    <div class="cards">
+  `;
+
+
+  if(d.rpm){
+
+    const revLimit=
+      (tuneWarnings && tuneWarnings.revLimit)
+        ?tuneWarnings.revLimit
+        :(d.revLimit && d.revLimit.some(Number.isFinite) ? max(d.revLimit) : null);
+
+    const peakRpm=max(d.rpm);
+
+    /*
+      Peak RPM while actually in gear is the number that
+      matters for "how close did I get to the limiter while
+      driving" — a neutral rev can spike well past the limiter
+      with zero driveline consequence and shouldn't be treated
+      the same way. Falls back to the plain peak when gear
+      isn't logged.
+    */
+
+    let peakInGear=peakRpm;
+    let neutralRevSeen=false;
+
+    if(d.gear){
+
+      const inGearRpms=[];
+
+      for(let i=0;i<d.rpm.length;i++){
+        if(Number.isFinite(d.rpm[i]) && d.gear[i]>0){
+          inGearRpms.push(d.rpm[i]);
+        }
+      }
+
+      if(inGearRpms.length){
+        peakInGear=Math.max(...inGearRpms);
+        neutralRevSeen=peakRpm>peakInGear+50;
+      }
+
+    }
+
+    html+=card({
+      label:'RPM (in gear)',
+      value:fmtRpm(peakInGear),
+      stat:'PEAK WHILE DRIVING',
+      range:
+        (revLimit
+          ?`limit ${Math.round(revLimit)} RPM${tuneWarnings&&tuneWarnings.revLimit?' (from tune)':''}`
+          :`Average ${fmtRpm(avg(d.rpm))}`)+
+        (neutralRevSeen?` \u00b7 ${Math.round(peakRpm)} seen in neutral`:''),
+      icon:'↻',
+      accent:
+        revLimit && peakInGear>=revLimit*0.98
+          ?'var(--red)'
+          :'var(--blue)'
+    });
+
+  }
+
+
+  /*
+    Throttle card removed from the dashboard — average TPS
+    across a whole log isn't a meaningful number on its own
+    (it's still used internally to detect WOT pulls and to
+    scope AFR/Lambda stats, just not surfaced as its own card).
+  */
+
+
+  if(d.mapPsi && d.mapPsi.some(Number.isFinite)){
+
+    const peakBoost=max(d.mapPsi);
+
+    html+=card({
+      label:'Boost (MAP)',
+      value:(peakBoost>=0?'+':'')+fmtPsi(peakBoost),
+      stat:'PEAK, EST. GAUGE',
+      range:`${fmtPsi(min(d.mapPsi))} – ${fmtPsi(max(d.mapPsi))} · sea-level baseline, not altitude-corrected`,
+      icon:'B',
+      accent:'var(--orange)'
+    });
+
+  }
+
+
+  if(d.iatF && d.iatF.some(Number.isFinite)){
+
+    html+=card({
+      label:'Intake air temp',
+      value:fmtTemp(avg(d.iatF)),
+      stat:'AVERAGE',
+      range:`${fmtTemp(min(d.iatF))} – ${fmtTemp(max(d.iatF))}`,
+      icon:'IAT',
+      accent:'var(--amber)'
+    });
+
+  }
+
+
+  if(d.ignTiming && d.ignTiming.some(Number.isFinite)){
+
+    html+=card({
+      label:'Ignition timing',
+      value:Math.round(max(d.ignTiming))+'°',
+      stat:'PEAK ADVANCE',
+      range:`${Math.round(min(d.ignTiming))}° – ${Math.round(max(d.ignTiming))}°`,
+      icon:'IGN',
+      accent:'var(--blue)'
+    });
+
+  }
+
+
+  if(d.knockRetard && d.knockRetard.some(Number.isFinite)){
+
+    const peakRetard=max(d.knockRetard);
+
+    html+=card({
+      label:'Knock retard',
+      value:Math.round(peakRetard)+'°',
+      stat:'PEAK PULLED',
+      range:peakRetard>0
+        ?'timing was pulled for knock during this log'
+        :'no timing pulled for knock',
+      icon:'K',
+      accent:peakRetard>2?'var(--red)':'var(--green)'
+    });
+
+  }
+
+
+  const waInfo=afrInfo(d);
+  const wa=waInfo.stats;
+
+  if(wa){
+
+    html+=card({
+      label:waInfo.scope==='WOT'?'WOT AFR':'AFR (full log)',
+      value:fmtAfr(wa.average),
+      stat:'SPIKE FILTERED',
+      range:`${fmtAfr(wa.min)} – ${fmtAfr(wa.max)}`,
+      icon:'A',
+      accent:'var(--purple)'
+    });
+
+  }
+
+
+  if(d.fuelPressPsi){
+
+    const fp=stabilizedFuelPressure(d.fuelPressPsi);
+
+    const mismatch=calibrationMismatch(d,'fuelPress','cfgFuel');
+
+    if(fp){
+
+      html+=card({
+        label:mismatch?'Fuel pressure \u26a0':'Fuel pressure',
+        value:mismatch?'UNRELIABLE':fmtPsi(fp.average),
+        stat:mismatch?'CALIBRATION MISMATCH':`AUTO-DETECTED ${d.fuelPressSourceUnit?d.fuelPressSourceUnit.toUpperCase():''} SOURCE`,
+        range:mismatch
+          ?`raw reading exceeds this tune's own AIN${mismatch.ain} calibration ceiling \u2014 check with a manual gauge`
+          :`${fmtPsi(fp.min)} – ${fmtPsi(fp.max)} · startup excluded`,
+        icon:'F',
+        accent:mismatch?'var(--red)':'var(--green)'
+      });
+
+    }
+
+  }
+
+
+  if(d.oilPressPsi){
+
+    const oilMismatch=calibrationMismatch(d,'oilPress','cfgOil');
+
+    html+=card({
+      label:oilMismatch?'Oil pressure \u26a0':'Oil pressure',
+      value:oilMismatch?'UNRELIABLE':fmtPsi(avg(d.oilPressPsi)),
+      stat:oilMismatch?'CALIBRATION MISMATCH':`AUTO-DETECTED ${d.oilPressSourceUnit?d.oilPressSourceUnit.toUpperCase():''} SOURCE`,
+      range:oilMismatch
+        ?`raw reading exceeds this tune's own AIN${oilMismatch.ain} calibration ceiling \u2014 check with a manual gauge`
+        :`${fmtPsi(min(d.oilPressPsi))} – ${fmtPsi(max(d.oilPressPsi))}`,
+      icon:'O',
+      accent:oilMismatch?'var(--red)':'var(--cyan)'
+    });
+
+  }
+
+
+  if(d.coolantF){
+
+    html+=card({
+      label:'Coolant',
+      value:fmtTemp(avg(d.coolantF)),
+      stat:'AVERAGE',
+      range:`${fmtTemp(min(d.coolantF))} – ${fmtTemp(max(d.coolantF))}`,
+      icon:'C',
+      accent:'var(--green)'
+    });
+
+  }
+
+
+  if(d.transTempF){
+
+    html+=card({
+      label:'Transmission',
+      value:fmtTemp(avg(d.transTempF)),
+      stat:'AVERAGE',
+      range:`${fmtTemp(min(d.transTempF))} – ${fmtTemp(max(d.transTempF))}`,
+      icon:'T',
+      accent:'var(--red)'
+    });
+
+  }
+
+
+  if(d.battery){
+
+    html+=card({
+      label:'Battery',
+      value:fmtVolt(avg(d.battery)),
+      stat:'AVERAGE',
+      range:`${fmtVolt(min(d.battery))} – ${fmtVolt(max(d.battery))}`,
+      icon:'V',
+      accent:'var(--cyan)'
+    });
+
+  }
+
+
+  if(d.fuelDuty && d.fuelDuty.some(Number.isFinite)){
+
+    const warnDuty=
+      tuneWarnings && tuneWarnings.warnDuty
+        ?tuneWarnings.warnDuty
+        :85;
+
+    const peakDuty=max(d.fuelDuty);
+
+    html+=card({
+      label:'Injector duty',
+      value:fmtPct(peakDuty),
+      stat:'PEAK',
+      range:tuneWarnings && tuneWarnings.warnDuty
+        ?`warns at ${warnDuty}%`
+        :'no tune warning point loaded',
+      icon:'I',
+      accent:peakDuty>=warnDuty?'var(--red)':'var(--green)'
+    });
+
+  }
+
+
+  if(d.ethanol){
+
+    html+=card({
+      label:'Ethanol',
+      value:fmtPct(avg(d.ethanol)),
+      stat:'AVERAGE',
+      range:`${fmtPct(min(d.ethanol))} – ${fmtPct(max(d.ethanol))}`,
+      icon:'E',
+      accent:'var(--amber)'
+    });
+
+  }
+
+
+  if(d.vss){
+
+    html+=card({
+      label:'Vehicle speed',
+      value:fmtSpeed(max(d.vss)),
+      stat:'PEAK',
+      range:`Average ${fmtSpeed(avg(d.vss))}`,
+      icon:'S',
+      accent:'var(--blue)'
+    });
+
+  }
+
+
+  if(d.gear && d.gear.some(Number.isFinite)){
+
+    html+=card({
+      label:'Gear range',
+      value:`${Math.round(min(d.gear))}–${Math.round(max(d.gear))}`,
+      stat:'ACTUAL GEAR',
+      range:`Last gear ${Math.round(d.gear.filter(Number.isFinite).slice(-1)[0]??0)}`,
+      icon:'G',
+      accent:'var(--blue)'
+    });
+
+  }
+
+
+  if(d.converterLockup && d.converterLockup.some(Number.isFinite)){
+
+    const engaged=d.converterLockup.filter(Number.isFinite);
+    const pct=engaged.filter(v=>v>0).length/engaged.length*100;
+
+    html+=card({
+      label:'Converter lockup',
+      value:Math.round(pct)+'%',
+      stat:'OF LOG ENGAGED',
+      range:'torque converter lockup duty',
+      icon:'L',
+      accent:'var(--purple)'
+    });
+
+  }
+
+
+  if(d.transLinePressPsi && d.transLinePressPsi.some(Number.isFinite)){
+
+    html+=card({
+      label:'Line pressure',
+      value:fmtPsi(max(d.transLinePressPsi)),
+      stat:'PEAK',
+      range:`${fmtPsi(min(d.transLinePressPsi))} – ${fmtPsi(max(d.transLinePressPsi))}`,
+      icon:'P',
+      accent:'var(--cyan)'
+    });
+
+  }
+
+
+  html+=`</div>`;
+
+
+  const afrI=afrInfo(d);
+  const targetAfrI=targetAfrInfo(d);
+  const lambdaI=lambdaInfo(d);
+  const targetLambdaI=targetLambdaInfo(d);
+
+  const delta=afrDelta(d);
+  const ldelta=lambdaDelta(d);
+
+  const scopeLabel=s=>s==='WOT'?'WOT (TPS ≥80%)':s==='FULL LOG'?'full log average':'';
+
+  if(afrI.stats || targetAfrI.stats || lambdaI.stats || targetLambdaI.stats){
+
+    html+=`
+
+      <div class="sectionTitle">
+        <div>Fueling target intelligence</div>
+        <span>LOGGED TARGET · NOT USER ENTERED</span>
+      </div>
+
+      <div class="targetGrid">
+
+        <div class="targetBox">
+          <div class="targetLabel">Actual AFR</div>
+          <div class="targetMain">
+            ${afrI.stats?fmtAfr(afrI.stats.average):'N/A'}
+          </div>
+          <div class="targetSub">
+            ${afrI.scope?scopeLabel(afrI.scope):'no AFR data found'}
+          </div>
+        </div>
+
+        <div class="targetBox">
+          <div class="targetLabel">
+            ${targetAfrI.computed?'Target AFR (computed)':'Logged target AFR'}
+          </div>
+          <div class="targetMain">
+            ${targetAfrI.stats?fmtAfr(targetAfrI.stats.average):'NOT AVAILABLE'}
+          </div>
+          <div class="targetSub">
+            ${
+              !targetAfrI.stats
+                ?'no Target AFR, Lambda target, or Stoich AFR channel found'
+                :targetAfrI.computed
+                  ?scopeLabel(targetAfrI.scope)+' · from lambda target \u00d7 stoich AFR'
+                  :scopeLabel(targetAfrI.scope)
+            }
+          </div>
+        </div>
+
+        <div class="targetBox">
+          <div class="targetLabel">AFR: actual − target</div>
+          <div class="targetMain delta ${
+            delta==null?'':Math.abs(delta)<=.5?'good':
+            Math.abs(delta)<=1?'warn':'bad'
+          }">
+            ${delta==null?'N/A':(delta>0?'+':'')+delta.toFixed(2)}
+          </div>
+          <div class="targetSub">
+            ${delta==null?'needs both actual and target':'AFR difference'}
+          </div>
+        </div>
+
+        <div class="targetBox">
+          <div class="targetLabel">Actual lambda</div>
+          <div class="targetMain">
+            ${lambdaI.stats?fmtLambda(lambdaI.stats.average):'N/A'}
+          </div>
+          <div class="targetSub">
+            ${lambdaI.scope?scopeLabel(lambdaI.scope):'no lambda data found'}
+          </div>
+        </div>
+
+        <div class="targetBox">
+          <div class="targetLabel">Logged target lambda</div>
+          <div class="targetMain">
+            ${targetLambdaI.stats?fmtLambda(targetLambdaI.stats.average):'NOT LOGGED'}
+          </div>
+          <div class="targetSub">
+            ${targetLambdaI.stats?scopeLabel(targetLambdaI.scope):'no target lambda channel found'}
+          </div>
+        </div>
+
+        <div class="targetBox">
+          <div class="targetLabel">Lambda: actual − target</div>
+          <div class="targetMain delta ${
+            ldelta==null?'':Math.abs(ldelta)<=.03?'good':
+            Math.abs(ldelta)<=.06?'warn':'bad'
+          }">
+            ${ldelta==null?'N/A':(ldelta>0?'+':'')+ldelta.toFixed(3)}
+          </div>
+          <div class="targetSub">
+            ${ldelta==null?'needs both actual and target':'lambda difference'}
+          </div>
+        </div>
+
+      </div>
+    `;
+
+  }
+
+
+  html+=`
+
+    <div class="sectionTitle">
+      <div>Log trace</div>
+      <span>SELECTED I/O CHANNELS</span>
+    </div>
+
+    <div class="chartPanel">
+
+      <div class="chartTop">
+
+        <div class="toggles" id="seriesToggles"></div>
+
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+
+          <button class="btn" id="resetZoom">
+            RESET ZOOM
+          </button>
+
+          <button class="btn" id="saveChartBtn">
+            SAVE CHART IMAGE
+          </button>
+
+        </div>
+
+      </div>
+
+      <canvas id="mainChart"></canvas>
+
+      <div class="hint">
+        SCROLL / PINCH TO ZOOM · DRAG TO PAN
+      </div>
+
+    </div>
+  `;
+
+
+  html+=`
+
+    <div class="sectionTitle">
+      <div>Health intelligence</div>
+      <span>WEIGHTED · SENSOR SPECIFIC</span>
+    </div>
+
+    <div class="checklist">
+  `;
+
+  h.checks
+    .sort((a,b)=>a.score-b.score)
+    .forEach(c=>{
+
+      const state=
+        c.score>=90?'pass':
+        c.score>=75?'info':
+        c.score>=60?'warn':
+        'bad';
+
+      html+=checkRow(
+        state,
+        c.name,
+        `${c.score}/100 · ${c.reason}`
+      );
+
+    });
+
+
+  if(!h.checks.length){
+
+    html+=checkRow(
+      'info',
+      'Insufficient sensor coverage',
+      'Configure additional channels to improve the analysis.'
+    );
+
+  }
+
+
+  html+=`</div>`;
+
+
+  if(d.pulls.length){
+
+    html+=`
+
+      <div class="sectionTitle">
+        <div>WOT pulls</div>
+        <span>${d.pulls.length} DETECTED</span>
+      </div>
+
+      <div class="tableWrap">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Pull</th>
+              <th>Duration</th>
+              <th>RPM</th>
+              <th>Speed</th>
+              <th>AFR</th>
+              <th>Target</th>
+              <th>Δ</th>
+              <th>0-60</th>
+              <th>1/8 mi</th>
+              <th>Boost</th>
+              <th>Knock</th>
+            </tr>
+          </thead>
+
+          <tbody>
+    `;
+
+    d.pulls.forEach((p,i)=>{
+
+      const a=smartAfr(valuesAtIndices(d.afr,p.start,p.end));
+      const t=smartAfr(valuesAtIndices(d.targetAfr,p.start,p.end));
+
+      const delta=
+        a && t
+          ?a.average-t.average
+          :null;
+
+      const accel=computeAccelStats(d,p);
+
+      const pullBoost=
+        d.mapPsi
+          ?max(valuesAtIndices(d.mapPsi,p.start,p.end))
+          :null;
+
+      const pullKnock=
+        d.knockRetard
+          ?max(valuesAtIndices(d.knockRetard,p.start,p.end))
+          :(d.knock?max(valuesAtIndices(d.knock,p.start,p.end)):null);
+
+      html+=`
+
+        <tr>
+          <td>#${i+1}</td>
+
+          <td>
+            ${fmtTime(p.duration)}
+          </td>
+
+          <td>
+            ${d.rpm
+              ?fmtRpm(max(valuesAtIndices(d.rpm,p.start,p.end)))
+              :'—'}
+          </td>
+
+          <td>
+            ${d.vss
+              ?fmtSpeed(max(valuesAtIndices(d.vss,p.start,p.end)))
+              :'—'}
+          </td>
+
+          <td>${a?fmtAfr(a.average):'—'}</td>
+
+          <td>${t?fmtAfr(t.average):'—'}</td>
+
+          <td>
+            ${delta==null
+              ?'—'
+              :(delta>0?'+':'')+delta.toFixed(2)}
+          </td>
+
+          <td>
+            ${accel && accel.zeroToSixty!=null
+              ?accel.zeroToSixty.toFixed(2)+'s'
+              :'—'}
+          </td>
+
+          <td>
+            ${accel && accel.eighthMile!=null
+              ?accel.eighthMile.toFixed(2)+'s'
+              :'—'}
+          </td>
+
+          <td>
+            ${Number.isFinite(pullBoost)?fmtPsi(pullBoost):'—'}
+          </td>
+
+          <td>
+            ${Number.isFinite(pullKnock)
+              ?(pullKnock>0?'⚠ '+Math.round(pullKnock):'clean')
+              :'—'}
+          </td>
+
+        </tr>
+      `;
+
+    });
+
+    html+=`
+          </tbody>
+        </table>
+      </div>
+    `;
+
+  }
+
+
+  /* DRIVETRAIN & INPUTS */
+
+  const hasDrivetrainData=
+    (d.upshiftEvents && d.upshiftEvents.length) ||
+    (d.downshiftEvents && d.downshiftEvents.length) ||
+    (d.acPressure && d.acPressure.some(Number.isFinite)) ||
+    (d.tuneSelector && d.tuneSelector.some(Number.isFinite)) ||
+    (d.driveMode && d.driveMode.some(Number.isFinite)) ||
+    (d.tractionCorrection && d.tractionCorrection.some(Number.isFinite));
+
+  if(hasDrivetrainData){
+
+    html+=`
+      <div class="sectionTitle">
+        <div>Drivetrain & inputs</div>
+        <span>SHIFTER · MODES · A/C</span>
+      </div>
+
+      <div class="cards">
+    `;
+
+    if(d.upshiftEvents){
+
+      html+=card({
+        label:'Upshift presses',
+        value:String(d.upshiftEvents.length),
+        stat:'DETECTED THIS LOG',
+        range:'debounced digital input',
+        icon:'\u2191',
+        accent:'var(--green)'
+      });
+
+    }
+
+    if(d.downshiftEvents){
+
+      html+=card({
+        label:'Downshift presses',
+        value:String(d.downshiftEvents.length),
+        stat:'DETECTED THIS LOG',
+        range:'debounced digital input',
+        icon:'\u2193',
+        accent:'var(--orange)'
+      });
+
+    }
+
+    if(d.acPressure && d.acPressure.some(Number.isFinite)){
+
+      /*
+        Now uses magnitude-based auto-detection instead of
+        trusting the tune's own unit label (which we've
+        confirmed can be wrong). AC pressure has a wide
+        plausible range (low side vs high side vs compressor
+        off), so confidence is lower than fuel/oil — shown as
+        "AUTO-DETECTED" rather than presented as certain.
+      */
+
+      const acMismatch=calibrationMismatch(d,'acPressure','cfgAC');
+
+      if(acMismatch){
+
+        html+=card({
+          label:'A/C pressure \u26a0',
+          value:'UNRELIABLE',
+          stat:'CALIBRATION MISMATCH',
+          range:`raw reading exceeds this tune's AIN${acMismatch.ain} calibration ceiling \u2014 same issue as fuel/oil`,
+          icon:'\u2744',
+          accent:'var(--red)'
+        });
+
+      }else if(d.acPressurePsi){
+
+        html+=card({
+          label:'A/C pressure',
+          value:fmtPsi(avg(d.acPressurePsi)),
+          stat:`AUTO-DETECTED (${d.acPressureSourceUnit?d.acPressureSourceUnit.toUpperCase():'?'} SOURCE)`,
+          range:`${fmtPsi(min(d.acPressurePsi))} \u2013 ${fmtPsi(max(d.acPressurePsi))} \u00b7 wide range, lower confidence`,
+          icon:'\u2744',
+          accent:'var(--cyan)'
+        });
+
+      }
+
+    }
+
+    if(d.tuneSelector && d.tuneSelector.some(Number.isFinite)){
+
+      const vals=[...new Set(clean(d.tuneSelector))];
+
+      const names=tuneWarnings && tuneWarnings.tuneSelectorNames;
+
+      /*
+        The raw tune-selector channel is 0-indexed (0,1,2,3...)
+        but the Textname slots in the tune file are 1-indexed
+        (1=Street, 2=Sport...). Verified against a real car:
+        raw value 0 while the driver was actually in "Street"
+        (slot 1). Off-by-one here previously showed the wrong
+        mode entirely.
+      */
+
+      const nameFor=v=>{
+        const n=Math.round(v)+1;
+        return names && names[n] ? names[n] : 'slot '+n;
+      };
+
+      const namedSlot=names && names[Math.round(vals[0])+1];
+
+      html+=card({
+        label:'Tune map',
+        value:vals.length===1?nameFor(vals[0]):`${vals.length} maps used`,
+        stat:vals.length===1?'ACTIVE THIS LOG':'MAP SWITCHED',
+        range:
+          vals.length>1
+            ?'used: '+vals.map(nameFor).join(', ')
+            :namedSlot
+              ?`slot ${Math.round(vals[0])+1}`
+              :names
+                ?'this slot isn\u2019t named in your tune file'
+                :'drop your tune file for named modes',
+        icon:'M',
+        accent:'var(--amber)'
+      });
+
+    }
+
+    if(d.driveMode && d.driveMode.some(Number.isFinite)){
+
+      const vals=[...new Set(clean(d.driveMode))];
+
+      html+=card({
+        label:'Drive mode',
+        value:vals.length===1?String(Math.round(vals[0])):`${vals.length} modes used`,
+        stat:vals.length===1?'CONSTANT THIS LOG':'MODE SWITCHED',
+        range:'raw TCU value, not decoded to a name',
+        icon:'D',
+        accent:'var(--blue)'
+      });
+
+    }
+
+    if(d.tractionCorrection && d.tractionCorrection.some(Number.isFinite)){
+
+      const events=d.tractionEvents ? d.tractionEvents.length : 0;
+
+      html+=card({
+        label:'Traction control',
+        value:events?`${events} intervention${events===1?'':'s'}`:'no intervention',
+        stat:'DEBOUNCED EVENTS',
+        range:events?`peak pullback ${fmtAfr(min(d.tractionCorrection))}`:'never engaged',
+        icon:'T',
+        accent:'var(--purple)'
+      });
+
+    }
+
+    html+=`</div>`;
+
+    if(
+      (d.upshiftEvents && d.upshiftEvents.length) ||
+      (d.downshiftEvents && d.downshiftEvents.length)
+    ){
+
+      const allShifts=[
+        ...d.upshiftEvents.map(e=>({...e,type:'UPSHIFT'})),
+        ...d.downshiftEvents.map(e=>({...e,type:'DOWNSHIFT'}))
+      ].sort((a,b)=>(a.time??0)-(b.time??0));
+
+      html+=`
+        <div class="sectionTitle">
+          <div>Shift events</div>
+          <span>${allShifts.length} PADDLE PRESSES</span>
+        </div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Time</th>
+                <th>RPM</th>
+                <th>Gear at press</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      allShifts.forEach(e=>{
+
+        html+=`
+          <tr>
+            <td>${e.type}</td>
+            <td>${fmtTime(e.time)}</td>
+            <td>${e.rpm!=null?Math.round(e.rpm)+' RPM':'\u2014'}</td>
+            <td>${e.gear!=null?Math.round(e.gear):'\u2014'}</td>
+          </tr>
+        `;
+
+      });
+
+      html+=`
+            </tbody>
+          </table>
+        </div>
+      `;
+
+    }
+
+  }
+
+
+  html+=`
+
+    <div class="sectionTitle">
+      <div>Tuner report</div>
+      <span>ONE CLICK COPY</span>
+    </div>
+
+    <div class="report" id="tunerReport">${escapeHTML(generateReport(d,h))}</div>
+  `;
+
+
+  $('results').innerHTML=html;
+
+
+  $('resetBtn').onclick=()=>{
+
+    $('results').style.display='none';
+    $('drop').style.display='grid';
+
+    rawLogText=null;
+    rawHeaders=[];
+    lastParsed=null;
+    lastFilename='';
+
+    fileInput.value='';
+
+    if(chart){
+      chart.destroy();
+      chart=null;
+    }
+
+  };
+
+
+  document.querySelectorAll('.unitGroup button').forEach(btn=>{
+
+    btn.onclick=()=>{
+
+      const u=btn.dataset.unit;
+
+      if(u==='tempF')units.temp='F';
+      if(u==='tempC')units.temp='C';
+      if(u==='pressPsi')units.press='psi';
+      if(u==='pressBar')units.press='bar';
+
+      /*
+        Re-render with the same parsed data — nothing needs
+        reparsing, formatting functions just read the new
+        units.temp/units.press state.
+      */
+
+      render(d,filename);
+
+    };
+
+  });
+
+
+  $('configBtn').onclick=()=>{
+
+    document.querySelectorAll('.tabs button')
+      .forEach(x=>x.classList.remove('active'));
+
+    document.querySelectorAll('.view')
+      .forEach(x=>x.classList.remove('active'));
+
+    document.querySelector('[data-tab="config"]')
+      .classList.add('active');
+
+    $('view-config').classList.add('active');
+
+    refreshConfigUI();
+
+  };
+
+
+  $('copyReportBtn').onclick=async()=>{
+
+    try{
+
+      await navigator.clipboard.writeText(
+        generateReport(d,h)
+      );
+
+      $('copyReportBtn').textContent='COPIED ✓';
+
+      setTimeout(()=>{
+        $('copyReportBtn').textContent='COPY TUNER REPORT';
+      },1500);
+
+    }catch(e){
+
+      alert('Could not copy report.');
+
+    }
+
+  };
+
+
+  $('shareReportBtn').onclick=async()=>{
+
+    const text=generateReport(d,h);
+    const shareTitle='PULLSHEET report — '+filename;
+
+    /*
+      Web Share API — this is what makes "SHARE" actually open the
+      native iOS share sheet (Messages, AirDrop, Files, etc.)
+      instead of just copying. Falls back to clipboard copy on
+      desktop browsers / older Safari where it isn't available.
+    */
+
+    if(navigator.share){
+
+      try{
+
+        await navigator.share({
+          title:shareTitle,
+          text
+        });
+
+      }catch(err){
+
+        /* AbortError just means the user cancelled the share sheet */
+        if(err.name!=='AbortError'){
+          console.error(err);
+        }
+
+      }
+
+    }else{
+
+      try{
+
+        await navigator.clipboard.writeText(text);
+        alert('Sharing isn\'t available in this browser — report copied to your clipboard instead.');
+
+      }catch(e){
+
+        alert('Could not share or copy the report.');
+
+      }
+
+    }
+
+  };
+
+
+  $('printReportBtn').onclick=()=>{
+
+    $('printArea').textContent=generateReport(d,h);
+    window.print();
+
+  };
+
+
+  $('saveChartBtn').onclick=async()=>{
+
+    if(!chart)return;
+
+    const dataUrl=chart.toBase64Image('image/png',1);
+
+    const cleanName=filename.replace(/\.(MaxxECU-Zip-log|MaxxECU-Log|log|zip|csv)$/i,'');
+    const imgFilename=cleanName+'-chart.png';
+
+    /*
+      Prefer sharing the image directly (drops straight into
+      Messages/AirDrop/Files on iOS) and only fall back to a plain
+      download when the browser can't share files — canShare with
+      a files array is the correct feature check here, navigator.share
+      alone isn't enough since text-only sharing is more widely
+      supported than file sharing.
+    */
+
+    try{
+
+      const blob=await (await fetch(dataUrl)).blob();
+      const file=new File([blob],imgFilename,{type:'image/png'});
+
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+
+        await navigator.share({
+          files:[file],
+          title:imgFilename
+        });
+
+        return;
+
+      }
+
+    }catch(err){
+
+      if(err.name==='AbortError')return;
+      console.error(err);
+
+    }
+
+    const a=document.createElement('a');
+    a.href=dataUrl;
+    a.download=imgFilename;
+    a.click();
+
+  };
+
+
+  buildChart(d);
+}
+
+
+function checkRow(state,title,text){
+
+  return`
+    <div class="check">
+
+      <div class="dot ${state}"></div>
+
+      <div>
+        <b>${escapeHTML(title)}</b>
+        <small>${escapeHTML(text)}</small>
+      </div>
+
+    </div>
+  `;
+}
+
+
+const SERIES={
+
+  rpm:{
+    label:'RPM',
+    color:'#49a7ff',
+    axis:'rpm'
+  },
+
+  tps:{
+    label:'TPS %',
+    color:'#ffb627',
+    axis:'pct'
+  },
+
+  afr:{
+    label:'AFR',
+    color:'#b88cff',
+    axis:'afr'
+  },
+
+  targetAfr:{
+    label:'Target AFR',
+    color:'#ffffff',
+    axis:'afr'
+  },
+
+  fuelPress:{
+    label:'Fuel PSI',
+    color:'#72d43c',
+    axis:'press'
+  },
+
+  oilPress:{
+    label:'Oil PSI',
+    color:'#42dada',
+    axis:'press'
+  },
+
+  coolant:{
+    label:'Coolant °F',
+    color:'#72d43c',
+    axis:'temp'
+  },
+
+  transTemp:{
+    label:'Trans °F',
+    color:'#ff5c4d',
+    axis:'temp'
+  },
+
+  map:{
+    label:'Boost PSI',
+    color:'#ff8757',
+    axis:'map'
+  },
+
+  iat:{
+    label:'IAT °F',
+    color:'#f5d76e',
+    axis:'temp'
+  },
+
+  ignTiming:{
+    label:'Timing °',
+    color:'#8fd3ff',
+    axis:'timing'
+  },
+
+  knockRetard:{
+    label:'Knock retard °',
+    color:'#ff4f6d',
+    axis:'timing'
+  }
+
+};
+
+
+function buildChart(d){
+
+  const canvas=$('mainChart');
+
+  if(!canvas)return;
+
+  if(!d.runtime || !d.runtime.length){
+
+    canvas.style.display='none';
+    return;
+
+  }
+
+  canvas.style.display='block';
+
+  if(chart){
+    chart.destroy();
+    chart=null;
+  }
+
+  const n=d.runtime.length;
+
+  const step=Math.max(
+    1,
+    Math.floor(n/1800)
+  );
+
+  const labels=[];
+
+  const runtimeClean=d.runtime.filter(Number.isFinite);
+  const runtimeMin=runtimeClean.length?Math.min(...runtimeClean):0;
+
+  for(let i=0;i<n;i+=step){
+
+    const t=d.runtime[i];
+
+    labels.push(
+      Number.isFinite(t)
+        ?(t-runtimeMin).toFixed(2)
+        :''
+    );
+
+  }
+
+
+  const toggles=$('seriesToggles');
+
+  toggles.innerHTML='';
+
+
+  Object.keys(SERIES).forEach(key=>{
+
+    let available=false;
+
+    if(key==='fuelPress')available=!!d.fuelPressPsi;
+    else if(key==='oilPress')available=!!d.oilPressPsi;
+    else if(key==='map')available=!!d.mapPsi;
+    else if(key==='iat')available=!!d.iatF;
+    else available=!!d[key];
+
+    if(!available)return;
+
+    const s=SERIES[key];
+
+    const b=document.createElement('button');
+
+    b.className=
+      'toggle '+(activeSeries[key]?'on':'');
+
+    b.textContent=s.label;
+
+    b.style.setProperty('--accent',s.color);
+
+    b.onclick=()=>{
+
+      activeSeries[key]=!activeSeries[key];
+
+      buildChart(d);
+
+    };
+
+    toggles.appendChild(b);
+
+  });
+
+
+  const datasets=[];
+
+
+  function getArray(key){
+
+    if(key==='fuelPress')return d.fuelPressPsi;
+    if(key==='oilPress')return d.oilPressPsi;
+    if(key==='coolant')return d.coolantF;
+    if(key==='transTemp')return d.transTempF;
+    if(key==='map')return d.mapPsi;
+    if(key==='iat')return d.iatF;
+
+    return d[key];
+
+  }
+
+
+  Object.keys(SERIES).forEach(key=>{
+
+    const arr=getArray(key);
+
+    if(!arr || !activeSeries[key])return;
+
+    const s=SERIES[key];
+
+    const data=[];
+
+    for(let i=0;i<arr.length;i+=step){
+
+      data.push(
+        Number.isFinite(arr[i])
+          ?arr[i]
+          :null
+      );
+
+    }
+
+    datasets.push({
+
+      label:s.label,
+      data,
+
+      borderColor:s.color,
+      backgroundColor:s.color+'18',
+
+      borderWidth:
+        key==='targetAfr'?1.2:1.8,
+
+      borderDash:
+        key==='targetAfr'?[5,5]:[],
+
+      pointRadius:0,
+      tension:.12,
+
+      spanGaps:true,
+      yAxisID:s.axis
+
+    });
+
+  });
+
+
+  const scales={
+
+    x:{
+      grid:{color:'#20262a'},
+      ticks:{
+        color:'#667178',
+        maxTicksLimit:10,
+        callback:v=>labels[v]+'s'
+      }
+    }
+
+  };
+
+
+  if(activeSeries.rpm && d.rpm){
+
+    scales.rpm={
+      position:'left',
+      grid:{color:'#20262a'},
+      ticks:{color:'#49a7ff'},
+      title:{
+        display:true,
+        text:'RPM',
+        color:'#49a7ff'
+      }
+    };
+
+  }
+
+
+  if(activeSeries.tps && d.tps){
+
+    scales.pct={
+      position:'right',
+      min:0,
+      max:100,
+      grid:{display:false},
+      ticks:{color:'#ffb627'},
+      title:{
+        display:true,
+        text:'TPS %',
+        color:'#ffb627'
+      }
+    };
+
+  }
+
+
+  if(
+    (activeSeries.afr && d.afr) ||
+    (activeSeries.targetAfr && d.targetAfr)
+  ){
+
+    scales.afr={
+      position:'right',
+      grid:{display:false},
+      ticks:{color:'#b88cff'},
+      title:{
+        display:true,
+        text:'AFR',
+        color:'#b88cff'
+      }
+    };
+
+  }
+
+
+  if(
+    (activeSeries.fuelPress && d.fuelPressPsi) ||
+    (activeSeries.oilPress && d.oilPressPsi)
+  ){
+
+    scales.press={
+      position:'right',
+      grid:{display:false},
+      ticks:{color:'#42dada'},
+      title:{
+        display:true,
+        text:'PSI',
+        color:'#42dada'
+      }
+    };
+
+  }
+
+
+  if(
+    (activeSeries.coolant && d.coolantF) ||
+    (activeSeries.transTemp && d.transTempF) ||
+    (activeSeries.iat && d.iatF)
+  ){
+
+    scales.temp={
+      position:'right',
+      grid:{display:false},
+      ticks:{color:'#72d43c'},
+      title:{
+        display:true,
+        text:'°F',
+        color:'#72d43c'
+      }
+    };
+
+  }
+
+
+  if(activeSeries.map && d.mapPsi){
+
+    scales.map={
+      position:'right',
+      grid:{display:false},
+      ticks:{color:'#ff8757'},
+      title:{
+        display:true,
+        text:'Boost PSI',
+        color:'#ff8757'
+      }
+    };
+
+  }
+
+
+  if(
+    (activeSeries.ignTiming && d.ignTiming) ||
+    (activeSeries.knockRetard && d.knockRetard)
+  ){
+
+    scales.timing={
+      position:'right',
+      grid:{display:false},
+      ticks:{color:'#8fd3ff'},
+      title:{
+        display:true,
+        text:'° (timing)',
+        color:'#8fd3ff'
+      }
+    };
+
+  }
+
+
+  chart=new Chart(canvas,{
+
+    type:'line',
+
+    data:{
+      labels,
+      datasets
+    },
+
+    options:{
+
+      responsive:true,
+      maintainAspectRatio:false,
+      animation:false,
+
+      interaction:{
+        mode:'index',
+        intersect:false
+      },
+
+      plugins:{
+
+        legend:{
+          display:false
+        },
+
+        tooltip:{
+          callbacks:{
+            title:c=>
+              'TIME '+c[0].label+'s'
+          }
+        },
+
+        zoom:{
+
+          pan:{
+            enabled:true,
+            mode:'x'
+          },
+
+          zoom:{
+            wheel:{
+              enabled:true
+            },
+
+            pinch:{
+              enabled:true
+            },
+
+            mode:'x'
+          }
+
+        }
+
+      },
+
+      scales
+
+    }
+
+  });
+
+
+  $('resetZoom').onclick=()=>{
+
+    if(chart)chart.resetZoom();
+
+  };
+
+}
+
+
+function generateReport(d,h){
+
+  let r='';
+
+  r+='PULLSHEET — TUNER REPORT\n';
+  r+='========================================\n\n';
+
+  r+=`HEALTH: ${h.score==null?'N/A':h.score+'/100'}\n`;
+  r+=`CONFIDENCE: ${h.confidence||0}%\n\n`;
+
+  r+='ENGINE\n';
+  r+='----------------------------------------\n';
+
+  if(d.rpm){
+    r+=`RPM PEAK: ${Math.round(max(d.rpm))} RPM\n`;
+  }
+
+  if(d.tps){
+    r+=`TPS AVG: ${fmtPct(avg(d.tps))}\n`;
+  }
+
+  if(d.mapPsi && d.mapPsi.some(Number.isFinite)){
+    r+=`BOOST PEAK (est. gauge, sea-level baseline): ${fmtPsi(max(d.mapPsi))}\n`;
+  }
+
+  if(d.iatF && d.iatF.some(Number.isFinite)){
+    r+=`INTAKE AIR TEMP AVG: ${fmtTemp(avg(d.iatF))}\n`;
+    r+=`INTAKE AIR TEMP PEAK: ${fmtTemp(max(d.iatF))}\n`;
+  }
+
+  r+='\n';
+
+
+  if(
+    (d.ignTiming && d.ignTiming.some(Number.isFinite)) ||
+    (d.knockRetard && d.knockRetard.some(Number.isFinite))
+  ){
+
+    r+='IGNITION\n';
+    r+='----------------------------------------\n';
+
+    if(d.ignTiming && d.ignTiming.some(Number.isFinite)){
+      r+=`TIMING RANGE: ${Math.round(min(d.ignTiming))}° - ${Math.round(max(d.ignTiming))}°\n`;
+    }
+
+    if(d.knockRetard && d.knockRetard.some(Number.isFinite)){
+      r+=`KNOCK RETARD PEAK: ${Math.round(max(d.knockRetard))}°\n`;
+    }
+
+    r+='\n';
+
+  }
+
+
+  r+='FUELING\n';
+  r+='----------------------------------------\n';
+
+  const waR=afrInfo(d);
+  const wtR=targetAfrInfo(d);
+
+  if(waR.stats){
+    r+=`AFR ACTUAL (${waR.scope}): ${fmtAfr(waR.stats.average)}\n`;
+  }
+
+  if(wtR.stats){
+    r+=`AFR TARGET (${wtR.scope}${wtR.computed?', COMPUTED from lambda target x stoich AFR':''}): ${fmtAfr(wtR.stats.average)}\n`;
+  }else{
+    r+=`AFR TARGET: not logged on this build\n`;
+  }
+
+  if(afrDelta(d)!=null){
+    r+=`AFR DELTA: ${afrDelta(d)>0?'+':''}${afrDelta(d).toFixed(2)}\n`;
+  }
+
+  const wlR=lambdaInfo(d);
+  const wltR=targetLambdaInfo(d);
+
+  if(wlR.stats){
+    r+=`LAMBDA ACTUAL (${wlR.scope}): ${fmtLambda(wlR.stats.average)}\n`;
+  }
+
+  if(wltR.stats){
+    r+=`LAMBDA TARGET (${wltR.scope}): ${fmtLambda(wltR.stats.average)}\n`;
+  }
+
+  if(lambdaDelta(d)!=null){
+    r+=`LAMBDA DELTA: ${lambdaDelta(d)>0?'+':''}${lambdaDelta(d).toFixed(3)}\n`;
+  }
+
+  if(d.ethanol){
+    r+=`ETHANOL AVG: ${fmtPct(avg(d.ethanol))}\n`;
+  }
+
+  r+='\n';
+
+
+  if(d.fuelPressPsi){
+
+    const fp=stabilizedFuelPressure(d.fuelPressPsi);
+
+    r+='FUEL PRESSURE\n';
+    r+='----------------------------------------\n';
+    r+=`AVERAGE: ${fmtPsi(fp.average)}\n`;
+    r+=`RANGE: ${fmtPsi(fp.min)} – ${fmtPsi(fp.max)}\n`;
+    r+=`STARTUP SAMPLES EXCLUDED: ${fp.excluded}\n`;
+    r+=`RAW UNIT: KPA\n`;
+    r+=`DISPLAY UNIT: PSI\n\n`;
+
+  }
+
+
+  if(d.oilPressPsi){
+
+    r+='OIL PRESSURE\n';
+    r+='----------------------------------------\n';
+    r+=`AVERAGE: ${fmtPsi(avg(d.oilPressPsi))}\n`;
+    r+=`RANGE: ${fmtPsi(min(d.oilPressPsi))} – ${fmtPsi(max(d.oilPressPsi))}\n`;
+    r+=`RAW UNIT: BAR\n`;
+    r+=`DISPLAY UNIT: PSI\n\n`;
+
+  }
+
+
+  if(d.coolantF){
+
+    r+='TEMPERATURE\n';
+    r+='----------------------------------------\n';
+    r+=`COOLANT AVG: ${fmtTemp(avg(d.coolantF))}\n`;
+    r+=`COOLANT PEAK: ${fmtTemp(max(d.coolantF))}\n`;
+
+  }
+
+
+  if(d.transTempF){
+
+    r+=`TRANS AVG: ${fmtTemp(avg(d.transTempF))}\n`;
+    r+=`TRANS PEAK: ${fmtTemp(max(d.transTempF))}\n`;
+
+  }
+
+  r+='\n';
+
+
+  if(d.tuneSelector && d.tuneSelector.some(Number.isFinite)){
+
+    const vals=[...new Set(clean(d.tuneSelector))];
+    const names=tuneWarnings && tuneWarnings.tuneSelectorNames;
+    const nameFor=v=>{ const n=Math.round(v)+1; return names && names[n] ? names[n]+' (slot '+n+')' : 'slot '+n; };
+
+    r+='ENGINE TUNE MAP\n';
+    r+='----------------------------------------\n';
+    r+=`${vals.length>1?'SWITCHED DURING LOG: ':'ACTIVE: '}${vals.map(nameFor).join(', ')}\n`;
+    r+='(this is the MaxxECU tune map selector, not the 8HP70 TCU drive mode)\n\n';
+
+  }
+
+
+  if(d.gear && d.gear.some(Number.isFinite)){
+
+    r+='TRANSMISSION\n';
+    r+='----------------------------------------\n';
+    r+=`GEAR RANGE: ${Math.round(min(d.gear))}-${Math.round(max(d.gear))}\n`;
+
+    if(d.converterLockup && d.converterLockup.some(Number.isFinite)){
+      const engaged=d.converterLockup.filter(Number.isFinite);
+      const pct=engaged.filter(v=>v>0).length/engaged.length*100;
+      r+=`CONVERTER LOCKUP: ${Math.round(pct)}% of log\n`;
+    }
+
+    if(d.transLinePressPsi && d.transLinePressPsi.some(Number.isFinite)){
+      r+=`LINE PRESSURE: ${fmtPsi(min(d.transLinePressPsi))} - ${fmtPsi(max(d.transLinePressPsi))}\n`;
+    }
+
+    r+=`LIMP-HOME: ${d.limpHome && d.limpHome.some(Number.isFinite) ? (max(d.limpHome)>0?'YES - TRIGGERED':'no') : 'not logged'}\n`;
+    r+=`TCU FAULT: ${d.transFaultDodge && d.transFaultDodge.some(Number.isFinite) ? (max(d.transFaultDodge)>0?'YES - FLAGGED':'no') : 'not logged'}\n\n`;
+
+  }
+
+
+  if(d.battery){
+
+    r+='ELECTRICAL\n';
+    r+='----------------------------------------\n';
+    r+=`BATTERY AVG: ${fmtVolt(avg(d.battery))}\n`;
+    r+=`BATTERY MIN: ${fmtVolt(min(d.battery))}\n`;
+    r+=`BATTERY MAX: ${fmtVolt(max(d.battery))}\n`;
+
+    if(d.canLoad1 && d.canLoad1.some(Number.isFinite)){
+      r+=`CAN BUS LOAD PEAK: ${Math.round(max(d.canLoad1))}%\n`;
+    }
+
+    if(d.bsdErrors && d.bsdErrors.some(Number.isFinite)){
+      r+=`BSD ERRORS: ${Math.round(max(d.bsdErrors))}\n`;
+    }
+
+    r+='\n';
+
+  }
+
+
+  if(d.vss){
+
+    r+=`TOP SPEED: ${fmtSpeed(max(d.vss))}\n\n`;
+
+  }
+
+
+  r+='EVENTS\n';
+  r+='----------------------------------------\n';
+
+  r+=`WOT PULLS: ${d.pulls.length}\n`;
+
+  if(d.pulls.length){
+
+    const accelTimes=d.pulls
+      .map(p=>computeAccelStats(d,p))
+      .filter(a=>a && a.zeroToSixty!=null);
+
+    if(accelTimes.length){
+
+      const best0to60=Math.min(...accelTimes.map(a=>a.zeroToSixty));
+
+      r+=`BEST 0-60 (est. from VSS trace): ${best0to60.toFixed(2)}s\n`;
+
+      const eighths=accelTimes
+        .map(a=>a.eighthMile)
+        .filter(v=>v!=null);
+
+      if(eighths.length){
+        r+=`BEST 1/8 MILE (est.): ${Math.min(...eighths).toFixed(2)}s\n`;
+      }
+
+    }
+
+  }
+
+  if(d.knock){
+    r+=`KNOCK MAX: ${max(d.knock)}\n`;
+  }
+
+  if(d.errors){
+    r+=`ECU ERROR COUNT MAX: ${max(d.errors)}\n`;
+  }
+
+  r+='\n';
+
+
+  r+='CONFIGURATION\n';
+  r+='----------------------------------------\n';
+
+  Object.entries(d.sourceColumns||{}).forEach(([key,col])=>{
+
+    if(col>=0){
+
+      r+=`${key.toUpperCase()}: COLUMN ${col} — ${d.headers[col]}\n`;
+
+    }
+
+  });
+
+
+  r+='\n';
+  r+='NOTES\n';
+  r+='----------------------------------------\n';
+  r+='Health is weighted by available sensor evidence.\n';
+  r+='Missing sensors do not automatically count as healthy.\n';
+  r+='Fuel pressure startup/prime transient is excluded from stabilized statistics.\n';
+  r+='AFR statistics remove brief outlier spikes.\n';
+  r+='Target AFR/lambda is pulled from the log when available.\n';
+  r+='Manual I/O selection overrides automatic detection.\n';
+  r+='Limp-home and TCU fault flags are weighted heavily when present.\n';
+  r+='0-60/eighth-mile times are estimated by integrating the logged VSS trace and only shown for pulls that actually start near a stop.\n';
+  r+='Boost is MAP converted to gauge PSI against a fixed sea-level baseline, not corrected for altitude/weather.\n';
+
+  return r;
+}
+
+
+function saveHistory(d,filename){
+
+  const h=healthScore(d);
+
+  const entry={
+
+    filename,
+    date:Date.now(),
+    vehicle:currentVehicleLabel||'',
+
+    rpm:d.rpm?max(d.rpm):null,
+
+    coolant:d.coolantF?avg(d.coolantF):null,
+
+    trans:d.transTempF?avg(d.transTempF):null,
+
+    fuel:d.fuelPressPsi
+      ?stabilizedFuelPressure(d.fuelPressPsi).average
+      :null,
+
+    oil:d.oilPressPsi
+      ?avg(d.oilPressPsi)
+      :null,
+
+    battery:d.battery
+      ?avg(d.battery)
+      :null,
+
+    ethanol:d.ethanol
+      ?avg(d.ethanol)
+      :null,
+
+    health:h.score,
+    confidence:h.confidence
+
+  };
+
+  let history=[];
+
+  try{
+    history=JSON.parse(
+      localStorage.getItem('logbook-history')||'[]'
+    );
+  }catch(e){
+    history=[];
+  }
+
+  history.push(entry);
+
+  if(history.length>100){
+    history=history.slice(-100);
+  }
+
+  localStorage.setItem(
+    'logbook-history',
+    JSON.stringify(history)
+  );
+}
+
+
+function renderHistory(){
+
+  const el=$('historyContent');
+
+  let allHistory=[];
+
+  try{
+    allHistory=JSON.parse(
+      localStorage.getItem('logbook-history')||'[]'
+    );
+  }catch(e){}
+
+
+  const vehicleLabelBar=`
+    <div class="configItem" style="margin-bottom:16px">
+      <label>Vehicle label for new sessions</label>
+      <input
+        id="vehicleLabelInput"
+        type="text"
+        placeholder="e.g. LS Swap Camaro"
+        value="${escapeHTML(currentVehicleLabel)}"
+        style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;outline:none"
+      >
+    </div>
+  `;
+
+  if(!allHistory.length){
+
+    el.innerHTML=vehicleLabelBar+`
+      <div class="empty">
+        NO LOG HISTORY YET.<br><br>
+        Analyze a log and it will appear here.
+      </div>
+    `;
+
+    wireVehicleLabelInput();
+
+    return;
+
+  }
+
+
+  /*
+    Older entries saved before vehicle tagging existed have no
+    .vehicle field — group those under "Unlabeled" rather than
+    silently dropping them from the filter.
+  */
+
+  const vehicles=[...new Set(
+    allHistory.map(h=>h.vehicle||'Unlabeled')
+  )];
+
+  if(!vehicles.includes(historyVehicleFilter) && historyVehicleFilter!=='__all__'){
+    historyVehicleFilter='__all__';
+  }
+
+  const history=
+    historyVehicleFilter==='__all__'
+      ?allHistory
+      :allHistory.filter(h=>(h.vehicle||'Unlabeled')===historyVehicleFilter);
+
+
+  let filterBar='';
+
+  if(vehicles.length>1){
+
+    filterBar=`
+      <div class="configItem" style="margin-bottom:16px">
+        <label>Showing history for</label>
+        <select id="historyVehicleFilter" style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;outline:none">
+          <option value="__all__" ${historyVehicleFilter==='__all__'?'selected':''}>ALL VEHICLES (${allHistory.length})</option>
+          ${vehicles.map(v=>{
+            const count=allHistory.filter(h=>(h.vehicle||'Unlabeled')===v).length;
+            return `<option value="${escapeHTML(v)}" ${historyVehicleFilter===v?'selected':''}>${escapeHTML(v)} (${count})</option>`;
+          }).join('')}
+        </select>
+      </div>
+    `;
+
+  }
+
+
+  let html=`
+
+    <div class="sectionTitle">
+      <div>Past logs</div>
+
+      <button class="btn" id="clearHistory">
+        CLEAR HISTORY
+      </button>
+
+    </div>
+
+    <div class="historyList">
+  `;
+
+
+  if(history.length>=2){
+
+    /*
+      Prepend the trend chart in front of the already-built "Past
+      logs" header rather than rebuilding it — keeps this a single
+      unclosed .historyList div (closed once, below), instead of
+      duplicating that markup per branch.
+    */
+
+    html=`
+      <div class="sectionTitle">
+        <div>Trend across saved drives</div>
+        <span>${history.length} SESSIONS</span>
+      </div>
+
+      <div class="chartPanel" style="margin-bottom:20px">
+        <canvas id="historyChart" style="height:220px!important"></canvas>
+      </div>
+    `+html;
+
+  }
+
+  html=vehicleLabelBar+filterBar+html;
+
+
+  [...history].reverse().forEach(h=>{
+
+    html+=`
+
+      <div class="historyRow">
+
+        <div>
+
+          <div class="historyName">
+            ${escapeHTML(h.filename)}
+            ${vehicles.length>1?`<span style="color:var(--dim);font:9px JetBrains Mono;margin-left:8px">${escapeHTML(h.vehicle||'Unlabeled')}</span>`:''}
+          </div>
+
+          <div class="historyDate">
+            ${new Date(h.date).toLocaleString()}
+          </div>
+
+        </div>
+
+        <div class="historyStats">
+
+          ${
+            h.health!=null
+              ?`<span>health <b>${h.health}</b></span>`
+              :''
+          }
+
+          ${
+            h.confidence!=null
+              ?`<span>confidence <b>${h.confidence}%</b></span>`
+              :''
+          }
+
+          ${
+            h.rpm!=null
+              ?`<span>rpm <b>${Math.round(h.rpm)}</b></span>`
+              :''
+          }
+
+          ${
+            h.fuel!=null
+              ?`<span>fuel <b>${h.fuel.toFixed(1)} psi</b></span>`
+              :''
+          }
+
+          ${
+            h.oil!=null
+              ?`<span>oil <b>${h.oil.toFixed(1)} psi</b></span>`
+              :''
+          }
+
+        </div>
+
+      </div>
+
+    `;
+
+  });
+
+
+  html+='</div>';
+
+  el.innerHTML=html;
+
+  if(history.length>=2){
+    buildHistoryChart(history);
+  }
+
+  $('clearHistory').onclick=()=>{
+
+    if(confirm(
+      historyVehicleFilter==='__all__'
+        ?'Clear all PULLSHEET history?'
+        :`Clear history for "${historyVehicleFilter}" only? Other vehicles' history is kept.`
+    )){
+
+      if(historyVehicleFilter==='__all__'){
+
+        localStorage.removeItem('logbook-history');
+
+      }else{
+
+        const kept=allHistory.filter(h=>(h.vehicle||'Unlabeled')!==historyVehicleFilter);
+        localStorage.setItem('logbook-history',JSON.stringify(kept));
+
+      }
+
+      if(historyChart){
+        historyChart.destroy();
+        historyChart=null;
+      }
+
+      renderHistory();
+
+    }
+
+  };
+
+  wireVehicleLabelInput();
+
+  if(vehicles.length>1){
+
+    $('historyVehicleFilter').onchange=(e)=>{
+      historyVehicleFilter=e.target.value;
+      renderHistory();
+    };
+
+  }
+
+}
+
+
+function wireVehicleLabelInput(){
+
+  const input=$('vehicleLabelInput');
+
+  if(!input)return;
+
+  input.addEventListener('change',()=>{
+
+    currentVehicleLabel=input.value.trim();
+    localStorage.setItem('logbook-vehicle',currentVehicleLabel);
+
+  });
+
+}
+
+
+function buildHistoryChart(history){
+
+  const canvas=$('historyChart');
+
+  if(!canvas)return;
+
+  if(historyChart){
+    historyChart.destroy();
+    historyChart=null;
+  }
+
+  const sorted=[...history].sort((a,b)=>a.date-b.date);
+
+  const labels=sorted.map(h=>
+    new Date(h.date).toLocaleDateString(undefined,{month:'short',day:'numeric'})
+  );
+
+  historyChart=new Chart(canvas,{
+
+    type:'line',
+
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'Health score',
+          data:sorted.map(h=>h.health),
+          borderColor:'#ffb627',
+          backgroundColor:'#ffb62718',
+          yAxisID:'health',
+          pointRadius:3,
+          borderWidth:1.8,
+          tension:.15,
+          spanGaps:true
+        },
+        {
+          label:'Trans °F',
+          data:sorted.map(h=>h.trans),
+          borderColor:'#ff5c4d',
+          backgroundColor:'#ff5c4d18',
+          yAxisID:'temp',
+          pointRadius:3,
+          borderWidth:1.8,
+          tension:.15,
+          spanGaps:true
+        },
+        {
+          label:'Coolant °F',
+          data:sorted.map(h=>h.coolant),
+          borderColor:'#72d43c',
+          backgroundColor:'#72d43c18',
+          yAxisID:'temp',
+          pointRadius:3,
+          borderWidth:1.8,
+          tension:.15,
+          spanGaps:true
+        }
+      ]
+    },
+
+    options:{
+
+      responsive:true,
+      maintainAspectRatio:false,
+      animation:false,
+
+      interaction:{mode:'index',intersect:false},
+
+      plugins:{
+        legend:{
+          display:true,
+          labels:{color:'#7f8a91',font:{size:9},boxWidth:10}
+        }
+      },
+
+      scales:{
+
+        x:{
+          grid:{color:'#20262a'},
+          ticks:{color:'#667178',font:{size:9}}
+        },
+
+        health:{
+          position:'left',
+          min:0,
+          max:100,
+          grid:{color:'#20262a'},
+          ticks:{color:'#ffb627',font:{size:9}},
+          title:{display:true,text:'Health',color:'#ffb627',font:{size:9}}
+        },
+
+        temp:{
+          position:'right',
+          grid:{display:false},
+          ticks:{color:'#72d43c',font:{size:9}},
+          title:{display:true,text:'°F',color:'#72d43c',font:{size:9}}
+        }
+
+      }
+
+    }
+
+  });
+
+}
+
+
+function escapeHTML(str){
+
+  return String(str)
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#039;");
+
+}
+
+
+$('exportConfigBtn').addEventListener('click',exportConfig);
+
+$('importConfigBtn').addEventListener('click',()=>{
+  $('importConfigInput').click();
+});
+
+$('importConfigInput').addEventListener('change',e=>{
+  if(e.target.files.length){
+    importConfigFile(e.target.files[0]);
+  }
+});
+
+restoreConfig();
+renderHistory();
+
+/*
+  Registers the service worker that caches the app shell (this
+  page, the vendored JSZip/Chart.js/Hammer/zoom-plugin scripts,
+  icons) so the app still opens and analyzes logs with zero signal.
+  Google Fonts is intentionally left uncached/cross-origin — it
+  just falls back to system fonts offline, which is a fine trade
+  for not needing to self-host a font family.
+*/
+if('serviceWorker' in navigator){
+
+  window.addEventListener('load',()=>{
+
+    navigator.serviceWorker.register('sw.js').catch(err=>{
+      console.error('Service worker registration failed:',err);
+    });
+
+  });
+
+}
+
+</script>
+
+</body>
+</html>
