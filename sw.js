@@ -10,7 +10,7 @@
   instead of them being stuck on a stale cached copy forever.
 */
 
-const CACHE_NAME = 'pullsheet-v1.3';
+const CACHE_NAME = 'pullsheet-v1.4.1';
 
 const APP_SHELL = [
   './',
@@ -30,14 +30,42 @@ const APP_SHELL = [
 
 self.addEventListener('install', (event) => {
 
+  /*
+    cache.addAll() is all-or-nothing — if even ONE request in the
+    list fails (a flaky connection at the exact moment a new version
+    installs, a transient CDN hiccup), the WHOLE batch is rejected
+    and nothing gets cached under the new CACHE_NAME. Combined with
+    activate() deleting the old cache regardless, that's a real
+    failure mode: the device is left with an empty new cache and no
+    old one to fall back to, so the next load can hit a script tag
+    with nothing cached AND a failed network fetch — "Chart is not
+    defined" / "JSZip is not defined", exactly the offline-reliability
+    problem this service worker exists to prevent.
+
+    Caching each file independently via allSettled means one bad
+    fetch only loses that one file — everything else that DID
+    succeed is still cached and still helps.
+  */
+
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .catch((err) => {
-        // A single missing/renamed asset shouldn't block install
-        // entirely — log it and let whatever DID cache still help.
-        console.error('SW install: could not cache full app shell', err);
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.allSettled(
+        APP_SHELL.map((url) =>
+          cache.add(url).catch((err) => {
+            console.error('SW install: could not cache', url, err);
+            throw err;
+          })
+        )
+      ).then((results) => {
+
+        const failed = results.filter((r) => r.status === 'rejected').length;
+
+        if (failed) {
+          console.warn(`SW install: ${failed}/${APP_SHELL.length} app shell files failed to cache — the rest are still cached.`);
+        }
+
       })
+    )
   );
 
   self.skipWaiting();
@@ -46,14 +74,36 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
 
+  /*
+    If install ran during a near-total network outage, the new
+    CACHE_NAME cache could be empty or nearly so (allSettled means
+    it's rarely ALL 13 files, but a bad enough connection could still
+    do it). Deleting every old cache unconditionally in that case
+    would leave a device that was fine on the previous version with
+    nothing cached at all the moment it's offline — the opposite of
+    what this service worker is for. Only purge old caches once the
+    new one actually has real content to fall back on.
+  */
+
   event.waitUntil(
-    caches.keys().then((names) =>
-      Promise.all(
-        names
-          .filter((n) => n !== CACHE_NAME)
-          .map((n) => caches.delete(n))
-      )
-    )
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.keys())
+      .then((keys) => {
+
+        if (!keys.length) {
+          console.warn('SW activate: new cache is empty (install likely had no network) — keeping old cache(s) around instead of deleting them.');
+          return;
+        }
+
+        return caches.keys().then((names) =>
+          Promise.all(
+            names
+              .filter((n) => n !== CACHE_NAME)
+              .map((n) => caches.delete(n))
+          )
+        );
+
+      })
   );
 
   self.clients.claim();
