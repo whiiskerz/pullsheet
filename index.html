@@ -963,7 +963,7 @@ tr:last-child td{border-bottom:0}
     <div class="logoMark">PS</div>
     <div>
       <h1>PULL<span>SHEET</span></h1>
-      <small>MAXXECU LOG INTELLIGENCE · v1.8 · @whiiskerzbuilt</small>
+      <small>MAXXECU LOG INTELLIGENCE · v1.9 · @whiiskerzbuilt</small>
     </div>
   </div>
 
@@ -1329,6 +1329,13 @@ tr:last-child td{border-bottom:0}
   <div class="configHeader">
     <h2>Recent fixes</h2>
     <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
+      v1.9 — New "Traction control events" table (Drivetrain & inputs
+      section): every intervention now shows when it happened, what
+      gear/RPM it triggered at, how long it stayed active, and its
+      peak pullback — not just the total count the dashboard card
+      already showed. Nearby corrections that are really one
+      intervention get merged the same way the existing count does,
+      so the numbers line up.<br><br>
       v1.8 — The shareable pull/session card images got a rework:
       each one now includes a small power-vs-RPM graph (session card
       blends every pull into one curve, pull cards show that pull's
@@ -3428,6 +3435,7 @@ function parseLog(text){
   out.upshiftEvents=detectButtonEvents(out,'upshift');
   out.downshiftEvents=detectButtonEvents(out,'downshift');
   out.tractionEvents=detectButtonEvents(out,'tractionCorrection',v=>v<0);
+  out.tractionDetailEvents=detectTractionEvents(out);
 
   return out;
 }
@@ -4284,6 +4292,77 @@ function detectButtonEvents(d,key,predicate){
   }
 
   return events;
+}
+
+
+function detectTractionEvents(d){
+
+  /*
+    detectButtonEvents (above) only records the single sample where
+    a traction correction STARTS — enough for a count and a "peak
+    pullback across the whole log" card, but not enough to answer
+    "what did it actually do" for any one intervention. This walks
+    the full correction WINDOW via detectActiveWindows so each
+    event carries its own duration and its own peak pullback, not
+    just the log-wide peak.
+
+    Adjacent windows separated by a short gap (<3 samples "off")
+    are merged into one intervention — the same debounce window
+    detectButtonEvents uses — so the event COUNT here lines up with
+    the "N interventions" dashboard card instead of drifting apart
+    from it.
+  */
+
+  const arr=d.tractionCorrection;
+
+  if(!arr)return [];
+
+  const rawWindows=detectActiveWindows(d,'tractionCorrection',v=>v<0);
+
+  if(!rawWindows.length)return [];
+
+  const merged=[];
+
+  rawWindows.forEach(w=>{
+
+    const prev=merged[merged.length-1];
+
+    if(prev && (w.start-prev.end)<=3){
+      prev.end=w.end;
+    }else{
+      merged.push({start:w.start,end:w.end});
+    }
+
+  });
+
+  return merged.map(w=>{
+
+    let peakCorrection=0;
+    let peakIndex=w.start;
+
+    for(let i=w.start;i<=w.end;i++){
+      if(Number.isFinite(arr[i]) && arr[i]<peakCorrection){
+        peakCorrection=arr[i];
+        peakIndex=i;
+      }
+    }
+
+    const startTime=d.runtime && Number.isFinite(d.runtime[w.start])?d.runtime[w.start]:null;
+    const endTime=d.runtime && Number.isFinite(d.runtime[w.end])?d.runtime[w.end]:null;
+
+    return {
+      start:w.start,
+      end:w.end,
+      time:startTime,
+      duration:(startTime!=null && endTime!=null)?Math.max(0,endTime-startTime):null,
+      rpm:d.rpm && Number.isFinite(d.rpm[w.start])?d.rpm[w.start]:null,
+      gear:d.gear && Number.isFinite(d.gear[w.start])?d.gear[w.start]:null,
+      peakCorrection,
+      peakRpm:d.rpm && Number.isFinite(d.rpm[peakIndex])?d.rpm[peakIndex]:null
+    };
+
+  });
+
 }
 
 
@@ -6582,6 +6661,54 @@ function render(d,filename,prBadges){
       html+=`
             </tbody>
           </table>
+        </div>
+      `;
+
+    }
+
+    if(d.tractionDetailEvents && d.tractionDetailEvents.length){
+
+      html+=`
+        <div class="sectionTitle">
+          <div>Traction control events</div>
+          <span>${d.tractionDetailEvents.length} INTERVENTION${d.tractionDetailEvents.length===1?'':'S'}</span>
+        </div>
+
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Gear</th>
+                <th>RPM at trigger</th>
+                <th>Duration</th>
+                <th>Peak pullback</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+
+      d.tractionDetailEvents.forEach(e=>{
+
+        html+=`
+          <tr>
+            <td>${fmtTime(e.time)}</td>
+            <td>${e.gear!=null?Math.round(e.gear):'—'}</td>
+            <td>${e.rpm!=null?Math.round(e.rpm)+' RPM':'—'}</td>
+            <td>${e.duration!=null?e.duration.toFixed(2)+'s':'—'}</td>
+            <td>${fmtAfr(e.peakCorrection)}</td>
+          </tr>
+        `;
+
+      });
+
+      html+=`
+            </tbody>
+          </table>
+        </div>
+
+        <div class="hint">
+          "Peak pullback" is the raw traction-correction channel value from your tune — more negative means a bigger cut. Duration is how long that correction stayed active in one continuous intervention (short gaps are merged, same debounce as the intervention count above).
         </div>
       `;
 
