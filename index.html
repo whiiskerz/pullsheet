@@ -963,7 +963,7 @@ tr:last-child td{border-bottom:0}
     <div class="logoMark">PS</div>
     <div>
       <h1>PULL<span>SHEET</span></h1>
-      <small>MAXXECU LOG INTELLIGENCE · v1.2 · @whiiskerzbuilt</small>
+      <small>MAXXECU LOG INTELLIGENCE · v1.3 · @whiiskerzbuilt</small>
     </div>
   </div>
 
@@ -1308,6 +1308,14 @@ tr:last-child td{border-bottom:0}
   <div class="configHeader">
     <h2>Recent fixes</h2>
     <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
+      v1.3 — Fixed knock retard auto-detect grabbing the wrong column
+      on real MaxxECU exports (a "Retard reason" status code, not a
+      degrees value — showed up as absurd numbers like 1024°). Now
+      matches MaxxECU's actual "Knock correction" channel, and ignition
+      timing auto-detect matches MaxxECU's actual "Ignition angle"
+      channel too. Knock retard peaks are also computed correctly
+      regardless of whether the log stores it as a negative delta or a
+      positive magnitude.<br><br>
       v1.2 — Works fully offline after the first load (JSZip/Chart.js/
       the zoom plugin are bundled locally now instead of loaded from a
       CDN, plus a service worker caches the app itself — useful with
@@ -1783,8 +1791,8 @@ function renderCompare(){
 
   /* Knock retard peak — lower is unambiguously better */
   {
-    const aVal=dA.knockRetard && dA.knockRetard.some(Number.isFinite)?max(dA.knockRetard):null;
-    const bVal=dB.knockRetard && dB.knockRetard.some(Number.isFinite)?max(dB.knockRetard):null;
+    const aVal=dA.knockRetard && dA.knockRetard.some(Number.isFinite)?peakAbs(dA.knockRetard):null;
+    const bVal=dB.knockRetard && dB.knockRetard.some(Number.isFinite)?peakAbs(dB.knockRetard):null;
     const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
 
     rows+=compareRow(
@@ -2973,6 +2981,7 @@ function parseLog(text){
     ]),
 
     ignTiming:findColumn(headers,selected('cfgTiming'),[
+      'Ignition angle [',
       'Ignition timing [',
       'Ignition advance [',
       'Total timing [',
@@ -2981,12 +2990,22 @@ function parseLog(text){
       'Timing Advance'
     ]),
 
+    /*
+      No bare 'Retard' fallback here on purpose — a real MaxxECU
+      export was found in the wild with a "Retard reason [590]"
+      channel (a bitmask/enum, not a degrees value) that a bare
+      'Retard' substring match grabbed instead of the real knock
+      channel, displaying nonsense like "1024°". 'Knock correction ['
+      is MaxxECU's actual channel name for this (confirmed against
+      a real export); the bracket keeps it from also matching
+      "Knock correction accumulated [...]" or "Knock correction 2 [...]".
+    */
     knockRetard:findColumn(headers,selected('cfgKnockRetard'),[
       'Knock retard [',
+      'Knock correction [',
       'Ignition correction knock [',
       'Knock timing [',
-      'Knock Retard',
-      'Retard'
+      'Knock Retard'
     ]),
 
     driveMode:findColumn(headers,'auto',[
@@ -3223,6 +3242,34 @@ function min(a){
 function max(a){
   const x=clean(a);
   return x.length?Math.max(...x):null;
+}
+
+/*
+  For channels that can legitimately be logged either as a
+  negative delta (e.g. "-3.2°" = 3.2° pulled) or a positive
+  magnitude depending on the ECU/logger's convention — knock
+  retard chief among them. plain max() silently returns ~0 on
+  a log where retard is stored as negative, hiding real knock
+  events. This finds whichever finite value is furthest from
+  zero, keeping its original sign, so callers can decide how to
+  present it (Math.abs() for a "degrees pulled" style readout).
+*/
+function peakMagnitude(a){
+  const x=clean(a);
+  if(!x.length)return null;
+  return x.reduce((best,v)=>Math.abs(v)>Math.abs(best)?v:best,x[0]);
+}
+
+/*
+  Null-safe Math.abs(peakMagnitude(...)) — plain Math.abs(null)
+  coerces to 0, which would make an empty/no-data slice look
+  identical to "confirmed zero knock retard" everywhere this
+  feeds a Number.isFinite() gate. Use this instead so "no data"
+  stays null all the way through.
+*/
+function peakAbs(a){
+  const v=peakMagnitude(a);
+  return v==null?null:Math.abs(v);
 }
 
 
@@ -4267,7 +4314,7 @@ function healthScore(d){
 
   if(d.knockRetard && d.knockRetard.some(Number.isFinite)){
 
-    const mx=max(d.knockRetard);
+    const mx=peakAbs(d.knockRetard);
 
     let s=100;
 
@@ -4738,7 +4785,7 @@ function render(d,filename){
 
   if(d.knockRetard && d.knockRetard.some(Number.isFinite)){
 
-    const peakRetard=max(d.knockRetard);
+    const peakRetard=peakAbs(d.knockRetard);
 
     html+=card({
       label:'Knock retard',
@@ -5186,7 +5233,7 @@ function render(d,filename){
 
       const pullKnock=
         d.knockRetard
-          ?max(valuesAtIndices(d.knockRetard,p.start,p.end))
+          ?peakAbs(valuesAtIndices(d.knockRetard,p.start,p.end))
           :(d.knock?max(valuesAtIndices(d.knock,p.start,p.end)):null);
 
       html+=`
@@ -6176,7 +6223,7 @@ function generateReport(d,h){
     }
 
     if(d.knockRetard && d.knockRetard.some(Number.isFinite)){
-      r+=`KNOCK RETARD PEAK: ${Math.round(max(d.knockRetard))}°\n`;
+      r+=`KNOCK RETARD PEAK: ${Math.round(peakAbs(d.knockRetard))}°\n`;
     }
 
     r+='\n';
