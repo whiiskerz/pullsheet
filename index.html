@@ -963,7 +963,7 @@ tr:last-child td{border-bottom:0}
     <div class="logoMark">PS</div>
     <div>
       <h1>PULL<span>SHEET</span></h1>
-      <small>MAXXECU LOG INTELLIGENCE · v1.9 · @whiiskerzbuilt</small>
+      <small>MAXXECU LOG INTELLIGENCE · v1.11 · @whiiskerzbuilt</small>
     </div>
   </div>
 
@@ -1237,6 +1237,13 @@ tr:last-child td{border-bottom:0}
       </select>
     </div>
 
+    <div class="configItem">
+      <label>Barometric pressure</label>
+      <select id="cfgBaro">
+        <option value="auto">AUTO DETECT</option>
+      </select>
+    </div>
+
   </div>
 
   <div id="detectedChannels" class="detected" style="display:none"></div>
@@ -1251,6 +1258,7 @@ tr:last-child td{border-bottom:0}
     Battery = V.
     Speed = km/h → mph.
     Ignition timing/knock retard = degrees, unconverted.
+    Barometric pressure = KPA absolute → inHg, for the weather-corrected power estimate.
   </div>
 
 </section>
@@ -1329,6 +1337,33 @@ tr:last-child td{border-bottom:0}
   <div class="configHeader">
     <h2>Recent fixes</h2>
     <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
+      v1.11 — Three big ones. (1) Weather-corrected power: a new
+      "Weather-corrected power" table per pull, using barometric
+      pressure + intake air temp (new I/O Config channel for baro)
+      to correct peak power/torque to standard conditions — an
+      SAE-style dry-air approximation, so two pulls made on
+      different days can actually be compared. (2) Pull consistency
+      score: a 0-100 score for how much back-to-back WOT pulls in
+      one session actually agree with each other, weighing peak
+      power spread, AFR drift, and any pull with detected
+      wheel/converter slip — flags the specific pull(s) dragging the
+      score down instead of just eyeballing the overlay chart. (3)
+      Build/mod timeline: History tab now has a "Build note for new
+      sessions" field (tags whatever gets saved next — "installed
+      212/224 cam, tune rev 4," etc.), a per-log edit button to
+      tag/fix notes after the fact, and a new POWER chart mode
+      showing peak power/torque over every saved log for a vehicle,
+      with noted logs drawn bigger and their note shown on
+      hover.<br><br>
+      v1.10 — The "Est. fuel burned" card now has a toggle for the
+      BSFC assumption behind it: N/A (0.50), Boosted (0.55), or
+      Nitrous active (0.62) — a naturally-aspirated engine genuinely
+      burns less fuel per horsepower than a boosted one running safe
+      margins, so one constant for every car was always going to be
+      wrong for someone. Pick lives right on the card, saved in this
+      browser like everything else. To be clear, this only affects
+      the fuel-burned number — it has zero effect on the power/torque
+      figures, which are MaxxECU's own logged numbers untouched.<br><br>
       v1.9 — New "Traction control events" table (Drivetrain & inputs
       section): every intervention now shows when it happened, what
       gear/RPM it triggered at, how long it stayed active, and its
@@ -1503,6 +1538,57 @@ let compareB=null;
 let currentVehicleLabel=localStorage.getItem('logbook-vehicle')||'';
 let historyVehicleFilter='__all__';
 
+/*
+  Same idea as currentVehicleLabel, but for tagging WHAT changed
+  on the car — "installed 212/224 cam", "tune rev 4", "switched to
+  93 pump gas" — onto whatever log gets saved to history next. Lets
+  the History tab's trend chart double as an actual build timeline
+  instead of just a bare number-over-time chart with no context for
+  why a jump happened. Cleared per-log is deliberately NOT automatic
+  (see saveHistory()) — a note usually applies to several logs in a
+  row after a change, not just the first one after it.
+*/
+let currentBuildNote=localStorage.getItem('logbook-buildnote')||'';
+
+/*
+  BSFC (brake-specific fuel consumption) assumption used ONLY by
+  estimateFuelBurnedLb() — has zero effect on the power/torque
+  numbers themselves, which come straight from MaxxECU's own
+  logged channels. A naturally-aspirated engine burns meaningfully
+  less fuel per horsepower than a boosted one running safe margins,
+  and a nitrous-enriched pull runs richer still, so one constant
+  for every car was always going to be wrong for someone. These are
+  rule-of-thumb figures (lb fuel / hp / hour), not measured for any
+  specific engine — pick whichever best matches how the car being
+  logged is actually built, right on the "Est. fuel burned" card.
+*/
+const BSFC_PRESETS={
+  na:0.50,
+  boosted:0.55,
+  nitrous:0.62
+};
+const BSFC_MODE_META=[
+  {key:'na',label:'N/A · 0.50'},
+  {key:'boosted',label:'Boosted · 0.55'},
+  {key:'nitrous',label:'Nitrous · 0.62'}
+];
+let bsfcMode=(()=>{
+  const saved=localStorage.getItem('logbook-bsfcMode');
+  return (saved && BSFC_PRESETS[saved]!=null) ? saved : 'na';
+})();
+
+function currentBsfc(){
+  return BSFC_PRESETS[bsfcMode]!=null ? BSFC_PRESETS[bsfcMode] : BSFC_PRESETS.na;
+}
+
+function bsfcModeLabel(){
+  return{
+    na:'N/A engine',
+    boosted:'boosted engine',
+    nitrous:'nitrous active'
+  }[bsfcMode] || 'N/A engine';
+}
+
 let units={
   temp:'F',
   press:'psi'
@@ -1601,7 +1687,8 @@ const CONFIG_IDS=[
   'cfgKnockRetard',
   'cfgPower',
   'cfgTorque',
-  'cfgNitrous'
+  'cfgNitrous',
+  'cfgBaro'
 ];
 
 document.querySelectorAll('.tabs button').forEach(btn=>{
@@ -3236,6 +3323,22 @@ function parseLog(text){
       'Nitrous [',
       'N2O [',
       'NOS ['
+    ]),
+
+    /*
+      Barometric (ambient atmospheric) pressure — feeds the
+      weather-corrected power estimate below. Distinct from MAP
+      (manifold pressure, already read as boost) even though both
+      are commonly logged in kPa absolute; on a NA engine at idle
+      they'd read close to each other, but WOT MAP is nowhere near
+      ambient, so they can't be substituted for one another.
+    */
+    baro:findColumn(headers,selected('cfgBaro'),[
+      'Baro pressure [',
+      'Barometric pressure [',
+      'Baro [',
+      'Ambient pressure [',
+      'Atmospheric pressure ['
     ])
 
   };
@@ -3309,6 +3412,7 @@ function parseLog(text){
     tractionEnabled:[],
     tractionCorrection:[],
     nitrous:[],
+    baro:[],
     sourceColumns:cfg
   };
 
@@ -3426,6 +3530,20 @@ function parseLog(text){
   if(out.torque.some(Number.isFinite)){
     out.torqueLbFt=out.torque.map(v=>
       Number.isFinite(v)?v*0.737562:NaN
+    );
+  }
+
+
+  /*
+    Barometric pressure — same kPa-absolute convention as MAP
+    above. Kept in kPa for the correction-factor math (weather
+    correction functions below take kPa directly) and also
+    converted to inHg purely for display, since that's the unit
+    most people actually think of ambient pressure in.
+  */
+  if(out.baro.some(Number.isFinite)){
+    out.baroInHg=out.baro.map(v=>
+      Number.isFinite(v)?v*0.2953:NaN
     );
   }
 
@@ -4178,6 +4296,106 @@ function analyzeLaunch(d,p){
     */
     motionConfirmed:motionIdx!=null
 
+  };
+
+}
+
+
+/*
+  Pull consistency score — how much back-to-back WOT pulls in the
+  SAME session actually agree with each other. A single pull can
+  look clean in isolation and still be a fluke (wheel spin masked
+  as extra power, a stumble that quietly cost 20hp, a knock event
+  that only happened once); comparing every pull against the rest
+  of the session is what catches that. Needs 2+ pulls with a real
+  peak-power reading to mean anything — a lone pull has nothing to
+  be consistent WITH.
+
+  Score starts at 100 and loses points for: how far peak power
+  spreads between pulls (the dominant signal — a tune/airflow/fuel
+  problem usually shows up here first), how much average WOT AFR
+  drifts pull-to-pull (points to fuel delivery or heat soak
+  inconsistency), and any pull with detected wheel/converter slip
+  (reuses analyzeLaunch's existing heuristic rather than inventing
+  a second one). Floored at 0 so a genuinely rough session doesn't
+  show a confusing negative number.
+*/
+function computePullConsistency(d){
+
+  if(!d.pulls || d.pulls.length<2)return null;
+
+  const pulls=d.pulls.map((p,i)=>{
+
+    const peakPower=d.power?max(valuesAtIndices(d.power,p.start,p.end)):null;
+    const afr=smartAfr(valuesAtIndices(d.afr,p.start,p.end));
+
+    const knockPeak=
+      d.knockRetard
+        ?peakAbs(valuesAtIndices(d.knockRetard,p.start,p.end))
+        :(d.knock?max(valuesAtIndices(d.knock,p.start,p.end)):null);
+
+    const launch=analyzeLaunch(d,p);
+
+    return{
+      i,
+      peakPower,
+      afrAvg:afr?afr.average:null,
+      knockPeak,
+      slipDetected:launch?!!launch.slipDetected:false
+    };
+
+  });
+
+  const powerVals=pulls.map(x=>x.peakPower).filter(Number.isFinite);
+
+  if(powerVals.length<2)return null;
+
+  const meanPower=avg(powerVals);
+  const maxPower=Math.max(...powerVals);
+  const minPower=Math.min(...powerVals);
+  const powerSpreadPct=meanPower?((maxPower-minPower)/meanPower)*100:0;
+
+  const afrVals=pulls.map(x=>x.afrAvg).filter(Number.isFinite);
+  const afrSpread=afrVals.length>=2?Math.max(...afrVals)-Math.min(...afrVals):0;
+
+  const slipCount=pulls.filter(x=>x.slipDetected).length;
+
+  let score=100;
+  score-=Math.min(70,powerSpreadPct*4);
+  score-=Math.min(20,afrSpread*10);
+  score-=slipCount*12;
+  score=Math.max(0,Math.round(score));
+
+  const flagged=pulls.map(x=>{
+
+    const flags=[];
+
+    if(x.peakPower!=null && maxPower && ((maxPower-x.peakPower)/maxPower)*100>=8){
+      flags.push('LOW POWER OUTLIER');
+    }
+
+    if(x.slipDetected){
+      flags.push('WHEEL/CONVERTER SLIP');
+    }
+
+    return{
+      ...x,
+      deltaFromBestPct:
+        x.peakPower!=null && maxPower
+          ?((x.peakPower-maxPower)/maxPower)*100
+          :null,
+      flags
+    };
+
+  });
+
+  return{
+    score,
+    powerSpreadPct,
+    afrSpread,
+    meanPower,
+    maxPower,
+    pulls:flagged
   };
 
 }
@@ -5571,7 +5789,7 @@ function render(d,filename,prBadges){
           label:'Est. fuel burned',
           value:fuelLb.toFixed(2)+' lb',
           stat:'ACROSS ALL WOT PULLS',
-          range:`≈ ${(fuelLb/6.1).toFixed(2)} gal gasoline · back-calculated from power, assumed BSFC ${ASSUMED_BSFC}`,
+          range:`≈ ${(fuelLb/6.1).toFixed(2)} gal gasoline · back-calculated from power, BSFC ${currentBsfc().toFixed(2)} (${bsfcModeLabel()})`,
           icon:'⛽',
           accent:'var(--amber)'
         });
@@ -5847,6 +6065,22 @@ function render(d,filename,prBadges){
       `).join('');
 
       html+=`</div>`;
+
+    }
+
+    if(dashCardHTML.fuelBurned){
+
+      html+=`
+        <div class="actions" style="flex-wrap:wrap;margin-bottom:14px;gap:6px;align-items:center">
+          <span style="font-family:Inter;font-size:11px;color:var(--dim);margin-right:2px">FUEL ESTIMATE ASSUMES:</span>
+          ${BSFC_MODE_META.map(m=>`
+            <button
+              class="toggle bsfcToggle ${bsfcMode===m.key?'on':''}"
+              data-bsfckey="${m.key}"
+            >${escapeHTML(m.label)}</button>
+          `).join('')}
+        </div>
+      `;
 
     }
 
@@ -6322,6 +6556,128 @@ function render(d,filename,prBadges){
   }
 
 
+  /* WEATHER-CORRECTED POWER */
+
+  const weatherRows=d.pulls
+    .map((p,i)=>({i,wc:weatherCorrectedPower(d,[p])}))
+    .filter(x=>x.wc);
+
+  if(weatherRows.length){
+
+    const isBoosted=d.mapPsi && d.mapPsi.some(v=>Number.isFinite(v) && v>3);
+
+    html+=`
+      <div class="sectionTitle">
+        <div>Weather-corrected power</div>
+        <span>${weatherRows.length} PULL${weatherRows.length===1?'':'S'}</span>
+      </div>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pull</th>
+              <th>Baro</th>
+              <th>IAT</th>
+              <th>CF</th>
+              <th>Raw peak HP</th>
+              <th>Corrected HP</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${weatherRows.map(({i,wc})=>`
+              <tr>
+                <td>#${i+1}</td>
+                <td>${wc.avgBaro!=null?(wc.avgBaro*0.2953).toFixed(2)+' inHg':'—'}</td>
+                <td>${fmtTemp(c2f(wc.avgIat))}</td>
+                <td>${wc.cf.toFixed(3)}</td>
+                <td>${wc.peakPower!=null?Math.round(wc.peakPower):'—'}</td>
+                <td><b>${wc.correctedPower!=null?Math.round(wc.correctedPower):'—'}</b></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="hint">
+        Corrected to standard conditions (101.325 kPa / 60°F) using an SAE-style
+        dry-air approximation — there's no logged humidity/dewpoint channel, so
+        treat this as "in the right neighborhood," not a lab-grade number.
+        ${isBoosted?' This car looks boosted — a forced-induction ECU targets an absolute boost pressure regardless of weather, so density correction means a lot less here than it does on an N/A engine.':''}
+      </div>
+    `;
+
+  }
+
+
+  /* PULL CONSISTENCY */
+
+  const consistency=computePullConsistency(d);
+
+  if(consistency){
+
+    const scoreLabel=
+      consistency.score>=90?'very consistent':
+      consistency.score>=75?'mostly consistent':
+      consistency.score>=50?'somewhat inconsistent':
+      'inconsistent — worth digging into';
+
+    const scoreColor=
+      consistency.score>=90?'var(--green)':
+      consistency.score>=75?'var(--amber)':
+      'var(--red)';
+
+    html+=`
+      <div class="sectionTitle">
+        <div>Pull consistency</div>
+        <span>${consistency.pulls.length} PULLS COMPARED</span>
+      </div>
+
+      <div class="cards" style="margin-bottom:16px">
+        ${card({
+          label:'Consistency score',
+          value:consistency.score+'/100',
+          stat:scoreLabel.toUpperCase(),
+          range:`peak power spread ${consistency.powerSpreadPct.toFixed(1)}% across this session`,
+          icon:'C',
+          accent:scoreColor
+        })}
+      </div>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pull</th>
+              <th>Peak HP</th>
+              <th>Δ from best</th>
+              <th>Flags</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${consistency.pulls.map(x=>`
+              <tr>
+                <td>#${x.i+1}</td>
+                <td>${x.peakPower!=null?Math.round(x.peakPower):'—'}</td>
+                <td>${x.deltaFromBestPct!=null?(x.deltaFromBestPct>=0?'best':x.deltaFromBestPct.toFixed(1)+'%'):'—'}</td>
+                <td>${x.flags.length?x.flags.join(', '):'—'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="hint">
+        Score weighs peak-power spread most heavily, with smaller penalties for
+        WOT AFR drift and any pull with detected wheel/converter slip. A low
+        score means the pulls disagree with each other, not necessarily that
+        any one of them is "wrong" — check the flagged pulls first.
+      </div>
+    `;
+
+  }
+
+
   /* GEAR-BY-GEAR BREAKDOWN */
 
   const gearBreakdowns=d.pulls
@@ -6736,6 +7092,19 @@ function render(d,filename,prBadges){
     btn.onclick=()=>{
 
       activeDashCards[btn.dataset.dashkey]=!activeDashCards[btn.dataset.dashkey];
+
+      render(d,filename,prBadges);
+
+    };
+
+  });
+
+  document.querySelectorAll('.bsfcToggle').forEach(btn=>{
+
+    btn.onclick=()=>{
+
+      bsfcMode=btn.dataset.bsfckey;
+      localStorage.setItem('logbook-bsfcMode',bsfcMode);
 
       render(d,filename,prBadges);
 
@@ -7379,13 +7748,14 @@ function computeDynoCurveData(d,ranges){
   read directly (MaxxECU's own power/torque channels are already
   the output of ITS internal fuel-flow math, not the flow rate
   itself), so this works BACKWARDS from the power channel using
-  the same assumed BSFC constant documented below — consistent
-  with the same "engine-side estimate, not a lab measurement"
-  honesty as the power number itself. Integrated with a simple
-  trapezoidal sum over d.runtime so it accounts for the real
-  (uneven) sample spacing rather than assuming a fixed log rate.
+  the BSFC preset picked on the "Est. fuel burned" card (see
+  BSFC_PRESETS / currentBsfc() near the top of the script) —
+  consistent with the same "engine-side estimate, not a lab
+  measurement" honesty as the power number itself. Integrated with
+  a simple trapezoidal sum over d.runtime so it accounts for the
+  real (uneven) sample spacing rather than assuming a fixed log
+  rate.
 */
-const ASSUMED_BSFC=0.55; // lb fuel per hp per hour — typical for a boosted, safely-rich tune
 
 function estimateFuelBurnedLb(d,ranges){
 
@@ -7414,7 +7784,7 @@ function estimateFuelBurnedLb(d,ranges){
       const dtHours=(t1-t0)/3600;
       const avgPower=Math.max(0,(p0+p1)/2);
 
-      totalLb+=avgPower*ASSUMED_BSFC*dtHours;
+      totalLb+=avgPower*currentBsfc()*dtHours;
       sawAny=true;
 
     }
@@ -7422,6 +7792,91 @@ function estimateFuelBurnedLb(d,ranges){
   });
 
   return sawAny?totalLb:null;
+
+}
+
+
+/*
+  Weather-corrected power — a standard-conditions correction so a
+  pull made on a cool dry day and a pull made on a hot humid one
+  can actually be compared apples-to-apples, the same idea as a
+  real chassis dyno correcting to STP. Uses the classic SAE-style
+  dry-air approximation:
+
+    CF = (101.325 / baroKpa) * sqrt((iatC + 273.15) / 288.71)
+
+  which is the kPa/Celsius form of the textbook
+  CF = (29.92/Pb) * sqrt((460+T)/519.67) formula (29.92 inHg,
+  60°F reference conditions). This is a DRY-AIR approximation —
+  there's no logged humidity/dewpoint channel to correct for
+  moisture the way the full SAE J1349 spec does, so treat the
+  result as "in the right neighborhood," not a lab-grade number.
+  It's also written with naturally-aspirated engines in mind — a
+  boosted engine's ECU is already targeting an absolute boost
+  pressure regardless of the weather, so density correction means
+  a lot less for it. Callers should show that caveat; this function
+  just does the math.
+
+  Returns null if baro/IAT aren't in a physically plausible range
+  (a bad channel mapping is a much more likely explanation than a
+  freak weather day) rather than silently returning a wild CF.
+*/
+function weatherCorrectionFactor(baroKpa,iatC){
+
+  if(!Number.isFinite(baroKpa) || !Number.isFinite(iatC))return null;
+
+  // ~70kPa is roughly 9,000ft density altitude; ~108kPa is well
+  // above anything earth's weather actually produces at any
+  // elevation a car gets driven at — outside that band this is
+  // almost certainly a mismapped channel, not real air.
+  if(baroKpa<70 || baroKpa>108)return null;
+
+  // -40°C to 70°C — implausible intake air outside that range.
+  if(iatC<-40 || iatC>70)return null;
+
+  return (101.325/baroKpa)*Math.sqrt((iatC+273.15)/288.71);
+
+}
+
+
+function weatherCorrectedPower(d,ranges){
+
+  if(!d.baro || !d.iat || !d.power)return null;
+  if(!ranges || !ranges.length)return null;
+
+  let baroVals=[];
+  let iatVals=[];
+  let powerVals=[];
+  let torqueVals=[];
+
+  ranges.forEach(p=>{
+    baroVals=baroVals.concat(valuesAtIndices(d.baro,p.start,p.end));
+    iatVals=iatVals.concat(valuesAtIndices(d.iat,p.start,p.end));
+    powerVals=powerVals.concat(valuesAtIndices(d.power,p.start,p.end));
+    if(d.torqueLbFt)torqueVals=torqueVals.concat(valuesAtIndices(d.torqueLbFt,p.start,p.end));
+  });
+
+  const avgBaro=avg(baroVals);
+  const avgIat=avg(iatVals);
+  const peakPower=max(powerVals);
+
+  if(avgBaro==null || avgIat==null || peakPower==null)return null;
+
+  const cf=weatherCorrectionFactor(avgBaro,avgIat);
+
+  if(cf==null)return null;
+
+  const peakTorque=torqueVals.length?max(torqueVals):null;
+
+  return{
+    cf,
+    avgBaro,
+    avgIat,
+    peakPower,
+    correctedPower:peakPower*cf,
+    peakTorque,
+    correctedTorque:peakTorque!=null?peakTorque*cf:null
+  };
 
 }
 
@@ -8876,9 +9331,11 @@ function saveHistory(d,filename){
 
   const entry={
 
+    id:Date.now()+'-'+Math.random().toString(36).slice(2,8),
     filename,
     date:Date.now(),
     vehicle:currentVehicleLabel||'',
+    note:currentBuildNote||'',
 
     rpm:d.rpm?max(d.rpm):null,
 
@@ -9091,6 +9548,17 @@ function renderHistory(){
         style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;outline:none"
       >
     </div>
+
+    <div class="configItem" style="margin-bottom:16px">
+      <label>Build note for new sessions (tags what changed on the car)</label>
+      <input
+        id="buildNoteInput"
+        type="text"
+        placeholder="e.g. installed 212/224 cam, tune rev 4"
+        value="${escapeHTML(currentBuildNote)}"
+        style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;outline:none"
+      >
+    </div>
   `;
 
   if(!allHistory.length){
@@ -9103,6 +9571,7 @@ function renderHistory(){
     `;
 
     wireVehicleLabelInput();
+    wireBuildNoteInput();
 
     return;
 
@@ -9214,11 +9683,20 @@ function renderHistory(){
         <button class="btn ${historyChartMode==='performance'?'primary':''}" id="historyModePerformance">
           PERFORMANCE
         </button>
+        <button class="btn ${historyChartMode==='power'?'primary':''}" id="historyModePower">
+          POWER
+        </button>
       </div>
 
       <div class="chartPanel" style="margin-bottom:20px">
         <canvas id="historyChart" style="height:220px!important"></canvas>
       </div>
+
+      ${historyChartMode==='power'?`
+        <div class="hint" style="margin-top:-12px">
+          Bigger dot = a log with a build note attached — hover it for what changed. Build notes are set from the field above, and apply to every log saved while they're active, so a mod usually tags several logs in a row instead of just the first one after it.
+        </div>
+      `:''}
     `+html;
 
   }
@@ -9241,6 +9719,11 @@ function renderHistory(){
 
           <div class="historyDate">
             ${new Date(h.date).toLocaleString()}
+          </div>
+
+          <div style="font-size:11px;color:var(--dim);margin-top:2px;display:flex;align-items:center;gap:6px">
+            ${h.note?`<span>📝 ${escapeHTML(h.note)}</span>`:'<span style="opacity:.6">no build note</span>'}
+            ${h.id?`<button class="btn" onclick="editHistoryNote('${h.id}')" style="padding:2px 6px;font-size:9px">${h.note?'EDIT':'ADD'}</button>`:''}
           </div>
 
         </div>
@@ -9316,6 +9799,11 @@ function renderHistory(){
       renderHistory();
     };
 
+    $('historyModePower').onclick=()=>{
+      historyChartMode='power';
+      renderHistory();
+    };
+
   }
 
   $('clearHistory').onclick=()=>{
@@ -9349,6 +9837,7 @@ function renderHistory(){
   };
 
   wireVehicleLabelInput();
+  wireBuildNoteInput();
 
   if(vehicles.length>1){
 
@@ -9378,6 +9867,59 @@ function wireVehicleLabelInput(){
 }
 
 
+function wireBuildNoteInput(){
+
+  const input=$('buildNoteInput');
+
+  if(!input)return;
+
+  input.addEventListener('change',()=>{
+
+    currentBuildNote=input.value.trim();
+    localStorage.setItem('logbook-buildnote',currentBuildNote);
+
+  });
+
+}
+
+
+function editHistoryNote(entryId){
+
+  /*
+    Retroactive edit for a log already saved to history — lets a
+    note get added/fixed after the fact instead of only being
+    capturable at save time. Uses the plain browser prompt() the
+    same way clearHistory() already uses confirm() elsewhere in
+    this file; there's no in-place editable table cell here, and
+    a real modal would be a lot of markup for something used
+    occasionally.
+  */
+
+  let history=[];
+
+  try{
+    history=JSON.parse(localStorage.getItem('logbook-history')||'[]');
+  }catch(e){
+    return;
+  }
+
+  const entry=history.find(h=>h.id===entryId);
+
+  if(!entry)return;
+
+  const next=prompt('Build note for this log:',entry.note||'');
+
+  if(next===null)return;
+
+  entry.note=next.trim();
+
+  localStorage.setItem('logbook-history',JSON.stringify(history));
+
+  renderHistory();
+
+}
+
+
 function buildHistoryChart(history){
 
   const canvas=$('historyChart');
@@ -9396,18 +9938,32 @@ function buildHistoryChart(history){
   );
 
   /*
-    Two modes instead of one crowded chart — health/coolant/trans
-    and boost/knock/AFR live on genuinely different scales (0-100,
-    °F, psi, degrees, +/-AFR), and cramming all of them onto one
-    220px-tall chart with 4+ Y axes would be unreadable. Each mode
-    keeps to 2 visible axes plus, in performance mode, one hidden
-    axis for AFR delta (its own tooltip still shows the value —
-    it just doesn't need a 3rd set of gridlines fighting for space).
+    Note markers — power mode is the "build timeline" view, so
+    points where a build note was active get drawn bigger and get
+    the note text appended to their tooltip via the callback below.
+    Computed once here regardless of mode; only power mode's point
+    styling actually uses it, but the tooltip callback checks every
+    mode so a note is never hidden just because you're looking at
+    the reliability or performance chart instead.
+  */
+  const notePointRadius=sorted.map(h=>h.note?6:3);
+
+  /*
+    Three modes instead of one crowded chart — health/coolant/trans,
+    boost/knock/AFR, and peak power/torque all live on genuinely
+    different scales (0-100, °F, psi, degrees, +/-AFR, hp/lb-ft),
+    and cramming all of them onto one 220px-tall chart with 5+ Y
+    axes would be unreadable. Each mode keeps to 2 visible axes
+    plus, in performance mode, one hidden axis for AFR delta (its
+    own tooltip still shows the value — it just doesn't need a 3rd
+    set of gridlines fighting for space).
   */
 
-  const datasets=
-    historyChartMode==='performance'
-      ?[
+  let datasets;
+
+  if(historyChartMode==='performance'){
+
+    datasets=[
         {
           label:'Peak boost (psi)',
           data:sorted.map(h=>h.boost),
@@ -9441,46 +9997,82 @@ function buildHistoryChart(history){
           tension:.15,
           spanGaps:true
         }
-      ]
-      :[
-        {
-          label:'Health score',
-          data:sorted.map(h=>h.health),
-          borderColor:'#ffb627',
-          backgroundColor:'#ffb62718',
-          yAxisID:'health',
-          pointRadius:3,
-          borderWidth:1.8,
-          tension:.15,
-          spanGaps:true
-        },
-        {
-          label:'Trans °F',
-          data:sorted.map(h=>h.trans),
-          borderColor:'#ff5c4d',
-          backgroundColor:'#ff5c4d18',
-          yAxisID:'temp',
-          pointRadius:3,
-          borderWidth:1.8,
-          tension:.15,
-          spanGaps:true
-        },
-        {
-          label:'Coolant °F',
-          data:sorted.map(h=>h.coolant),
-          borderColor:'#72d43c',
-          backgroundColor:'#72d43c18',
-          yAxisID:'temp',
-          pointRadius:3,
-          borderWidth:1.8,
-          tension:.15,
-          spanGaps:true
-        }
-      ];
+    ];
 
-  const scales=
-    historyChartMode==='performance'
-      ?{
+  }else if(historyChartMode==='power'){
+
+    datasets=[
+      {
+        label:'Peak power (hp)',
+        data:sorted.map(h=>h.power),
+        borderColor:'#3ddc84',
+        backgroundColor:'#3ddc8418',
+        yAxisID:'power',
+        pointRadius:notePointRadius,
+        pointBackgroundColor:sorted.map(h=>h.note?'#3ddc84':'#3ddc8499'),
+        borderWidth:1.8,
+        tension:.15,
+        spanGaps:true
+      },
+      {
+        label:'Peak torque (lb-ft)',
+        data:sorted.map(h=>h.torque),
+        borderColor:'#4fb3ff',
+        backgroundColor:'#4fb3ff18',
+        yAxisID:'power',
+        pointRadius:notePointRadius,
+        pointBackgroundColor:sorted.map(h=>h.note?'#4fb3ff':'#4fb3ff99'),
+        borderWidth:1.8,
+        tension:.15,
+        spanGaps:true
+      }
+    ];
+
+  }else{
+
+    datasets=[
+      {
+        label:'Health score',
+        data:sorted.map(h=>h.health),
+        borderColor:'#ffb627',
+        backgroundColor:'#ffb62718',
+        yAxisID:'health',
+        pointRadius:3,
+        borderWidth:1.8,
+        tension:.15,
+        spanGaps:true
+      },
+      {
+        label:'Trans °F',
+        data:sorted.map(h=>h.trans),
+        borderColor:'#ff5c4d',
+        backgroundColor:'#ff5c4d18',
+        yAxisID:'temp',
+        pointRadius:3,
+        borderWidth:1.8,
+        tension:.15,
+        spanGaps:true
+      },
+      {
+        label:'Coolant °F',
+        data:sorted.map(h=>h.coolant),
+        borderColor:'#72d43c',
+        backgroundColor:'#72d43c18',
+        yAxisID:'temp',
+        pointRadius:3,
+        borderWidth:1.8,
+        tension:.15,
+        spanGaps:true
+      }
+    ];
+
+  }
+
+  let scales;
+
+  if(historyChartMode==='performance'){
+
+    scales={
         x:{
           grid:{color:'#20262a'},
           ticks:{color:'#667178',font:{size:9}}
@@ -9508,29 +10100,50 @@ function buildHistoryChart(history){
         afrDelta:{
           display:false
         }
+    };
+
+  }else if(historyChartMode==='power'){
+
+    scales={
+      x:{
+        grid:{color:'#20262a'},
+        ticks:{color:'#667178',font:{size:9}}
+      },
+
+      power:{
+        position:'left',
+        grid:{color:'#20262a'},
+        ticks:{color:'#3ddc84',font:{size:9}},
+        title:{display:true,text:'hp / lb-ft',color:'#3ddc84',font:{size:9}}
       }
-      :{
-        x:{
-          grid:{color:'#20262a'},
-          ticks:{color:'#667178',font:{size:9}}
-        },
+    };
 
-        health:{
-          position:'left',
-          min:0,
-          max:100,
-          grid:{color:'#20262a'},
-          ticks:{color:'#ffb627',font:{size:9}},
-          title:{display:true,text:'Health',color:'#ffb627',font:{size:9}}
-        },
+  }else{
 
-        temp:{
-          position:'right',
-          grid:{display:false},
-          ticks:{color:'#72d43c',font:{size:9}},
-          title:{display:true,text:'°F',color:'#72d43c',font:{size:9}}
-        }
-      };
+    scales={
+      x:{
+        grid:{color:'#20262a'},
+        ticks:{color:'#667178',font:{size:9}}
+      },
+
+      health:{
+        position:'left',
+        min:0,
+        max:100,
+        grid:{color:'#20262a'},
+        ticks:{color:'#ffb627',font:{size:9}},
+        title:{display:true,text:'Health',color:'#ffb627',font:{size:9}}
+      },
+
+      temp:{
+        position:'right',
+        grid:{display:false},
+        ticks:{color:'#72d43c',font:{size:9}},
+        title:{display:true,text:'°F',color:'#72d43c',font:{size:9}}
+      }
+    };
+
+  }
 
   historyChart=new Chart(canvas,{
 
@@ -9553,6 +10166,22 @@ function buildHistoryChart(history){
         legend:{
           display:true,
           labels:{color:'#7f8a91',font:{size:9},boxWidth:10}
+        },
+        tooltip:{
+          callbacks:{
+            /*
+              Surfaces the build note on whichever point is being
+              hovered, in ANY chart mode — not just power mode — so
+              "why did this jump" is answerable no matter which
+              trend you're looking at. sorted/dataIndex line up
+              1:1 with the datasets built above.
+            */
+            afterBody(items){
+              const idx=items && items[0] ? items[0].dataIndex : null;
+              const h=idx!=null ? sorted[idx] : null;
+              return h && h.note ? ['📝 '+h.note] : [];
+            }
+          }
         }
       },
 
