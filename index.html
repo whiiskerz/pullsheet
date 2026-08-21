@@ -963,7 +963,7 @@ tr:last-child td{border-bottom:0}
     <div class="logoMark">PS</div>
     <div>
       <h1>PULL<span>SHEET</span></h1>
-      <small>MAXXECU LOG INTELLIGENCE · v1.11 · @whiiskerzbuilt</small>
+      <small>MAXXECU LOG INTELLIGENCE · v1.13 · @whiiskerzbuilt</small>
     </div>
   </div>
 
@@ -1246,6 +1246,30 @@ tr:last-child td{border-bottom:0}
 
   </div>
 
+  <div class="configHeader" style="margin-top:20px">
+    <h2>Fuel-burned display</h2>
+    <p>
+      Not a sensor mapping — just how the "Est. fuel burned" numbers
+      (dashboard card, pull/session cards) get framed. Change this to
+      your own car's tank size to get a real "X% of a tank" figure
+      instead of a bare pound number.
+    </p>
+  </div>
+
+  <div class="configGrid">
+    <div class="configItem">
+      <label>Fuel tank size (gallons)</label>
+      <input
+        id="tankGalInput"
+        type="number"
+        step="0.1"
+        min="1"
+        value="16.9"
+        style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;outline:none"
+      >
+    </div>
+  </div>
+
   <div id="detectedChannels" class="detected" style="display:none"></div>
 
   <div class="configNote">
@@ -1337,6 +1361,21 @@ tr:last-child td{border-bottom:0}
   <div class="configHeader">
     <h2>Recent fixes</h2>
     <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
+      v1.13 — Moved the fuel-burned BSFC toggle (N/A/Boosted/Nitrous)
+      to live inside the "Est. fuel burned" card itself instead of
+      sitting as its own row above the whole dashboard grid. It only
+      ever affected that one card's number — but floating above
+      everything made it look like a global setting that should also
+      move "Peak power" next to it. It never did and never will:
+      power/torque are MaxxECU's own logged numbers, untouched by
+      this toggle either way.<br><br>
+      v1.12 — "Est. fuel burned" now leads with gallons instead of
+      pounds everywhere it shows up (dashboard card, pull/session
+      card images), with pounds kept as a secondary detail. Also new:
+      a "Fuel tank size" field in I/O Config (defaults 16.9gal) so
+      the card can show what % of a tank that session burned, plus a
+      "~N sessions like this ≈ half a tank" line for a number that
+      actually means something at a glance.<br><br>
       v1.11 — Three big ones. (1) Weather-corrected power: a new
       "Weather-corrected power" table per pull, using barometric
       pressure + intake air temp (new I/O Config channel for baro)
@@ -1587,6 +1626,31 @@ function bsfcModeLabel(){
     boosted:'boosted engine',
     nitrous:'nitrous active'
   }[bsfcMode] || 'N/A engine';
+}
+
+/*
+  Fuel tank size, purely for framing the "Est. fuel burned" numbers
+  in a way that actually means something ("3% of a tank") instead
+  of a bare pound figure nobody has a feel for. Same persisted-input
+  pattern as currentVehicleLabel/currentBuildNote — wired once at
+  the bottom of the script since the Config I/O tab's markup is
+  static, not rebuilt per-render like the History tab is. Defaults
+  to a 16.9gal tank (E90 3-series factory spec) since that's this
+  app's actual daily driver; anyone else can just change the field.
+*/
+let currentTankGal=(()=>{
+  const saved=parseFloat(localStorage.getItem('logbook-tankgal'));
+  return Number.isFinite(saved) && saved>0 ? saved : 16.9;
+})();
+
+/* 1 US gallon of gasoline ≈ 6.1 lb — same constant already used
+   for the dashboard card's gallon conversion, now shared. */
+function lbToGal(lb){
+  return Number.isFinite(lb) ? lb/6.1 : null;
+}
+
+function pctOfTank(gal){
+  return (Number.isFinite(gal) && currentTankGal>0) ? (gal/currentTankGal)*100 : null;
 }
 
 let units={
@@ -5782,14 +5846,52 @@ function render(d,filename,prBadges){
     if(d.pulls && d.pulls.length){
 
       const fuelLb=estimateFuelBurnedLb(d,d.pulls);
+      const fuelGal=lbToGal(fuelLb);
+      const tankPct=pctOfTank(fuelGal);
 
-      if(fuelLb!=null){
+      /*
+        "At this rate, N pulls like this session ≈ half a tank" —
+        purely a fun/relatable framing, not a claim about highway
+        driving (WOT fuel flow isn't cruise fuel flow). Skipped for
+        near-zero fuelGal to avoid a nonsense/huge pull count.
+      */
+      const pullsForHalfTank=
+        fuelGal && fuelGal>0.01
+          ?(currentTankGal*0.5/fuelGal)*d.pulls.length
+          :null;
+
+      if(fuelGal!=null){
+
+        /*
+          The BSFC toggle lives INSIDE this card's own markup on
+          purpose — it used to sit as a row above the whole dashboard
+          grid, which read as a global setting and made it look like
+          it should also move the "Peak power" card next to it. It
+          only ever touches this one number, so now it's physically
+          attached to the one card it actually changes.
+        */
+        const bsfcToggleHTML=`
+          <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+            <span style="font-size:9px;color:var(--dim);margin-right:2px">ASSUMES:</span>
+            ${BSFC_MODE_META.map(m=>`
+              <button
+                class="toggle bsfcToggle ${bsfcMode===m.key?'on':''}"
+                data-bsfckey="${m.key}"
+                style="padding:2px 6px;font-size:9px"
+              >${escapeHTML(m.label)}</button>
+            `).join('')}
+          </div>
+        `;
 
         dashCardHTML.fuelBurned=card({
           label:'Est. fuel burned',
-          value:fuelLb.toFixed(2)+' lb',
+          value:fuelGal.toFixed(2)+' gal',
           stat:'ACROSS ALL WOT PULLS',
-          range:`≈ ${(fuelLb/6.1).toFixed(2)} gal gasoline · back-calculated from power, BSFC ${currentBsfc().toFixed(2)} (${bsfcModeLabel()})`,
+          range:
+            `${fuelLb.toFixed(2)} lb`+
+            (tankPct!=null?` · ${tankPct<0.1?'<0.1':tankPct.toFixed(1)}% of your ${currentTankGal}gal tank`:'')+
+            (pullsForHalfTank!=null?` · ~${Math.max(1,Math.round(pullsForHalfTank))} sessions like this ≈ half a tank`:'')+
+            bsfcToggleHTML,
           icon:'⛽',
           accent:'var(--amber)'
         });
@@ -6065,22 +6167,6 @@ function render(d,filename,prBadges){
       `).join('');
 
       html+=`</div>`;
-
-    }
-
-    if(dashCardHTML.fuelBurned){
-
-      html+=`
-        <div class="actions" style="flex-wrap:wrap;margin-bottom:14px;gap:6px;align-items:center">
-          <span style="font-family:Inter;font-size:11px;color:var(--dim);margin-right:2px">FUEL ESTIMATE ASSUMES:</span>
-          ${BSFC_MODE_META.map(m=>`
-            <button
-              class="toggle bsfcToggle ${bsfcMode===m.key?'on':''}"
-              data-bsfckey="${m.key}"
-            >${escapeHTML(m.label)}</button>
-          `).join('')}
-        </div>
-      `;
 
     }
 
@@ -7643,19 +7729,25 @@ function buildPullCardImage(d,pc,filename){
 
   /* estimated fuel burned + a one-line reminder of how the hp number is derived */
   const fuelLb=estimateFuelBurnedLb(d,[pc.p]);
+  const fuelGal=lbToGal(fuelLb);
+  const fuelTankPct=pctOfTank(fuelGal);
 
   ctx.fillStyle=COL.text;
   ctx.textAlign='left';
   ctx.font='700 18px JetBrains Mono, monospace';
   ctx.fillText(
-    'EST. FUEL BURNED THIS PULL: '+(fuelLb!=null?fuelLb.toFixed(2)+' lb':'—'),
+    'EST. FUEL BURNED THIS PULL: '+(fuelGal!=null?fuelGal.toFixed(2)+' gal':'—'),
     64,824
   );
 
   ctx.fillStyle=COL.dim;
   ctx.font='400 15px JetBrains Mono, monospace';
-  ctx.fillText('HOW: power = fuel flow ÷ assumed BSFC · torque = power × 5252 ÷ RPM',64,850);
-  ctx.fillText('MaxxECU-calculated, engine-side estimate — not a chassis dyno reading',64,872);
+  ctx.fillText(
+    (fuelLb!=null?fuelLb.toFixed(2)+' lb':'—')+
+    (fuelTankPct!=null?` · ${fuelTankPct<0.1?'<0.1':fuelTankPct.toFixed(1)}% of a ${currentTankGal}gal tank`:''),
+    64,850
+  );
+  ctx.fillText('HOW: power = fuel flow ÷ assumed BSFC · torque = power × 5252 ÷ RPM',64,872);
 
   /* footer */
   ctx.strokeStyle=COL.line;
@@ -8308,19 +8400,25 @@ function buildSessionCardImage(d,h,prBadges,issueEvents,filename){
 
   /* estimated fuel burned across every pull this session + how-calculated reminder */
   const fuelLb=d.pulls && d.pulls.length?estimateFuelBurnedLb(d,d.pulls):null;
+  const fuelGal=lbToGal(fuelLb);
+  const fuelTankPct=pctOfTank(fuelGal);
 
   ctx.fillStyle=COL.text;
   ctx.textAlign='left';
   ctx.font='700 18px JetBrains Mono, monospace';
   ctx.fillText(
-    'EST. FUEL BURNED THIS SESSION: '+(fuelLb!=null?fuelLb.toFixed(2)+' lb':'—'),
+    'EST. FUEL BURNED THIS SESSION: '+(fuelGal!=null?fuelGal.toFixed(2)+' gal':'—'),
     64,808
   );
 
   ctx.fillStyle=COL.dim;
   ctx.font='400 15px JetBrains Mono, monospace';
-  ctx.fillText('HOW: power = fuel flow ÷ assumed BSFC · torque = power × 5252 ÷ RPM',64,834);
-  ctx.fillText('MaxxECU-calculated, engine-side estimate — not a chassis dyno reading',64,856);
+  ctx.fillText(
+    (fuelLb!=null?fuelLb.toFixed(2)+' lb':'—')+
+    (fuelTankPct!=null?` · ${fuelTankPct<0.1?'<0.1':fuelTankPct.toFixed(1)}% of a ${currentTankGal}gal tank`:''),
+    64,834
+  );
+  ctx.fillText('HOW: power = fuel flow ÷ assumed BSFC · torque = power × 5252 ÷ RPM',64,856);
 
   /* pull count strip */
   ctx.fillStyle=COL.dim;
@@ -10217,6 +10315,37 @@ $('importConfigInput').addEventListener('change',e=>{
     importConfigFile(e.target.files[0]);
   }
 });
+
+{
+
+  const tankInput=$('tankGalInput');
+
+  if(tankInput){
+
+    tankInput.value=currentTankGal;
+
+    tankInput.addEventListener('change',()=>{
+
+      const v=parseFloat(tankInput.value);
+
+      if(Number.isFinite(v) && v>0){
+        currentTankGal=v;
+      }else{
+        currentTankGal=16.9;
+      }
+
+      tankInput.value=currentTankGal;
+      localStorage.setItem('logbook-tankgal',String(currentTankGal));
+
+      if(lastParsed){
+        render(lastParsed,lastFilename);
+      }
+
+    });
+
+  }
+
+}
 
 restoreConfig();
 renderHistory();
