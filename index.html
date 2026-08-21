@@ -963,7 +963,7 @@ tr:last-child td{border-bottom:0}
     <div class="logoMark">PS</div>
     <div>
       <h1>PULL<span>SHEET</span></h1>
-      <small>MAXXECU LOG INTELLIGENCE · v1.14 · @whiiskerzbuilt</small>
+      <small>MAXXECU LOG INTELLIGENCE · v1.15 · @whiiskerzbuilt</small>
     </div>
   </div>
 
@@ -1275,6 +1275,13 @@ tr:last-child td{border-bottom:0}
       </label>
     </div>
 
+    <div class="configItem">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input id="hidePowerInput" type="checkbox" style="width:16px;height:16px;accent-color:var(--amber)">
+        Hide power/torque on dashboard &amp; charts (estimated, not a dyno)
+      </label>
+    </div>
+
   </div>
 
   <div id="detectedChannels" class="detected" style="display:none"></div>
@@ -1368,6 +1375,19 @@ tr:last-child td{border-bottom:0}
   <div class="configHeader">
     <h2>Recent fixes</h2>
     <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
+      v1.15 — More decluttering. (1) Power/torque are now hidden by
+      default everywhere — dashboard card, main timeline chart series,
+      and the "Power / torque curves" dyno section — since they're
+      MaxxECU's fuel-flow estimate, not a real dyno number, and most
+      builds don't need to see it by default. New "Hide power/torque"
+      checkbox in I/O Config → Display preferences (unchecked = show
+      them) if you want them back; the WOT pulls table's HP column,
+      the weather-corrected power table, and the shareable pull-card
+      image are left alone since those are opt-in views already. (2)
+      Removed "Est. fuel burned," "Converter lockup," and "Line
+      pressure" as dashboard-card options — the fuel/tank estimate
+      still shows up in the shareable card image and copyable text
+      report, just not as its own dashboard tile anymore.<br><br>
       v1.14 — Decluttering pass. (1) Fixed Target AFR: on builds that
       don't log a literal Target AFR channel, the chart line, WOT
       pulls table delta column, and health scoring now all correctly
@@ -1689,6 +1709,22 @@ function pctOfTank(gal){
 */
 let hideKnock=localStorage.getItem('logbook-hideknock')==='true';
 
+/*
+  hidePower — the mirror image of hideKnock, but opt-IN instead of
+  opt-OUT: power/torque numbers here are calculated from fuel flow,
+  not a dyno, and the user asked for them hidden by default across
+  the dashboard and charts (with a setting to bring them back), not
+  merely off-by-default like the old dashboard-card toggle. Defaults
+  to true (hidden) the very first time the app runs — i.e. when
+  there's no stored preference yet — and only becomes false once the
+  user explicitly unchecks the setting, which is why this needs the
+  three-way localStorage check below instead of the simpler
+  ==='true' pattern hideKnock uses.
+*/
+let hidePower=localStorage.getItem('logbook-hidepower')==null
+  ? true
+  : localStorage.getItem('logbook-hidepower')==='true';
+
 let units={
   temp:'F',
   press:'psi'
@@ -1730,7 +1766,6 @@ let activeDashCards={
   knock:true,
   afr:true,
   nitrous:true,
-  fuelBurned:false,
   iat:false,
   ignTiming:false,
   fuelPress:false,
@@ -1741,9 +1776,7 @@ let activeDashCards={
   injDuty:false,
   ethanol:false,
   vss:false,
-  gear:false,
-  converterLockup:false,
-  linePress:false
+  gear:false
 };
 
 const DASH_CARD_META=[
@@ -1753,7 +1786,6 @@ const DASH_CARD_META=[
   {key:'knock',label:'Knock'},
   {key:'afr',label:'AFR'},
   {key:'nitrous',label:'Nitrous'},
-  {key:'fuelBurned',label:'Fuel burned'},
   {key:'iat',label:'IAT'},
   {key:'ignTiming',label:'Timing'},
   {key:'fuelPress',label:'Fuel PSI'},
@@ -1764,9 +1796,7 @@ const DASH_CARD_META=[
   {key:'injDuty',label:'Inj duty'},
   {key:'ethanol',label:'Ethanol'},
   {key:'vss',label:'Speed'},
-  {key:'gear',label:'Gear range'},
-  {key:'converterLockup',label:'Converter'},
-  {key:'linePress',label:'Line PSI'}
+  {key:'gear',label:'Gear range'}
 ];
 
 const CONFIG_IDS=[
@@ -5872,7 +5902,7 @@ function render(d,filename,prBadges){
   }
 
 
-  if(d.power && d.power.some(Number.isFinite)){
+  if(!hidePower && d.power && d.power.some(Number.isFinite)){
 
     const peakPower=max(d.power);
     const peakTorque=d.torqueLbFt && d.torqueLbFt.some(Number.isFinite)
@@ -5890,62 +5920,15 @@ function render(d,filename,prBadges){
       accent:'var(--green)'
     });
 
-    if(d.pulls && d.pulls.length){
-
-      const fuelLb=estimateFuelBurnedLb(d,d.pulls);
-      const fuelGal=lbToGal(fuelLb);
-      const tankPct=pctOfTank(fuelGal);
-
-      /*
-        "At this rate, N pulls like this session ≈ half a tank" —
-        purely a fun/relatable framing, not a claim about highway
-        driving (WOT fuel flow isn't cruise fuel flow). Skipped for
-        near-zero fuelGal to avoid a nonsense/huge pull count.
-      */
-      const pullsForHalfTank=
-        fuelGal && fuelGal>0.01
-          ?(currentTankGal*0.5/fuelGal)*d.pulls.length
-          :null;
-
-      if(fuelGal!=null){
-
-        /*
-          The BSFC toggle lives INSIDE this card's own markup on
-          purpose — it used to sit as a row above the whole dashboard
-          grid, which read as a global setting and made it look like
-          it should also move the "Peak power" card next to it. It
-          only ever touches this one number, so now it's physically
-          attached to the one card it actually changes.
-        */
-        const bsfcToggleHTML=`
-          <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:4px;align-items:center">
-            <span style="font-size:9px;color:var(--dim);margin-right:2px">ASSUMES:</span>
-            ${BSFC_MODE_META.map(m=>`
-              <button
-                class="toggle bsfcToggle ${bsfcMode===m.key?'on':''}"
-                data-bsfckey="${m.key}"
-                style="padding:2px 6px;font-size:9px"
-              >${escapeHTML(m.label)}</button>
-            `).join('')}
-          </div>
-        `;
-
-        dashCardHTML.fuelBurned=card({
-          label:'Est. fuel burned',
-          value:fuelGal.toFixed(2)+' gal',
-          stat:'ACROSS ALL WOT PULLS',
-          range:
-            `${fuelLb.toFixed(2)} lb`+
-            (tankPct!=null?` · ${tankPct<0.1?'<0.1':tankPct.toFixed(1)}% of your ${currentTankGal}gal tank`:'')+
-            (pullsForHalfTank!=null?` · ~${Math.max(1,Math.round(pullsForHalfTank))} sessions like this ≈ half a tank`:'')+
-            bsfcToggleHTML,
-          icon:'⛽',
-          accent:'var(--amber)'
-        });
-
-      }
-
-    }
+    /*
+      Fuel-burned was previously offered here as its own dashboard
+      card (with the BSFC-preset toggle embedded in it). Removed as
+      a dashboard card per user request to keep the default view
+      focused on what a newcomer actually needs to read a log — the
+      underlying estimate is still used in the shareable pull-card
+      image and the copyable text report, so nothing downstream
+      broke by dropping just this card.
+    */
 
   }
 
@@ -6167,35 +6150,13 @@ function render(d,filename,prBadges){
   }
 
 
-  if(d.converterLockup && d.converterLockup.some(Number.isFinite)){
-
-    const engaged=d.converterLockup.filter(Number.isFinite);
-    const pct=engaged.filter(v=>v>0).length/engaged.length*100;
-
-    dashCardHTML.converterLockup=card({
-      label:'Converter lockup',
-      value:Math.round(pct)+'%',
-      stat:'OF LOG ENGAGED',
-      range:'torque converter lockup duty',
-      icon:'L',
-      accent:'var(--purple)'
-    });
-
-  }
-
-
-  if(d.transLinePressPsi && d.transLinePressPsi.some(Number.isFinite)){
-
-    dashCardHTML.linePress=card({
-      label:'Line pressure',
-      value:fmtPsi(max(d.transLinePressPsi)),
-      stat:'PEAK',
-      range:`${fmtPsi(min(d.transLinePressPsi))} – ${fmtPsi(max(d.transLinePressPsi))}`,
-      icon:'P',
-      accent:'var(--cyan)'
-    });
-
-  }
+  /*
+    Converter lockup and line pressure dashboard cards removed per
+    user request — trimming default-visible clutter to keep the
+    tool focused on making a log easy to read for someone new to
+    it. The underlying d.converterLockup channel is still parsed
+    and still used in the copyable text report.
+  */
 
 
   {
@@ -6890,7 +6851,7 @@ function render(d,filename,prBadges){
     canvases are built AFTER $('results').innerHTML is set below
     (a canvas can't be drawn on before it exists in the DOM).
   */
-  const dynoPullIndices=d.power
+  const dynoPullIndices=(d.power && !hidePower)
     ?d.pulls
       .map((p,i)=>i)
       .filter(i=>{
@@ -7235,18 +7196,6 @@ function render(d,filename,prBadges){
 
   });
 
-  document.querySelectorAll('.bsfcToggle').forEach(btn=>{
-
-    btn.onclick=()=>{
-
-      bsfcMode=btn.dataset.bsfckey;
-      localStorage.setItem('logbook-bsfcMode',bsfcMode);
-
-      render(d,filename,prBadges);
-
-    };
-
-  });
 
 
   $('resetBtn').onclick=()=>{
@@ -8677,7 +8626,8 @@ function buildChart(d){
     else if(key==='oilPress')available=!!d.oilPressPsi;
     else if(key==='map')available=!!d.mapPsi;
     else if(key==='iat')available=!!d.iatF;
-    else if(key==='torque')available=!!d.torqueLbFt;
+    else if(key==='torque')available=!hidePower && !!d.torqueLbFt;
+    else if(key==='power')available=!hidePower && !!d.power;
     else available=!!d[key];
 
     if(!available)return;
@@ -8725,6 +8675,8 @@ function buildChart(d){
 
 
   Object.keys(SERIES).forEach(key=>{
+
+    if(hidePower && (key==='power' || key==='torque'))return;
 
     const arr=getArray(key);
 
@@ -10421,6 +10373,29 @@ $('importConfigInput').addEventListener('change',e=>{
 
       hideKnock=hideKnockInput.checked;
       localStorage.setItem('logbook-hideknock',String(hideKnock));
+
+      if(lastParsed){
+        render(lastParsed,lastFilename);
+      }
+
+    });
+
+  }
+
+}
+
+{
+
+  const hidePowerInput=$('hidePowerInput');
+
+  if(hidePowerInput){
+
+    hidePowerInput.checked=hidePower;
+
+    hidePowerInput.addEventListener('change',()=>{
+
+      hidePower=hidePowerInput.checked;
+      localStorage.setItem('logbook-hidepower',String(hidePower));
 
       if(lastParsed){
         render(lastParsed,lastFilename);
