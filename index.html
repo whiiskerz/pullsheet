@@ -963,7 +963,7 @@ tr:last-child td{border-bottom:0}
     <div class="logoMark">PS</div>
     <div>
       <h1>PULL<span>SHEET</span></h1>
-      <small>MAXXECU LOG INTELLIGENCE · v1.13 · @whiiskerzbuilt</small>
+      <small>MAXXECU LOG INTELLIGENCE · v1.14 · @whiiskerzbuilt</small>
     </div>
   </div>
 
@@ -1247,18 +1247,17 @@ tr:last-child td{border-bottom:0}
   </div>
 
   <div class="configHeader" style="margin-top:20px">
-    <h2>Fuel-burned display</h2>
+    <h2>Display preferences</h2>
     <p>
-      Not a sensor mapping — just how the "Est. fuel burned" numbers
-      (dashboard card, pull/session cards) get framed. Change this to
-      your own car's tank size to get a real "X% of a tank" figure
-      instead of a bare pound number.
+      Not sensor mappings — just how this build's results page is
+      framed. These don't affect what got logged, only what shows.
     </p>
   </div>
 
   <div class="configGrid">
+
     <div class="configItem">
-      <label>Fuel tank size (gallons)</label>
+      <label>Fuel tank size (gallons) — for "Est. fuel burned" framing</label>
       <input
         id="tankGalInput"
         type="number"
@@ -1268,6 +1267,14 @@ tr:last-child td{border-bottom:0}
         style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;outline:none"
       >
     </div>
+
+    <div class="configItem">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input id="hideKnockInput" type="checkbox" style="width:16px;height:16px;accent-color:var(--amber)">
+        This car has no knock sensor — hide knock readings
+      </label>
+    </div>
+
   </div>
 
   <div id="detectedChannels" class="detected" style="display:none"></div>
@@ -1361,6 +1368,20 @@ tr:last-child td{border-bottom:0}
   <div class="configHeader">
     <h2>Recent fixes</h2>
     <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
+      v1.14 — Decluttering pass. (1) Fixed Target AFR: on builds that
+      don't log a literal Target AFR channel, the chart line, WOT
+      pulls table delta column, and health scoring now all correctly
+      fall back to Lambda target × Fuel Stoich AFR instead of showing
+      nothing (or a wrong column) — this fallback used to only apply
+      to one summary card, now every consumer of Target AFR reads the
+      same corrected number. (2) New "This car has no knock sensor"
+      toggle in I/O Config → Display preferences: hides Knock retard
+      everywhere it showed up — dashboard card, WOT pulls table
+      column, gear-by-gear column, flagged issues, health scoring,
+      the shareable card images (swapped for avg AFR), and the
+      copyable text report. (3) Peak power moved out of the default
+      dashboard cards — still one tap away under the toggle chips,
+      just not shown automatically anymore.<br><br>
       v1.13 — Moved the fuel-burned BSFC toggle (N/A/Boosted/Nitrous)
       to live inside the "Est. fuel burned" card itself instead of
       sitting as its own row above the whole dashboard grid. It only
@@ -1653,6 +1674,21 @@ function pctOfTank(gal){
   return (Number.isFinite(gal) && currentTankGal>0) ? (gal/currentTankGal)*100 : null;
 }
 
+/*
+  Master "this car has no knock sensor" switch. Knock ends up
+  touched by a lot of surfaces (dashboard cards, the WOT pulls
+  table, gear-by-gear breakdown, flagged issues, health scoring,
+  the shareable card images, the copyable text report) — a car
+  with no physical knock sensor either has no channel at all
+  (already handled fine, those spots just don't render) or has one
+  logging a value that's technically present but meaningless, which
+  otherwise still shows up everywhere as if it were real data. This
+  flag is checked at each of those surfaces rather than deleting the
+  channel from d, so flipping it back on doesn't require re-parsing
+  the log.
+*/
+let hideKnock=localStorage.getItem('logbook-hideknock')==='true';
+
 let units={
   temp:'F',
   press:'psi'
@@ -1677,17 +1713,20 @@ let activeSeries={
 
 /*
   Same toggle pattern as activeSeries above, but for the "Smart
-  dashboard" card grid — defaults to only the 5 cards most people
-  actually care about when tuning (RPM, boost, power, knock, AFR),
-  with everything else one tap away instead of an 18-card wall on
-  first look. DASH_CARD_META gives each key the label used to
-  build its toggle chip; only keys with a card actually available
-  for the current log get shown as a chip (see render()).
+  dashboard" card grid — defaults to only the cards most people
+  actually care about at a glance (RPM, boost, knock, AFR), with
+  everything else one tap away instead of an 18-card wall on first
+  look. Peak power/torque moved out of the defaults on purpose —
+  you already know your own numbers going in, so it's one tap away
+  under the toggle chips rather than the first thing you see every
+  time. DASH_CARD_META gives each key the label used to build its
+  toggle chip; only keys with a card actually available for the
+  current log get shown as a chip (see render()).
 */
 let activeDashCards={
   rpm:true,
   boost:true,
-  power:true,
+  power:false,
   knock:true,
   afr:true,
   nitrous:true,
@@ -3612,6 +3651,33 @@ function parseLog(text){
   }
 
 
+  /*
+    Some MaxxECU builds don't log a literal "Target AFR" channel at
+    all — just Lambda target and a live Stoich AFR reference (which
+    itself shifts with ethanol blend on a flex-fuel setup). Every
+    consumer of targetAfr — the chart's target line, the WOT pulls
+    table's delta column, health scoring, the AFR summary card — all
+    read this ONE array, so the fallback has to happen HERE, once,
+    rather than separately in each place. The old approach only had
+    the fallback inside the summary card's own function, so the
+    chart kept plotting nothing (or, worse, whatever a loose
+    "AFR Target"-style name match happened to grab) even after the
+    summary card had already worked out the real number.
+  */
+  out.targetAfrDerived=false;
+
+  if(!out.targetAfr.some(Number.isFinite)){
+
+    const derived=derivedTargetAfr(out);
+
+    if(derived && derived.some(Number.isFinite)){
+      out.targetAfr=derived;
+      out.targetAfrDerived=true;
+    }
+
+  }
+
+
   out.pulls=detectWotPulls(out);
 
   out.upshiftEvents=detectButtonEvents(out,'upshift');
@@ -3984,44 +4050,25 @@ function derivedTargetAfr(d){
 
 function targetAfrInfo(d){
 
+  /*
+    parseLog() already substitutes the derived (Lambda target ×
+    Stoich AFR) array into d.targetAfr itself when this build
+    doesn't log a literal Target AFR channel, and sets
+    d.targetAfrDerived accordingly — so this just reads the one
+    array everything else reads too, instead of re-deriving its
+    own separate copy.
+  */
+
   const wot=wotValues(d,'targetAfr');
 
   if(wot.length>=8){
-    return{stats:smartAfr(wot),scope:'WOT',computed:false};
+    return{stats:smartAfr(wot),scope:'WOT',computed:!!d.targetAfrDerived};
   }
 
   const full=fullValues(d,'targetAfr');
 
   if(full.length){
-    return{stats:smartAfr(full),scope:'FULL LOG',computed:false};
-  }
-
-  /*
-    Raw channel not logged on this build — fall back to the
-    computed value.
-  */
-
-  const derived=derivedTargetAfr(d);
-
-  if(derived){
-
-    const derivedObj={afrDerived:derived};
-
-    const wotD=wotValues(
-      {tps:d.tps,afrDerived:derived},
-      'afrDerived'
-    );
-
-    if(wotD.length>=8){
-      return{stats:smartAfr(wotD),scope:'WOT',computed:true};
-    }
-
-    const fullD=fullValues(derivedObj,'afrDerived');
-
-    if(fullD.length){
-      return{stats:smartAfr(fullD),scope:'FULL LOG',computed:true};
-    }
-
+    return{stats:smartAfr(full),scope:'FULL LOG',computed:!!d.targetAfrDerived};
   }
 
   return{stats:null,scope:null,computed:false};
@@ -5278,7 +5325,7 @@ function healthScore(d){
   }
 
 
-  if(d.knock){
+  if(d.knock && !hideKnock){
 
     const mx=max(d.knock);
 
@@ -5292,7 +5339,7 @@ function healthScore(d){
   }
 
 
-  if(d.knockRetard && d.knockRetard.some(Number.isFinite)){
+  if(d.knockRetard && d.knockRetard.some(Number.isFinite) && !hideKnock){
 
     const mx=peakAbs(d.knockRetard);
 
@@ -5807,7 +5854,7 @@ function render(d,filename,prBadges){
   }
 
 
-  if(d.knockRetard && d.knockRetard.some(Number.isFinite)){
+  if(d.knockRetard && d.knockRetard.some(Number.isFinite) && !hideKnock){
 
     const peakRetard=peakAbs(d.knockRetard);
 
@@ -6407,7 +6454,7 @@ function render(d,filename,prBadges){
               <th>0-60</th>
               <th>1/8 mi</th>
               <th>Boost</th>
-              <th>Knock</th>
+              ${hideKnock?'':'<th>Knock</th>'}
               <th>HP</th>
               <th>Card</th>
             </tr>
@@ -6507,11 +6554,13 @@ function render(d,filename,prBadges){
             ${Number.isFinite(pullBoost)?fmtPsi(pullBoost):'—'}
           </td>
 
-          <td>
-            ${Number.isFinite(pullKnock)
-              ?(pullKnock>0?'⚠ '+Math.round(pullKnock):'clean')
-              :'—'}
-          </td>
+          ${hideKnock?'':`
+            <td>
+              ${Number.isFinite(pullKnock)
+                ?(pullKnock>0?'⚠ '+Math.round(pullKnock):'clean')
+                :'—'}
+            </td>
+          `}
 
           <td>
             ${Number.isFinite(pullPower)?Math.round(pullPower):'—'}
@@ -6544,7 +6593,8 @@ function render(d,filename,prBadges){
     at the bottom of render()) can drop matching markers on the
     timeline chart without recomputing any of this.
   */
-  const issueEvents=groupIssueEvents(detectPullIssues(d),d);
+  const issueEvents=groupIssueEvents(detectPullIssues(d),d)
+    .filter(ev=>!hideKnock || (ev.type!=='knock' && ev.type!=='nitrousKnock'));
 
   d._issueEvents=issueEvents;
 
@@ -6804,7 +6854,7 @@ function render(d,filename,prBadges){
                   <th>Speed in</th>
                   <th>Speed out</th>
                   <th>Boost peak</th>
-                  <th>Knock</th>
+                  ${hideKnock?'':'<th>Knock</th>'}
                 </tr>
               </thead>
               <tbody>
@@ -6818,7 +6868,7 @@ function render(d,filename,prBadges){
                     <td>${s.speedStart!=null?fmtSpeed(s.speedStart):'—'}</td>
                     <td>${s.speedEnd!=null?fmtSpeed(s.speedEnd):'—'}</td>
                     <td>${s.boostPeak!=null?fmtPsi(s.boostPeak):'—'}</td>
-                    <td>${s.knockPeak!=null && s.knockPeak>0?'⚠ '+Math.round(s.knockPeak):'clean'}</td>
+                    ${hideKnock?'':`<td>${s.knockPeak!=null && s.knockPeak>0?'⚠ '+Math.round(s.knockPeak):'clean'}</td>`}
                   </tr>
                 `).join('')}
               </tbody>
@@ -7685,13 +7735,25 @@ function buildPullCardImage(d,pc,filename){
       value:Number.isFinite(pc.pullBoost)?pc.pullBoost.toFixed(1)+' psi':'—',
       color:COL.amber
     },
-    {
-      label:'KNOCK',
-      value:Number.isFinite(pc.pullKnock)
-        ?(pc.pullKnock>0?Math.round(pc.pullKnock)+'°':'CLEAN')
-        :'—',
-      color:Number.isFinite(pc.pullKnock) && pc.pullKnock>2?COL.red:COL.green
-    }
+    /*
+      No knock sensor on this car (per the I/O Config toggle) — a
+      "KNOCK: CLEAN" box would just be reporting the absence of a
+      sensor as if it were a real all-clear, so swap it for average
+      AFR instead of leaving a misleading box on the shared image.
+    */
+    hideKnock
+      ? {
+          label:'AVG AFR',
+          value:pc.a && Number.isFinite(pc.a.average)?pc.a.average.toFixed(2):'—',
+          color:COL.green
+        }
+      : {
+          label:'KNOCK',
+          value:Number.isFinite(pc.pullKnock)
+            ?(pc.pullKnock>0?Math.round(pc.pullKnock)+'°':'CLEAN')
+            :'—',
+          color:Number.isFinite(pc.pullKnock) && pc.pullKnock>2?COL.red:COL.green
+        }
   ];
 
   const boxW=(W-128-3*24)/4;
@@ -9081,7 +9143,7 @@ function generateReport(d,h){
       r+=`TIMING RANGE: ${Math.round(min(d.ignTiming))}° - ${Math.round(max(d.ignTiming))}°\n`;
     }
 
-    if(d.knockRetard && d.knockRetard.some(Number.isFinite)){
+    if(d.knockRetard && d.knockRetard.some(Number.isFinite) && !hideKnock){
       r+=`KNOCK RETARD PEAK: ${Math.round(peakAbs(d.knockRetard))}°\n`;
     }
 
@@ -9272,7 +9334,7 @@ function generateReport(d,h){
 
   }
 
-  if(d.knock){
+  if(d.knock && !hideKnock){
     r+=`KNOCK MAX: ${max(d.knock)}\n`;
   }
 
@@ -10336,6 +10398,29 @@ $('importConfigInput').addEventListener('change',e=>{
 
       tankInput.value=currentTankGal;
       localStorage.setItem('logbook-tankgal',String(currentTankGal));
+
+      if(lastParsed){
+        render(lastParsed,lastFilename);
+      }
+
+    });
+
+  }
+
+}
+
+{
+
+  const hideKnockInput=$('hideKnockInput');
+
+  if(hideKnockInput){
+
+    hideKnockInput.checked=hideKnock;
+
+    hideKnockInput.addEventListener('change',()=>{
+
+      hideKnock=hideKnockInput.checked;
+      localStorage.setItem('logbook-hideknock',String(hideKnock));
 
       if(lastParsed){
         render(lastParsed,lastFilename);
