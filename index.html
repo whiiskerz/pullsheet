@@ -6,32 +6,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="PullSheet">
+<meta name="apple-mobile-web-app-title" content="SHOP TALK">
 <meta name="theme-color" content="#080a0c">
-
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icons/icon-180.png">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
-
-<!--
-  iOS splash screens shown briefly while the installed (Add to Home
-  Screen) app launches, before the page itself paints — without
-  these it's just a white flash. Apple requires an exact pixel-size
-  match per device via media queries; there's no way to give it one
-  image and have it scale. This covers current-generation iPhones;
-  a device not listed here just gets the white-flash default, which
-  is the same as before this existed.
--->
-<link rel="apple-touch-startup-image" href="splash/splash-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="splash/splash-1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="splash/splash-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="splash/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="splash/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="splash/splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-<link rel="apple-touch-startup-image" href="splash/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
-
-<title>PULLSHEET — MaxxECU Log Intelligence</title>
+<title>SHOP TALK — MaxxECU Log Intelligence</title>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
@@ -120,6 +97,26 @@ button{cursor:pointer}
   color:var(--dim);
   font:9px JetBrains Mono;
   letter-spacing:.1em;
+}
+
+.creditLink{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  margin-top:5px;
+  color:var(--amber);
+  font:700 11px JetBrains Mono;
+  letter-spacing:.04em;
+  text-decoration:none;
+  border:1px solid var(--amber);
+  border-radius:20px;
+  padding:4px 12px;
+  transition:.15s;
+}
+
+.creditLink:hover{
+  background:var(--amber);
+  color:#080a0c;
 }
 
 .tabs{
@@ -532,6 +529,19 @@ button{cursor:pointer}
 .delta.warn{color:var(--amber)}
 .delta.bad{color:var(--red)}
 
+.richLeanBadge{
+  display:inline-block;
+  font:700 10px JetBrains Mono;
+  letter-spacing:.06em;
+  padding:4px 10px;
+  border-radius:14px;
+  margin-bottom:6px;
+}
+
+.richLeanBadge.good{background:rgba(114,212,60,.14);color:var(--green)}
+.richLeanBadge.warn{background:rgba(255,182,39,.14);color:var(--amber)}
+.richLeanBadge.bad{background:rgba(255,92,77,.14);color:var(--red)}
+
 .chartPanel{
   background:var(--panel);
   border:1px solid var(--line);
@@ -823,33 +833,6 @@ tr:last-child td{border-bottom:0}
   overflow:auto;
 }
 
-#printArea{display:none}
-
-/*
-  Printing the report: everything on the page is hidden except
-  #printArea, which is populated with the plain-text tuner report
-  right before window.print() is called. This is what lets
-  "PRINT / SAVE PDF" work as a real PDF export on iOS Safari —
-  the OS print sheet has its own "Save to Files as PDF" option,
-  no PDF library needed.
-*/
-@media print{
-  body *{visibility:hidden}
-  #printArea,#printArea *{visibility:visible}
-  #printArea{
-    display:block;
-    position:absolute;
-    left:0;
-    top:0;
-    width:100%;
-    white-space:pre-wrap;
-    font-family:monospace;
-    font-size:11px;
-    color:#000;
-    padding:20px;
-  }
-}
-
 @media(max-width:800px){
   .heroGrid{grid-template-columns:1fr}
 }
@@ -960,16 +943,18 @@ tr:last-child td{border-bottom:0}
 <header class="top">
 
   <div class="brand">
-    <div class="logoMark">PS</div>
+    <div class="logoMark">ST</div>
     <div>
-      <h1>PULL<span>SHEET</span></h1>
-      <small>MAXXECU LOG INTELLIGENCE · v1.15 · @whiiskerzbuilt</small>
+      <h1>SHOP<span> TALK</span></h1>
+      <small>MAXXECU + HOLLEY LOGS, PLAIN ENGLISH · v2.0</small>
+      <a class="creditLink" href="https://instagram.com/whiiskerzbuilt" target="_blank" rel="noopener">
+        \u25c8 BUILT BY @WHIISKERZBUILT
+      </a>
     </div>
   </div>
 
   <div class="tabs">
     <button class="active" data-tab="analyze">Analyze</button>
-    <button data-tab="compare">Compare</button>
     <button data-tab="history">History</button>
     <button data-tab="config">I/O Config</button>
     <button data-tab="about">About</button>
@@ -986,12 +971,7 @@ tr:last-child td{border-bottom:0}
 
       <h2>Drop or tap to pick your log</h2>
 
-      <p>.MaxxECU-Zip-log · .MaxxECU-Log · .log · .csv · .zip</p>
-      <p style="margin-top:4px">
-        Built for MaxxECU, but plain CSV exports from other
-        loggers (Holley EFI, Haltech, AEM, Link) work too — map
-        any channel by hand in I/O Config if auto-detect misses one.
-      </p>
+      <p>.MaxxECU-Zip-log · .MaxxECU-Log · .log · .zip · Holley CSV export</p>
       <p style="margin-top:4px">
         Add your .MaxxECU-save tune file too — it'll auto-map
         your fuel/oil pressure AINs instead of guessing.
@@ -1003,18 +983,11 @@ tr:last-child td{border-bottom:0}
 
       <div id="tunePill" class="tune-pill" style="display:none"></div>
 
-      <!--
-        No `accept` filter here on purpose. iOS has no registered file
-        type (UTI) for custom extensions like .MaxxECU-Log or
-        .MaxxECU-save, so when accept listed them explicitly, Safari's
-        Files-app picker couldn't tell what to show and greyed the
-        files out / hid them. All real filtering already happens in
-        JS (handleFiles below), so the OS picker is left wide open.
-      -->
       <input
         id="fileInput"
         type="file"
         multiple
+        accept=".MaxxECU-Zip-log,.MaxxECU-Log,.log,.zip,.MaxxECU-save,.csv"
       >
     </div>
 
@@ -1026,39 +999,6 @@ tr:last-child td{border-bottom:0}
   </div>
 
   <div id="results" style="display:none"></div>
-
-</section>
-
-<section id="view-compare" class="view">
-
-  <div class="sectionTitle">
-    <div>Compare two logs</div>
-    <span>BEFORE / AFTER A TUNE CHANGE</span>
-  </div>
-
-  <div class="heroGrid">
-
-    <div id="dropA" class="drop" style="min-height:190px">
-      <div>
-        <div class="dropIcon">A</div>
-        <h2 id="dropALabel">Drop or tap for log A</h2>
-        <p>The baseline / "before" log</p>
-        <input id="fileInputA" type="file" multiple style="display:none">
-      </div>
-    </div>
-
-    <div id="dropB" class="drop" style="min-height:190px">
-      <div>
-        <div class="dropIcon">B</div>
-        <h2 id="dropBLabel">Drop or tap for log B</h2>
-        <p>The "after" log to compare against A</p>
-        <input id="fileInputB" type="file" multiple style="display:none">
-      </div>
-    </div>
-
-  </div>
-
-  <div id="compareResults" style="margin-top:20px"></div>
 
 </section>
 
@@ -1085,6 +1025,23 @@ tr:last-child td{border-bottom:0}
       friend with a different AIN/DIN layout can import it as a starting
       point and only needs to fix what doesn't auto-match. Config lives
       in this browser only — export it before switching devices.
+    </p>
+  </div>
+
+  <div id="configNoLogNotice" class="configHeader" style="display:none;border-color:var(--amber)">
+    <h2 style="color:var(--amber)">Drop a log first</h2>
+    <p>
+      Every dropdown below only shows "AUTO DETECT" until you've
+      loaded a log — there's nothing else to pick from yet. Go to
+      the Analyze tab, drop your log, then come back here and every
+      channel actually found in that log will show up as an option.
+    </p>
+  </div>
+
+  <div id="configPickedNotice" class="configHeader" style="display:none;border-color:var(--green)">
+    <p style="margin:0;color:var(--green);font-family:JetBrains Mono;font-size:11px">
+      \u2713 Picked a channel? It's applied — flip back to the <b>Analyze</b> tab
+      to see the updated dashboard reflect it.
     </p>
   </div>
 
@@ -1188,100 +1145,6 @@ tr:last-child td{border-bottom:0}
       </select>
     </div>
 
-    <div class="configItem">
-      <label>MAP / boost pressure</label>
-      <select id="cfgMAP">
-        <option value="auto">AUTO DETECT</option>
-      </select>
-    </div>
-
-    <div class="configItem">
-      <label>Intake air temperature</label>
-      <select id="cfgIAT">
-        <option value="auto">AUTO DETECT</option>
-      </select>
-    </div>
-
-    <div class="configItem">
-      <label>Ignition timing</label>
-      <select id="cfgTiming">
-        <option value="auto">AUTO DETECT</option>
-      </select>
-    </div>
-
-    <div class="configItem">
-      <label>Knock retard</label>
-      <select id="cfgKnockRetard">
-        <option value="auto">AUTO DETECT</option>
-      </select>
-    </div>
-
-    <div class="configItem">
-      <label>Engine power</label>
-      <select id="cfgPower">
-        <option value="auto">AUTO DETECT</option>
-      </select>
-    </div>
-
-    <div class="configItem">
-      <label>Engine torque</label>
-      <select id="cfgTorque">
-        <option value="auto">AUTO DETECT</option>
-      </select>
-    </div>
-
-    <div class="configItem">
-      <label>Nitrous activation</label>
-      <select id="cfgNitrous">
-        <option value="auto">AUTO DETECT</option>
-      </select>
-    </div>
-
-    <div class="configItem">
-      <label>Barometric pressure</label>
-      <select id="cfgBaro">
-        <option value="auto">AUTO DETECT</option>
-      </select>
-    </div>
-
-  </div>
-
-  <div class="configHeader" style="margin-top:20px">
-    <h2>Display preferences</h2>
-    <p>
-      Not sensor mappings — just how this build's results page is
-      framed. These don't affect what got logged, only what shows.
-    </p>
-  </div>
-
-  <div class="configGrid">
-
-    <div class="configItem">
-      <label>Fuel tank size (gallons) — for "Est. fuel burned" framing</label>
-      <input
-        id="tankGalInput"
-        type="number"
-        step="0.1"
-        min="1"
-        value="16.9"
-        style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;outline:none"
-      >
-    </div>
-
-    <div class="configItem">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-        <input id="hideKnockInput" type="checkbox" style="width:16px;height:16px;accent-color:var(--amber)">
-        This car has no knock sensor — hide knock readings
-      </label>
-    </div>
-
-    <div class="configItem">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-        <input id="hidePowerInput" type="checkbox" style="width:16px;height:16px;accent-color:var(--amber)">
-        Hide power/torque on dashboard &amp; charts (estimated, not a dyno)
-      </label>
-    </div>
-
   </div>
 
   <div id="detectedChannels" class="detected" style="display:none"></div>
@@ -1290,34 +1153,40 @@ tr:last-child td{border-bottom:0}
     <b>Conversions:</b>
     Fuel pressure = KPA → PSI.
     Oil pressure = BAR → PSI.
-    MAP/boost = KPA → PSI (gauge, minus 14.7 psi sea-level baseline).
     Temperature = °C → °F.
     TPS/Ethanol = %.
     Battery = V.
     Speed = km/h → mph.
-    Ignition timing/knock retard = degrees, unconverted.
-    Barometric pressure = KPA absolute → inHg, for the weather-corrected power estimate.
   </div>
 
 </section>
 
 <section id="view-about" class="view">
 
+  <div class="configHeader" style="border-color:var(--amber)">
+    <h2 style="color:var(--amber)">Built by @whiiskerzbuilt</h2>
+    <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
+      SHOP TALK was built for a MaxxECU + ZF8HP70 LS-swapped E90, and
+      grew from there. Follow the build:
+      <a href="https://instagram.com/whiiskerzbuilt" target="_blank" rel="noopener" style="color:var(--amber);font-weight:700;text-decoration:none">
+        instagram.com/whiiskerzbuilt
+      </a>
+    </p>
+  </div>
+
   <div class="configHeader">
     <h2>What this is</h2>
     <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
-      PULLSHEET reads MaxxECU M-Tune log exports (.MaxxECU-Zip-log or
-      .MaxxECU-Log) entirely in your browser — nothing is uploaded
-      anywhere, ever. Drop a log to get a health check, a zoomable
-      trace of every channel, WOT pull breakdowns, and a copyable
-      report you can hand to a tuner. Plain CSV exports from other
-      standalone ECUs work too, since channel detection matches on
-      plain header text as well as MaxxECU's own convention — Holley
-      EFI's datalog viewer has a CSV export button for exactly this
-      (Holley's native .dl/.dlz files are a different binary format
-      and can't be dropped in directly). Auto-detect won't be perfect
-      on a non-MaxxECU log, so check the I/O Config tab and fix
-      anything it missed by hand.
+      Your log file has thousands of numbers in it and most of them
+      mean nothing to you at a glance. SHOP TALK reads MaxxECU M-Tune
+      exports (.MaxxECU-Zip-log or .MaxxECU-Log) and Holley EFI CSV
+      exports entirely in your browser — nothing is uploaded anywhere,
+      ever — and turns it into plain sentences: what's healthy, what
+      needs a look, what your car was actually doing on that drive.
+      Still has the deep stuff underneath (zoomable trace of every
+      channel, WOT pull breakdowns, a report you can hand to a tuner)
+      for when you want it, but you don't have to know what any of it
+      means to get the plain-English version first.
     </p>
   </div>
 
@@ -1375,221 +1244,42 @@ tr:last-child td{border-bottom:0}
   <div class="configHeader">
     <h2>Recent fixes</h2>
     <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
-      v1.15 — More decluttering. (1) Power/torque are now hidden by
-      default everywhere — dashboard card, main timeline chart series,
-      and the "Power / torque curves" dyno section — since they're
-      MaxxECU's fuel-flow estimate, not a real dyno number, and most
-      builds don't need to see it by default. New "Hide power/torque"
-      checkbox in I/O Config → Display preferences (unchecked = show
-      them) if you want them back; the WOT pulls table's HP column,
-      the weather-corrected power table, and the shareable pull-card
-      image are left alone since those are opt-in views already. (2)
-      Removed "Est. fuel burned," "Converter lockup," and "Line
-      pressure" as dashboard-card options — the fuel/tank estimate
-      still shows up in the shareable card image and copyable text
-      report, just not as its own dashboard tile anymore.<br><br>
-      v1.14 — Decluttering pass. (1) Fixed Target AFR: on builds that
-      don't log a literal Target AFR channel, the chart line, WOT
-      pulls table delta column, and health scoring now all correctly
-      fall back to Lambda target × Fuel Stoich AFR instead of showing
-      nothing (or a wrong column) — this fallback used to only apply
-      to one summary card, now every consumer of Target AFR reads the
-      same corrected number. (2) New "This car has no knock sensor"
-      toggle in I/O Config → Display preferences: hides Knock retard
-      everywhere it showed up — dashboard card, WOT pulls table
-      column, gear-by-gear column, flagged issues, health scoring,
-      the shareable card images (swapped for avg AFR), and the
-      copyable text report. (3) Peak power moved out of the default
-      dashboard cards — still one tap away under the toggle chips,
-      just not shown automatically anymore.<br><br>
-      v1.13 — Moved the fuel-burned BSFC toggle (N/A/Boosted/Nitrous)
-      to live inside the "Est. fuel burned" card itself instead of
-      sitting as its own row above the whole dashboard grid. It only
-      ever affected that one card's number — but floating above
-      everything made it look like a global setting that should also
-      move "Peak power" next to it. It never did and never will:
-      power/torque are MaxxECU's own logged numbers, untouched by
-      this toggle either way.<br><br>
-      v1.12 — "Est. fuel burned" now leads with gallons instead of
-      pounds everywhere it shows up (dashboard card, pull/session
-      card images), with pounds kept as a secondary detail. Also new:
-      a "Fuel tank size" field in I/O Config (defaults 16.9gal) so
-      the card can show what % of a tank that session burned, plus a
-      "~N sessions like this ≈ half a tank" line for a number that
-      actually means something at a glance.<br><br>
-      v1.11 — Three big ones. (1) Weather-corrected power: a new
-      "Weather-corrected power" table per pull, using barometric
-      pressure + intake air temp (new I/O Config channel for baro)
-      to correct peak power/torque to standard conditions — an
-      SAE-style dry-air approximation, so two pulls made on
-      different days can actually be compared. (2) Pull consistency
-      score: a 0-100 score for how much back-to-back WOT pulls in
-      one session actually agree with each other, weighing peak
-      power spread, AFR drift, and any pull with detected
-      wheel/converter slip — flags the specific pull(s) dragging the
-      score down instead of just eyeballing the overlay chart. (3)
-      Build/mod timeline: History tab now has a "Build note for new
-      sessions" field (tags whatever gets saved next — "installed
-      212/224 cam, tune rev 4," etc.), a per-log edit button to
-      tag/fix notes after the fact, and a new POWER chart mode
-      showing peak power/torque over every saved log for a vehicle,
-      with noted logs drawn bigger and their note shown on
-      hover.<br><br>
-      v1.10 — The "Est. fuel burned" card now has a toggle for the
-      BSFC assumption behind it: N/A (0.50), Boosted (0.55), or
-      Nitrous active (0.62) — a naturally-aspirated engine genuinely
-      burns less fuel per horsepower than a boosted one running safe
-      margins, so one constant for every car was always going to be
-      wrong for someone. Pick lives right on the card, saved in this
-      browser like everything else. To be clear, this only affects
-      the fuel-burned number — it has zero effect on the power/torque
-      figures, which are MaxxECU's own logged numbers untouched.<br><br>
-      v1.9 — New "Traction control events" table (Drivetrain & inputs
-      section): every intervention now shows when it happened, what
-      gear/RPM it triggered at, how long it stayed active, and its
-      peak pullback — not just the total count the dashboard card
-      already showed. Nearby corrections that are really one
-      intervention get merged the same way the existing count does,
-      so the numbers line up.<br><br>
-      v1.8 — The shareable pull/session card images got a rework:
-      each one now includes a small power-vs-RPM graph (session card
-      blends every pull into one curve, pull cards show that pull's
-      own), peak power AND peak torque as their own stat boxes, an
-      estimated fuel burned figure, and a one-line reminder of how
-      MaxxECU derives the power number (fuel flow ÷ assumed BSFC).
-      Estimated fuel burned also got its own dashboard card (off by
-      default, toggle it on same as any other card). The fuel number
-      is a second-order estimate — it's back-calculated from the
-      power channel using an assumed BSFC constant, since there's no
-      reliable raw fuel-flow channel to read directly, so treat it as
-      a rough figure, same spirit as the power estimate itself.<br><br>
-      v1.7 — Three more. (1) Dyno curve overlay: 2+ pulls in the same
-      log now get an extra chart overlaying every pull's power curve
-      on one graph — actually see if a tune change made more power,
-      instead of eyeballing separate charts. (2) Launch analysis: a
-      new table breaking down the first couple seconds of each
-      standing-start pull — launch RPM, launch boost, 60-ft time, and
-      a heuristic flag for possible wheel or converter slip (RPM
-      climbing hard before the car is actually rolling). (3) Nitrous
-      safety: add a nitrous activation channel in Config I/O and the
-      app now watches specifically for lean or knock events WHILE
-      nitrous is active, using a much tighter threshold than normal
-      (a lean nitrous hit is how pistons get holes in them) — shown
-      as bright pink "NITROUS LEAN"/"NITROUS KNOCK" flags plus a
-      dedicated Nitrous dashboard card (activation count, total active
-      time, worst AFR seen).<br><br>
-      v1.6 — Four more. (1) Power/torque curves: any pull with usable
-      power data now gets an expandable RPM-based chart (like a real
-      dyno sheet) instead of just one peak number — clearly labeled
-      as MaxxECU's engine-side fuel-flow estimate, not a wheel-HP
-      dyno reading. (2) Trend alerts: your log history now watches
-      for slow-building problems — knock, coolant/trans temp, health
-      score, or AFR drift worsening over several consecutive logs for
-      the same vehicle — and flags them on the History tab before
-      they're obvious. (3) Session card: one button now builds a
-      single shareable image summarizing the WHOLE session (best
-      pull, health, any PRs, issues flagged), not just one pull. (4)
-      Dashboard cards are now toggleable — only RPM, boost, power,
-      knock, and AFR show by default, with everything else (coolant,
-      injector duty, gear range, etc.) a single tap away instead of
-      an 18-card wall every time.<br><br>
-      v1.5 — Three new features. (1) Flagged issues: every pull now
-      gets auto-scanned for real knock events, lean spots vs. target
-      AFR, boost spikes, and heat-soaked intake air — surfaced as a
-      chip list under the WOT pulls table and as colored triangle
-      markers right on the timeline chart, so problems jump out
-      instead of hiding in the numbers. (2) Gear-by-gear breakdown:
-      any pull that shifts through multiple gears (detected from the
-      gear channel) gets an expandable table showing time, RPM in/out,
-      speed, peak boost, and knock for each individual gear. (3)
-      Personal records: 0-60, 1/8 mile, peak power, peak torque, and
-      peak boost are now tracked per vehicle across your log history —
-      beat a previous best and a "NEW PERSONAL RECORD" banner shows up
-      right at the top of the results.<br><br>
-      v1.4.2 — Updates now actually show up: previously, shipping a
-      new version didn't refresh an already-open tab or installed
-      app — the new code loaded in the background but nothing told
-      the page to reload, so it kept running the old version until
-      you happened to fully close and reopen it. Now the app reloads
-      itself automatically the moment an update finishes installing.
-      (If you're reading this changelog entry, it worked.)<br><br>
-      v1.4.1 — Hardened the offline service worker: it used to cache
-      the whole app shell as one all-or-nothing batch, so a single
-      flaky request during an update (spotty signal at the exact
-      moment a new version installs) could silently leave the cache
-      empty and the old, working cache already deleted — causing
-      "Chart is not defined"/"JSZip is not defined" errors. Now each
-      file caches independently, one bad fetch doesn't take the rest
-      down with it, and a previous working cache is kept if an update
-      can't get anything new cached at all.<br><br>
-      v1.4 — Peak power/torque now parsed straight from MaxxECU's own
-      fuel-flow-calculated channels and shown on the dashboard, chart,
-      and WOT pulls table (not a dyno figure, but real logged data).
-      Each WOT pull can now generate a shareable square summary image
-      (0-60, boost, knock, power) via a CARD button — built for
-      texting/sharing, not just the full tuner report. History trend
-      chart now has a Performance view (peak boost/knock/AFR delta
-      across saved sessions) alongside the existing Reliability
-      view.<br><br>
-      v1.3 — Fixed knock retard auto-detect grabbing the wrong column
-      on real MaxxECU exports (a "Retard reason" status code, not a
-      degrees value — showed up as absurd numbers like 1024°). Now
-      matches MaxxECU's actual "Knock correction" channel, and ignition
-      timing auto-detect matches MaxxECU's actual "Ignition angle"
-      channel too. Knock retard peaks are also computed correctly
-      regardless of whether the log stores it as a negative delta or a
-      positive magnitude.<br><br>
-      v1.2 — Works fully offline after the first load (JSZip/Chart.js/
-      the zoom plugin are bundled locally now instead of loaded from a
-      CDN, plus a service worker caches the app itself — useful with
-      no signal at the track). Channel auto-detect now also recognizes
-      plainer CSV header styles, so exports from other standalone ECUs
-      (Holley EFI's CSV export, Haltech, AEM, Link) can be dropped in,
-      not just MaxxECU's own convention. History entries can be tagged
-      by vehicle and filtered, for anyone logging more than one car.
-      Added iOS splash screens and a clearer error when a file picked
-      from Files is an undownloaded iCloud placeholder.<br><br>
-      v1.1 — MAP/boost, intake air temp, ignition timing and knock
-      retard are now parsed and shown on the dashboard, chart, and
-      report; WOT pulls table adds estimated 0-60/eighth-mile times
-      (integrated from the logged speed trace, only shown for pulls
-      that actually start near a stop), plus peak boost and knock per
-      pull; new Compare tab for a side-by-side delta between two logs;
-      Share button (native share sheet on iOS) and Print/Save PDF
-      alongside Copy Report; file picker no longer restricts by
-      extension, fixing it being unable to see MaxxECU log files on
-      iOS.<br><br>
-      v1.0 — WOT/AFR stats now exclude neutral throttle blips from
-      driving pulls; automatic calibration-mismatch detection for
-      fuel/oil/AC pressure; tune-file engine map names (e.g. "Drag")
-      read directly from the tune instead of a raw slot number;
-      shift-button and traction-control counts use debounced event
-      detection instead of raw sample counts, which were overcounting
-      by 5-6x.
+      <b>v2.0</b> — added Holley EFI CSV support (parses to the same
+      internal format as MaxxECU, so health scoring/charts/unit
+      toggles all work identically); pressure units now auto-detect
+      per channel instead of assuming a fixed source unit; fixed a
+      real bug where changing a channel in I/O Config re-rendered
+      the Analyze tab invisibly while you were still looking at
+      Config, making it seem like picking a channel did nothing —
+      it now switches you back to Analyze automatically so the
+      change is immediately visible; added a notice when no log is
+      loaded yet, since the dropdowns only show "AUTO DETECT" until
+      then; content-sniffs mismatched file extensions instead of
+      rejecting them outright (MaxxECU had a real bug in older
+      firmware that corrupted the saved extension).<br><br>
+      <b>v1.0</b> — WOT/AFR stats now exclude neutral throttle blips
+      from driving pulls; automatic calibration-mismatch detection
+      for fuel/oil/AC pressure; tune-file engine map names (e.g.
+      "Drag") read directly from the tune instead of a raw slot
+      number; shift-button and traction-control counts use
+      debounced event detection instead of raw sample counts, which
+      were overcounting by 5-6x.
     </p>
   </div>
 
 </section>
 
 <footer style="text-align:center;margin-top:45px;color:var(--muted);font:9px JetBrains Mono">
-  PULLSHEET · LOCAL ANALYSIS · DATA NEVER LEAVES YOUR BROWSER · @whiiskerzbuilt
+  SHOP TALK · LOCAL ANALYSIS · DATA NEVER LEAVES YOUR BROWSER · built by
+  <a href="https://instagram.com/whiiskerzbuilt" target="_blank" rel="noopener" style="color:var(--amber);text-decoration:none;font-weight:700">@whiiskerzbuilt</a>
 </footer>
-
-<div id="printArea"></div>
 
 </div>
 
-<!--
-  Bundled locally (vendor/) instead of loaded from cdnjs — these
-  were previously fetched from a CDN on every load, which meant the
-  app was completely dead with zero signal even though the actual
-  log analysis is 100% local. Pinned to the exact same versions
-  that were already in use, so behavior is unchanged.
--->
-<script src="vendor/jszip.min.js"></script>
-<script src="vendor/chart.umd.js"></script>
-<script src="vendor/hammer.min.js"></script>
-<script src="vendor/chartjs-plugin-zoom.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
 
 <script>
 
@@ -1600,130 +1290,7 @@ let rawHeaders=[];
 let lastParsed=null;
 let lastFilename='';
 let chart=null;
-let dynoCharts=[];
 let historyChart=null;
-let historyChartMode='reliability';
-
-let compareA=null;
-let compareB=null;
-
-/*
-  History has no concept of "which car" a session belongs to —
-  everything just piles into one list. This label tags new history
-  entries so the History tab can separate/filter by vehicle if
-  someone logs more than one car. Persisted per-browser like
-  everything else here; old entries saved before this existed just
-  show up under "Unlabeled".
-*/
-let currentVehicleLabel=localStorage.getItem('logbook-vehicle')||'';
-let historyVehicleFilter='__all__';
-
-/*
-  Same idea as currentVehicleLabel, but for tagging WHAT changed
-  on the car — "installed 212/224 cam", "tune rev 4", "switched to
-  93 pump gas" — onto whatever log gets saved to history next. Lets
-  the History tab's trend chart double as an actual build timeline
-  instead of just a bare number-over-time chart with no context for
-  why a jump happened. Cleared per-log is deliberately NOT automatic
-  (see saveHistory()) — a note usually applies to several logs in a
-  row after a change, not just the first one after it.
-*/
-let currentBuildNote=localStorage.getItem('logbook-buildnote')||'';
-
-/*
-  BSFC (brake-specific fuel consumption) assumption used ONLY by
-  estimateFuelBurnedLb() — has zero effect on the power/torque
-  numbers themselves, which come straight from MaxxECU's own
-  logged channels. A naturally-aspirated engine burns meaningfully
-  less fuel per horsepower than a boosted one running safe margins,
-  and a nitrous-enriched pull runs richer still, so one constant
-  for every car was always going to be wrong for someone. These are
-  rule-of-thumb figures (lb fuel / hp / hour), not measured for any
-  specific engine — pick whichever best matches how the car being
-  logged is actually built, right on the "Est. fuel burned" card.
-*/
-const BSFC_PRESETS={
-  na:0.50,
-  boosted:0.55,
-  nitrous:0.62
-};
-const BSFC_MODE_META=[
-  {key:'na',label:'N/A · 0.50'},
-  {key:'boosted',label:'Boosted · 0.55'},
-  {key:'nitrous',label:'Nitrous · 0.62'}
-];
-let bsfcMode=(()=>{
-  const saved=localStorage.getItem('logbook-bsfcMode');
-  return (saved && BSFC_PRESETS[saved]!=null) ? saved : 'na';
-})();
-
-function currentBsfc(){
-  return BSFC_PRESETS[bsfcMode]!=null ? BSFC_PRESETS[bsfcMode] : BSFC_PRESETS.na;
-}
-
-function bsfcModeLabel(){
-  return{
-    na:'N/A engine',
-    boosted:'boosted engine',
-    nitrous:'nitrous active'
-  }[bsfcMode] || 'N/A engine';
-}
-
-/*
-  Fuel tank size, purely for framing the "Est. fuel burned" numbers
-  in a way that actually means something ("3% of a tank") instead
-  of a bare pound figure nobody has a feel for. Same persisted-input
-  pattern as currentVehicleLabel/currentBuildNote — wired once at
-  the bottom of the script since the Config I/O tab's markup is
-  static, not rebuilt per-render like the History tab is. Defaults
-  to a 16.9gal tank (E90 3-series factory spec) since that's this
-  app's actual daily driver; anyone else can just change the field.
-*/
-let currentTankGal=(()=>{
-  const saved=parseFloat(localStorage.getItem('logbook-tankgal'));
-  return Number.isFinite(saved) && saved>0 ? saved : 16.9;
-})();
-
-/* 1 US gallon of gasoline ≈ 6.1 lb — same constant already used
-   for the dashboard card's gallon conversion, now shared. */
-function lbToGal(lb){
-  return Number.isFinite(lb) ? lb/6.1 : null;
-}
-
-function pctOfTank(gal){
-  return (Number.isFinite(gal) && currentTankGal>0) ? (gal/currentTankGal)*100 : null;
-}
-
-/*
-  Master "this car has no knock sensor" switch. Knock ends up
-  touched by a lot of surfaces (dashboard cards, the WOT pulls
-  table, gear-by-gear breakdown, flagged issues, health scoring,
-  the shareable card images, the copyable text report) — a car
-  with no physical knock sensor either has no channel at all
-  (already handled fine, those spots just don't render) or has one
-  logging a value that's technically present but meaningless, which
-  otherwise still shows up everywhere as if it were real data. This
-  flag is checked at each of those surfaces rather than deleting the
-  channel from d, so flipping it back on doesn't require re-parsing
-  the log.
-*/
-let hideKnock=localStorage.getItem('logbook-hideknock')==='true';
-
-/*
-  hidePower — the mirror image of hideKnock, but opt-IN instead of
-  opt-OUT: power/torque numbers here are calculated from fuel flow,
-  not a dyno, and the user asked for them hidden by default across
-  the dashboard and charts (with a setting to bring them back), not
-  merely off-by-default like the old dashboard-card toggle. Defaults
-  to true (hidden) the very first time the app runs — i.e. when
-  there's no stored preference yet — and only becomes false once the
-  user explicitly unchecks the setting, which is why this needs the
-  three-way localStorage check below instead of the simpler
-  ==='true' pattern hideKnock uses.
-*/
-let hidePower=localStorage.getItem('logbook-hidepower')==null
-  ? true
-  : localStorage.getItem('logbook-hidepower')==='true';
 
 let units={
   temp:'F',
@@ -1738,66 +1305,8 @@ let activeSeries={
   fuelPress:false,
   oilPress:false,
   coolant:false,
-  transTemp:false,
-  map:false,
-  iat:false,
-  ignTiming:false,
-  knockRetard:false,
-  power:false,
-  torque:false
+  transTemp:false
 };
-
-/*
-  Same toggle pattern as activeSeries above, but for the "Smart
-  dashboard" card grid — defaults to only the cards most people
-  actually care about at a glance (RPM, boost, knock, AFR), with
-  everything else one tap away instead of an 18-card wall on first
-  look. Peak power/torque moved out of the defaults on purpose —
-  you already know your own numbers going in, so it's one tap away
-  under the toggle chips rather than the first thing you see every
-  time. DASH_CARD_META gives each key the label used to build its
-  toggle chip; only keys with a card actually available for the
-  current log get shown as a chip (see render()).
-*/
-let activeDashCards={
-  rpm:true,
-  boost:true,
-  power:false,
-  knock:true,
-  afr:true,
-  nitrous:true,
-  iat:false,
-  ignTiming:false,
-  fuelPress:false,
-  oilPress:false,
-  coolant:false,
-  transTemp:false,
-  battery:false,
-  injDuty:false,
-  ethanol:false,
-  vss:false,
-  gear:false
-};
-
-const DASH_CARD_META=[
-  {key:'rpm',label:'RPM'},
-  {key:'boost',label:'Boost'},
-  {key:'power',label:'Power'},
-  {key:'knock',label:'Knock'},
-  {key:'afr',label:'AFR'},
-  {key:'nitrous',label:'Nitrous'},
-  {key:'iat',label:'IAT'},
-  {key:'ignTiming',label:'Timing'},
-  {key:'fuelPress',label:'Fuel PSI'},
-  {key:'oilPress',label:'Oil PSI'},
-  {key:'coolant',label:'Coolant'},
-  {key:'transTemp',label:'Trans temp'},
-  {key:'battery',label:'Battery'},
-  {key:'injDuty',label:'Inj duty'},
-  {key:'ethanol',label:'Ethanol'},
-  {key:'vss',label:'Speed'},
-  {key:'gear',label:'Gear range'}
-];
 
 const CONFIG_IDS=[
   'cfgFuel',
@@ -1813,15 +1322,7 @@ const CONFIG_IDS=[
   'cfgBattery',
   'cfgRPM',
   'cfgTPS',
-  'cfgVSS',
-  'cfgMAP',
-  'cfgIAT',
-  'cfgTiming',
-  'cfgKnockRetard',
-  'cfgPower',
-  'cfgTorque',
-  'cfgNitrous',
-  'cfgBaro'
+  'cfgVSS'
 ];
 
 document.querySelectorAll('.tabs button').forEach(btn=>{
@@ -1837,7 +1338,6 @@ document.querySelectorAll('.tabs button').forEach(btn=>{
 
     if(btn.dataset.tab==='history') renderHistory();
     if(btn.dataset.tab==='config') refreshConfigUI();
-    if(btn.dataset.tab==='compare') renderCompare();
   });
 });
 
@@ -1875,400 +1375,68 @@ fileInput.addEventListener('change',e=>{
 });
 
 
-/*
-  COMPARE TAB — two independent drop zones, each parsed with
-  parseLog() using whatever I/O config is currently active (same
-  config the Analyze tab uses), so a comparison is apples-to-apples
-  with how the rest of the app reads this car. Deliberately doesn't
-  touch the main analyze state (rawLogText/lastParsed/tune mapping)
-  — dropping a log here has no effect on the Analyze tab.
-*/
-
-function wireCompareDrop(dropId,inputId,slot){
-
-  const zone=$(dropId);
-  const input=$(inputId);
-
-  zone.addEventListener('click',e=>{
-    if(e.target!==input)input.click();
-  });
-
-  ['dragenter','dragover'].forEach(ev=>{
-    zone.addEventListener(ev,e=>{
-      e.preventDefault();
-      zone.classList.add('drag');
-    });
-  });
-
-  ['dragleave','drop'].forEach(ev=>{
-    zone.addEventListener(ev,e=>{
-      e.preventDefault();
-      zone.classList.remove('drag');
-    });
-  });
-
-  zone.addEventListener('drop',e=>{
-    if(e.dataTransfer.files.length){
-      handleCompareFile([...e.dataTransfer.files],slot);
-    }
-  });
-
-  input.addEventListener('change',e=>{
-    if(e.target.files.length){
-      handleCompareFile([...e.target.files],slot);
-    }
-  });
-
-}
-
-wireCompareDrop('dropA','fileInputA','A');
-wireCompareDrop('dropB','fileInputB','B');
-
-
-async function handleCompareFile(files,slot){
-
-  const file=files.find(f=>
-    /\.(MaxxECU-Zip-log|MaxxECU-Log|log|zip|csv)$/i.test(f.name)
-  );
-
-  if(!file){
-    alert('Drop a MaxxECU log file.');
-    return;
-  }
-
-  if(file.size===0){
-    alert(
-      '"'+file.name+'" is 0 bytes — if it\'s stored in iCloud, open '+
-      'it once in the Files app so it fully downloads, then try again.'
-    );
-    return;
-  }
-
-  const label=$('drop'+slot+'Label');
-  const originalLabel=label.textContent;
-  label.textContent='READING…';
-
-  try{
-
-    const extracted=await extractLogText(file);
-    const parsed=parseLog(extracted.logText);
-
-    if(slot==='A'){
-      compareA={d:parsed,filename:file.name};
-    }else{
-      compareB={d:parsed,filename:file.name};
-    }
-
-    label.textContent=file.name;
-
-    renderCompare();
-
-  }catch(err){
-
-    console.error(err);
-    label.textContent=originalLabel;
-    alert('Could not read log '+slot+': '+err.message);
-
-  }
-
-}
-
-
-function fmtTempDelta(fDelta){
-
-  if(fDelta==null || !Number.isFinite(fDelta))return'—';
-
-  const val=units.temp==='C'?fDelta*5/9:fDelta;
-  const rounded=Math.round(val*10)/10;
-
-  return (rounded>0?'+':'')+rounded+'°'+units.temp;
-
-}
-
-
-function compareRow(label,aCell,bCell,deltaCell,deltaClass){
-
-  return`
-    <tr>
-      <td>${label}</td>
-      <td>${aCell}</td>
-      <td>${bCell}</td>
-      <td class="${deltaClass||''}">${deltaCell}</td>
-    </tr>
-  `;
-
-}
-
-
-function renderCompare(){
-
-  const box=$('compareResults');
-
-  if(!compareA && !compareB){
-    box.innerHTML='';
-    return;
-  }
-
-  if(!compareA || !compareB){
-
-    box.innerHTML=`
-      <div class="empty">
-        Drop a log into both A and B to see a comparison.
-      </div>
-    `;
-
-    return;
-
-  }
-
-  const dA=compareA.d;
-  const dB=compareB.d;
-
-  const hA=healthScore(dA);
-  const hB=healthScore(dB);
-
-  let rows='';
-
-  /* Health score — higher is unambiguously better */
-  {
-    const aVal=hA.score;
-    const bVal=hB.score;
-    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
-
-    rows+=compareRow(
-      'Health score',
-      aVal==null?'—':aVal+'/100',
-      bVal==null?'—':bVal+'/100',
-      delta==null?'—':(delta>0?'+':'')+delta,
-      delta==null?'':(delta>0?'delta good':delta<0?'delta bad':'')
-    );
-  }
-
-  /* Confidence — informational only, no good/bad judgment */
-  {
-    const aVal=hA.confidence;
-    const bVal=hB.confidence;
-    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
-
-    rows+=compareRow(
-      'Confidence',
-      aVal==null?'—':aVal+'%',
-      bVal==null?'—':bVal+'%',
-      delta==null?'—':(delta>0?'+':'')+delta+'%',
-      ''
-    );
-  }
-
-  /* WOT AFR average */
-  {
-    const aInfo=afrInfo(dA).stats;
-    const bInfo=afrInfo(dB).stats;
-    const aVal=aInfo?aInfo.average:null;
-    const bVal=bInfo?bInfo.average:null;
-    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
-
-    rows+=compareRow(
-      'WOT AFR avg',
-      aVal==null?'—':fmtAfr(aVal),
-      bVal==null?'—':fmtAfr(bVal),
-      delta==null?'—':(delta>0?'+':'')+fmtAfr(delta),
-      ''
-    );
-  }
-
-  /* AFR delta vs target — direction is a tuning judgment call, no color */
-  {
-    const aVal=afrDelta(dA);
-    const bVal=afrDelta(dB);
-    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
-
-    rows+=compareRow(
-      'AFR delta vs target',
-      aVal==null?'—':(aVal>0?'+':'')+aVal.toFixed(2),
-      bVal==null?'—':(bVal>0?'+':'')+bVal.toFixed(2),
-      delta==null?'—':(delta>0?'+':'')+delta.toFixed(2),
-      ''
-    );
-  }
-
-  /* Coolant / trans temps */
-  {
-    const aVal=dA.coolantF?avg(dA.coolantF):null;
-    const bVal=dB.coolantF?avg(dB.coolantF):null;
-    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
-
-    rows+=compareRow(
-      'Coolant avg',
-      aVal==null?'—':fmtTemp(aVal),
-      bVal==null?'—':fmtTemp(bVal),
-      fmtTempDelta(delta),
-      ''
-    );
-  }
-
-  {
-    const aVal=dA.transTempF?avg(dA.transTempF):null;
-    const bVal=dB.transTempF?avg(dB.transTempF):null;
-    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
-
-    rows+=compareRow(
-      'Trans avg',
-      aVal==null?'—':fmtTemp(aVal),
-      bVal==null?'—':fmtTemp(bVal),
-      fmtTempDelta(delta),
-      ''
-    );
-  }
-
-  /* Fuel / oil pressure */
-  {
-    const aVal=dA.fuelPressPsi?stabilizedFuelPressure(dA.fuelPressPsi).average:null;
-    const bVal=dB.fuelPressPsi?stabilizedFuelPressure(dB.fuelPressPsi).average:null;
-    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
-
-    rows+=compareRow(
-      'Fuel pressure avg',
-      aVal==null?'—':fmtPsi(aVal),
-      bVal==null?'—':fmtPsi(bVal),
-      delta==null?'—':(delta>0?'+':'')+fmtPsi(delta),
-      ''
-    );
-  }
-
-  {
-    const aVal=dA.oilPressPsi?avg(dA.oilPressPsi):null;
-    const bVal=dB.oilPressPsi?avg(dB.oilPressPsi):null;
-    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
-
-    rows+=compareRow(
-      'Oil pressure avg',
-      aVal==null?'—':fmtPsi(aVal),
-      bVal==null?'—':fmtPsi(bVal),
-      delta==null?'—':(delta>0?'+':'')+fmtPsi(delta),
-      ''
-    );
-  }
-
-  /* Battery */
-  {
-    const aVal=dA.battery?avg(dA.battery):null;
-    const bVal=dB.battery?avg(dB.battery):null;
-    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
-
-    rows+=compareRow(
-      'Battery avg',
-      aVal==null?'—':fmtVolt(aVal),
-      bVal==null?'—':fmtVolt(bVal),
-      delta==null?'—':(delta>0?'+':'')+fmtVolt(delta),
-      ''
-    );
-  }
-
-  /* Boost peak — informational, no color (more boost isn't inherently "good") */
-  {
-    const aVal=dA.mapPsi && dA.mapPsi.some(Number.isFinite)?max(dA.mapPsi):null;
-    const bVal=dB.mapPsi && dB.mapPsi.some(Number.isFinite)?max(dB.mapPsi):null;
-    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
-
-    rows+=compareRow(
-      'Boost peak',
-      aVal==null?'—':fmtPsi(aVal),
-      bVal==null?'—':fmtPsi(bVal),
-      delta==null?'—':(delta>0?'+':'')+fmtPsi(delta),
-      ''
-    );
-  }
-
-  /* Knock retard peak — lower is unambiguously better */
-  {
-    const aVal=dA.knockRetard && dA.knockRetard.some(Number.isFinite)?peakAbs(dA.knockRetard):null;
-    const bVal=dB.knockRetard && dB.knockRetard.some(Number.isFinite)?peakAbs(dB.knockRetard):null;
-    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
-
-    rows+=compareRow(
-      'Knock retard peak',
-      aVal==null?'—':Math.round(aVal)+'°',
-      bVal==null?'—':Math.round(bVal)+'°',
-      delta==null?'—':(delta>0?'+':'')+Math.round(delta)+'°',
-      delta==null?'':(delta<0?'delta good':delta>0?'delta bad':'')
-    );
-  }
-
-  /* WOT pulls + best 0-60 */
-  {
-    const aVal=dA.pulls?dA.pulls.length:null;
-    const bVal=dB.pulls?dB.pulls.length:null;
-    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
-
-    rows+=compareRow(
-      'WOT pulls',
-      aVal==null?'—':aVal,
-      bVal==null?'—':bVal,
-      delta==null?'—':(delta>0?'+':'')+delta,
-      ''
-    );
-  }
-
-  {
-    const accelA=(dA.pulls||[]).map(p=>computeAccelStats(dA,p)).filter(a=>a && a.zeroToSixty!=null);
-    const accelB=(dB.pulls||[]).map(p=>computeAccelStats(dB,p)).filter(a=>a && a.zeroToSixty!=null);
-
-    const aVal=accelA.length?Math.min(...accelA.map(a=>a.zeroToSixty)):null;
-    const bVal=accelB.length?Math.min(...accelB.map(a=>a.zeroToSixty)):null;
-    const delta=(aVal!=null && bVal!=null)?bVal-aVal:null;
-
-    rows+=compareRow(
-      'Best 0-60 (est.)',
-      aVal==null?'—':aVal.toFixed(2)+'s',
-      bVal==null?'—':bVal.toFixed(2)+'s',
-      delta==null?'—':(delta>0?'+':'')+delta.toFixed(2)+'s',
-      delta==null?'':(delta<0?'delta good':delta>0?'delta bad':'')
-    );
-  }
-
-  box.innerHTML=`
-
-    <div class="summary" style="margin-top:0">
-      <div>
-        <div class="filename">A vs B</div>
-        <div class="meta">
-          A: ${escapeHTML(compareA.filename)} · B: ${escapeHTML(compareB.filename)}
-        </div>
-      </div>
-    </div>
-
-    <div class="tableWrap" style="margin-top:14px">
-      <table>
-        <thead>
-          <tr>
-            <th>Metric</th>
-            <th>A</th>
-            <th>B</th>
-            <th>Δ (B−A)</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-      </table>
-    </div>
-
-    <div class="hint">
-      Δ colored only where the "better" direction is unambiguous (health score, knock retard, 0-60). Everything else is shown plain — you know your tune goals better than this app does.
-    </div>
-  `;
-
-}
-
-
 async function handleFiles(files){
 
-  const tuneFile=files.find(f=>/\.MaxxECU-save$/i.test(f.name));
+  let tuneFile=files.find(f=>/\.MaxxECU-save$/i.test(f.name));
 
-  const logFiles=files.filter(f=>
+  let logFiles=files.filter(f=>
     /\.(MaxxECU-Zip-log|MaxxECU-Log|log|zip|csv)$/i.test(f.name)
     && f!==tuneFile
   );
+
+  /*
+    MaxxECU M-Tune itself shipped a real bug (fixed in v1.161.3)
+    where saving a PC log added a typo to the file extension,
+    making the resulting file unopenable by name alone. If
+    nothing matched by extension, sniff the actual file content
+    instead of just giving up — a misnamed file from before that
+    fix is still perfectly readable once opened. Cheap zip-magic
+    check first, then a small text peek; only runs when the fast
+    extension match found nothing, so normal drops are unaffected.
+  */
+
+  if(!tuneFile && !logFiles.length && files.length){
+
+    const matched=new Set([tuneFile,...logFiles].filter(Boolean));
+
+    for(const f of files){
+
+      if(matched.has(f))continue;
+
+      try{
+
+        const headBuf=await f.slice(0,4).arrayBuffer();
+        const headBytes=new Uint8Array(headBuf);
+
+        if(headBytes[0]===0x50 && headBytes[1]===0x4B){
+          logFiles.push(f);
+          continue;
+        }
+
+        const textHead=await f.slice(0,4000).text();
+
+        if(/<\?xml/.test(textHead) && textHead.includes('ECUSettingsItem')){
+          tuneFile=f;
+          continue;
+        }
+
+        if(textHead.includes('\t') && /RPM \[|Engine runtime \[/i.test(textHead)){
+          logFiles.push(f);
+          continue;
+        }
+
+        if(textHead.startsWith('Point Number,')){
+          logFiles.push(f);
+          continue;
+        }
+
+      }catch(e){
+        /* unreadable — leaves it unmatched, falls through to the normal error message below */
+      }
+
+    }
+
+  }
 
   /*
     A tune file dropped explicitly (on its own, or alongside a
@@ -2301,46 +1469,14 @@ async function handleFiles(files){
 
   }
 
-  /*
-    A 0-byte file picked from iOS Files is almost always an
-    iCloud-only placeholder that hasn't actually downloaded to the
-    device yet — reading it will just produce an empty result, and
-    the generic "log appears empty" parse error is misleading here
-    since the real fix is different (open it once in Files first).
-  */
-
-  if(logFiles[0].size===0){
-
-    alert(
-      '"'+logFiles[0].name+'" is 0 bytes — if it\'s stored in '+
-      'iCloud (not downloaded to this device), open it once in the '+
-      'Files app so it fully downloads, then try dropping it here again.'
-    );
-
-    return;
-
-  }
-
   drop.style.display='none';
   $('status').style.display='block';
-
-  /*
-    iCloud files that ARE present locally but large can still take
-    a few seconds for Safari to hand over — update the status text
-    so it doesn't look hung on slow connections/large files.
-  */
-
-  const slowReadTimer=setTimeout(()=>{
-    $('statusText').textContent='STILL READING… large files or iCloud downloads can take a moment';
-  },4000);
 
   try{
 
     $('statusText').textContent='READING MAXXECU LOG…';
 
     const extracted=await extractLogText(logFiles[0]);
-
-    clearTimeout(slowReadTimer);
 
     rawLogText=extracted.logText;
 
@@ -2372,13 +1508,11 @@ async function handleFiles(files){
 
     const parsed=parseLog(rawLogText);
 
-    const prBadges=saveHistory(parsed,lastFilename);
+    render(parsed,lastFilename);
 
-    render(parsed,lastFilename,prBadges);
+    saveHistory(parsed,lastFilename);
 
   }catch(err){
-
-    clearTimeout(slowReadTimer);
 
     console.error(err);
 
@@ -2979,6 +2113,12 @@ function refreshConfigUI(){
     }
   });
 
+  const noLogNotice=$('configNoLogNotice');
+  const pickedNotice=$('configPickedNotice');
+
+  if(noLogNotice)noLogNotice.style.display=rawHeaders.length?'none':'block';
+  if(pickedNotice)pickedNotice.style.display=rawHeaders.length?'block':'none';
+
   refreshDetectedChannels();
 
 }
@@ -3044,6 +2184,26 @@ CONFIG_IDS.forEach(id=>{
           $('status').style.display='none';
 
           render(parsed,lastFilename);
+
+          /*
+            Re-rendering while the person is sitting on the
+            Config tab used to update the (hidden) Analyze view
+            with zero visible feedback — it looked like nothing
+            happened even though the change worked. Switch back
+            to Analyze automatically so picking a channel
+            actually shows its effect immediately.
+          */
+
+          document.querySelectorAll('.tabs button')
+            .forEach(x=>x.classList.remove('active'));
+
+          document.querySelectorAll('.view')
+            .forEach(x=>x.classList.remove('active'));
+
+          document.querySelector('[data-tab="analyze"]')
+            .classList.add('active');
+
+          $('view-analyze').classList.add('active');
 
         }catch(err){
 
@@ -3134,9 +2294,24 @@ function parseLog(text){
 
   const delimiter=detectDelimiter(lines[0]);
 
-  const headers=lines[0]
-    .split(delimiter)
-    .map(x=>x.trim());
+  /*
+    Holley EFI CSV exports are comma-delimited with a very
+    specific, reliable signature: "Point Number" as the first
+    column, followed by a dedicated units row (row 2) before
+    any data starts. Route to a separate parser rather than
+    trying to force Holley's structure through the MaxxECU
+    logic — different delimiter, different header convention
+    (clean names vs "Name [id]"), and a units row that MaxxECU
+    logs don't have.
+  */
+
+  const firstHeaders=lines[0].split(delimiter).map(x=>x.trim());
+
+  if(delimiter===',' && firstHeaders[0]==='Point Number'){
+    return parseHolleyLog(lines,firstHeaders);
+  }
+
+  const headers=firstHeaders;
 
   const rows=[];
 
@@ -3152,101 +2327,67 @@ function parseLog(text){
 
     runtime:findColumn(headers,'auto',[
       'Engine runtime [',
-      'Runtime [',
-      'Elapsed Time [',
-      'Elapsed Time'
+      'Runtime ['
     ]),
 
-    /*
-      Each of these tries the exact MaxxECU convention first
-      ("Name [unit]") and falls back to plainer, brand-agnostic
-      patterns after it — other loggers (Holley EFI's CSV export,
-      Haltech, AEM, Link) tend to use parentheses, no unit suffix
-      at all, or slightly different wording. Order matters: more
-      specific patterns are tried first so an exact MaxxECU header
-      is never shadowed by a looser generic one. Anything that
-      still doesn't auto-detect can always be pointed at the right
-      column by hand in I/O Config.
-    */
-
     rpm:findColumn(headers,selected('cfgRPM'),[
-      'RPM [',
-      'RPM'
+      'RPM ['
     ]),
 
     tps:findColumn(headers,selected('cfgTPS'),[
       'Throttle position [',
-      'TPS [',
-      'Throttle Position',
-      'TPS'
+      'TPS ['
     ]),
 
     coolant:findColumn(headers,selected('cfgCoolant'),[
       'Coolant temp [',
-      'Coolant temperature [',
-      'Coolant Temp',
-      'ECT',
-      'CTS'
+      'Coolant temperature ['
     ]),
 
     transTemp:findColumn(headers,selected('cfgTrans'),[
       'Transmission Oil Temp [',
-      'Transmission oil temp [',
-      'Trans Temp',
-      'Transmission Temp'
+      'Transmission oil temp ['
     ]),
 
     oilPress:findColumn(headers,selected('cfgOil'),[
       'OilPress',
       'Oil pressure',
-      'Oil Pressure',
-      'Oil Press'
+      'Oil Pressure'
     ]),
 
     fuelPress:findColumn(headers,selected('cfgFuel'),[
       'FuelPressure',
       'Fuel pressure',
       'Primary fuel pressure [',
-      'Secondary fuel pressure [',
-      'Fuel Press'
+      'Secondary fuel pressure ['
     ]),
 
     ethanol:findColumn(headers,selected('cfgEthanol'),[
       'Ethanol concentration used',
       'Ethanol concentration',
-      'Ethanol [%',
-      'Ethanol',
-      'Flex Fuel',
-      'E85'
+      'Ethanol [%'
     ]),
 
     battery:findColumn(headers,selected('cfgBattery'),[
       'Battery voltage [',
-      'Battery Voltage',
-      'VBat',
-      'Battery'
+      'Battery Voltage'
     ]),
 
     vss:findColumn(headers,selected('cfgVSS'),[
       'VSS Speed [',
       'Vehicle speed [',
-      'Vehicle Speed',
-      'VSS'
+      'Vehicle Speed'
     ]),
 
     afr:findColumn(headers,selected('cfgAFR'),[
       'AFR [',
-      'Air/Fuel Ratio',
-      'AFR',
-      'Wideband'
+      'Air/Fuel Ratio'
     ]),
 
     targetAfr:findColumn(headers,selected('cfgTargetAFR'),[
       'Target AFR [',
       'AFR target',
-      'Target air/fuel',
-      'AFR Target',
-      'Commanded AFR'
+      'Target air/fuel'
     ]),
 
     lambda:findColumn(headers,selected('cfgLambda'),[
@@ -3268,8 +2409,7 @@ function parseLog(text){
     gear:findColumn(headers,'auto',[
       'Delayed Gear [',
       'Current gear [',
-      'Gear [',
-      'Gear'
+      'Gear ['
     ]),
 
     gearCmd:findColumn(headers,'auto',[
@@ -3352,73 +2492,6 @@ function parseLog(text){
       'AIN7 (AC Pressure)'
     ]),
 
-    map:findColumn(headers,selected('cfgMAP'),[
-      'MAP [',
-      'Manifold pressure [',
-      'Boost pressure [',
-      'MAP',
-      'Manifold Absolute Pressure',
-      'Boost'
-    ]),
-
-    iat:findColumn(headers,selected('cfgIAT'),[
-      'IAT [',
-      'Intake air temp',
-      'Air temperature [',
-      'Inlet air temp',
-      'IAT',
-      'Air Temp'
-    ]),
-
-    ignTiming:findColumn(headers,selected('cfgTiming'),[
-      'Ignition angle [',
-      'Ignition timing [',
-      'Ignition advance [',
-      'Total timing [',
-      'Ignition Timing',
-      'Spark Advance',
-      'Timing Advance'
-    ]),
-
-    /*
-      No bare 'Retard' fallback here on purpose — a real MaxxECU
-      export was found in the wild with a "Retard reason [590]"
-      channel (a bitmask/enum, not a degrees value) that a bare
-      'Retard' substring match grabbed instead of the real knock
-      channel, displaying nonsense like "1024°". 'Knock correction ['
-      is MaxxECU's actual channel name for this (confirmed against
-      a real export); the bracket keeps it from also matching
-      "Knock correction accumulated [...]" or "Knock correction 2 [...]".
-    */
-    knockRetard:findColumn(headers,selected('cfgKnockRetard'),[
-      'Knock retard [',
-      'Knock correction [',
-      'Ignition correction knock [',
-      'Knock timing [',
-      'Knock Retard'
-    ]),
-
-    /*
-      MaxxECU calculates these itself from fuel flow (not a real
-      dyno figure — no load cell, no correction factor — but it's
-      a genuinely logged value, not a guess) and logs them directly.
-      "power (kW)" is a same-signal alternate the (hp) column already
-      covers, so it's not in this list on purpose — no reason to give
-      findColumn two ways to match the same data.
-    */
-    power:findColumn(headers,selected('cfgPower'),[
-      'Fuel Flow Engine Power (hp) [',
-      'Engine Power (hp) [',
-      'Power (hp) [',
-      'Horsepower ['
-    ]),
-
-    torque:findColumn(headers,selected('cfgTorque'),[
-      'Fuel Flow Engine Torque (Nm) [',
-      'Engine Torque (Nm) [',
-      'Torque (Nm) ['
-    ]),
-
     driveMode:findColumn(headers,'auto',[
       'Dodge 8HP Drive Mode ['
     ]),
@@ -3439,39 +2512,6 @@ function parseLog(text){
 
     tractionCorrection:findColumn(headers,'auto',[
       'Traction ctrl. correction ['
-    ]),
-
-    /*
-      Nitrous activation — no standard MaxxECU channel name to
-      guess at with confidence (this is normally a user-wired
-      digital output/aux channel, named however the installer
-      named it), so the auto-detect list only tries the obvious
-      ones and leans on the manual I/O Config override for
-      anything else. Treated as "active" whenever the value is
-      >0 — works whether it's logged as a clean 0/1 digital
-      state or a duty-cycle percentage.
-    */
-    nitrous:findColumn(headers,selected('cfgNitrous'),[
-      'Nitrous 1 [',
-      'Nitrous [',
-      'N2O [',
-      'NOS ['
-    ]),
-
-    /*
-      Barometric (ambient atmospheric) pressure — feeds the
-      weather-corrected power estimate below. Distinct from MAP
-      (manifold pressure, already read as boost) even though both
-      are commonly logged in kPa absolute; on a NA engine at idle
-      they'd read close to each other, but WOT MAP is nowhere near
-      ambient, so they can't be substituted for one another.
-    */
-    baro:findColumn(headers,selected('cfgBaro'),[
-      'Baro pressure [',
-      'Barometric pressure [',
-      'Baro [',
-      'Ambient pressure [',
-      'Atmospheric pressure ['
     ])
 
   };
@@ -3533,19 +2573,11 @@ function parseLog(text){
     downshift:[],
     brakeSwitch:[],
     acPressure:[],
-    map:[],
-    iat:[],
-    ignTiming:[],
-    knockRetard:[],
-    power:[],
-    torque:[],
     driveMode:[],
     tuneSelector:[],
     selectorPosition:[],
     tractionEnabled:[],
     tractionCorrection:[],
-    nitrous:[],
-    baro:[],
     sourceColumns:cfg
   };
 
@@ -3623,29 +2655,6 @@ function parseLog(text){
   }
 
 
-  /*
-    MAP is a channel the ECU itself computes (not a user-wired AIN
-    with an arbitrary calibration table), so unlike fuel/oil/AC
-    pressure this doesn't need detectPressureConversion — MaxxECU
-    always logs it in kPa absolute. Converted to a gauge "boost"
-    reading in PSI using a fixed 14.7psi/101.3kPa sea-level baseline
-    (not corrected for altitude or weather, so treat it as approximate).
-  */
-
-  if(out.map.some(Number.isFinite)){
-    out.mapPsi=out.map.map(v=>
-      Number.isFinite(v) ? v*0.145038-14.7 : NaN
-    );
-  }
-
-
-  if(out.iat.some(Number.isFinite)){
-    out.iatF=out.iat.map(v=>
-      Number.isFinite(v)?c2f(v):NaN
-    );
-  }
-
-
   if(out.coolant.some(Number.isFinite)){
     out.coolantF=out.coolant.map(v=>
       Number.isFinite(v)?c2f(v):NaN
@@ -3659,63 +2668,228 @@ function parseLog(text){
   }
 
 
-  /* 1 Nm = 0.737562 lb-ft */
-  if(out.torque.some(Number.isFinite)){
-    out.torqueLbFt=out.torque.map(v=>
-      Number.isFinite(v)?v*0.737562:NaN
-    );
-  }
+  out.pulls=detectWotPulls(out);
+
+  out.upshiftEvents=detectButtonEvents(out,'upshift');
+  out.downshiftEvents=detectButtonEvents(out,'downshift');
+  out.tractionEvents=detectButtonEvents(out,'tractionCorrection',v=>v<0);
+
+  return out;
+}
 
 
-  /*
-    Barometric pressure — same kPa-absolute convention as MAP
-    above. Kept in kPa for the correction-factor math (weather
-    correction functions below take kPa directly) and also
-    converted to inHg purely for display, since that's the unit
-    most people actually think of ambient pressure in.
-  */
-  if(out.baro.some(Number.isFinite)){
-    out.baroInHg=out.baro.map(v=>
-      Number.isFinite(v)?v*0.2953:NaN
-    );
-  }
-
+function parseHolleyLog(lines,headers){
 
   /*
-    Some MaxxECU builds don't log a literal "Target AFR" channel at
-    all — just Lambda target and a live Stoich AFR reference (which
-    itself shifts with ethanol blend on a flex-fuel setup). Every
-    consumer of targetAfr — the chart's target line, the WOT pulls
-    table's delta column, health scoring, the AFR summary card — all
-    read this ONE array, so the fallback has to happen HERE, once,
-    rather than separately in each place. The old approach only had
-    the fallback inside the summary card's own function, so the
-    chart kept plotting nothing (or, worse, whatever a loose
-    "AFR Target"-style name match happened to grab) even after the
-    summary card had already worked out the real number.
+    Holley CSV structure: row 0 = channel names, row 1 = units
+    in brackets (e.g. "[psi]", "[°F]", blank for status/unitless
+    channels), row 2+ = data. Every value comes with its own
+    declared unit right in the file — no need to guess or
+    cross-check a calibration table the way MaxxECU sometimes
+    requires, since there's no per-user AIN relabeling involved.
+
+    This produces the SAME canonical output shape as parseLog()
+    for MaxxECU logs, so every downstream feature (health score,
+    WOT detection, charts, unit toggles) works unchanged. Fields
+    with no clean Holley equivalent (tune selector names, 8HP
+    limp-home flags, MaxxECU-style shifter DINs) are simply left
+    unpopulated — the rest of the app already handles missing
+    channels gracefully.
   */
-  out.targetAfrDerived=false;
 
-  if(!out.targetAfr.some(Number.isFinite)){
+  if(lines.length<3){
+    throw new Error('Holley log appears to be missing its units row or data rows.');
+  }
 
-    const derived=derivedTargetAfr(out);
+  const unitRow=lines[1].split(',').map(x=>x.trim());
 
-    if(derived && derived.some(Number.isFinite)){
-      out.targetAfr=derived;
-      out.targetAfrDerived=true;
+  const rows=[];
+
+  for(let i=2;i<lines.length;i++){
+    rows.push(lines[i].split(','));
+  }
+
+  const idx=name=>headers.indexOf(name);
+
+  const unitOf=name=>{
+    const i=idx(name);
+    return i>=0 && unitRow[i] ? unitRow[i].replace(/[\[\]]/g,'') : null;
+  };
+
+  const rpmIdx=idx('RPM');
+  const runtimeIdx=idx('RTC');
+
+  if(rpmIdx<0 && runtimeIdx<0){
+
+    throw new Error(
+      "This doesn't look like a Holley EFI log — couldn't find RPM or "+
+      "RTC (time) channels, which are in every Holley CSV export. "+
+      "Double-check you dropped the right file."
+    );
+
+  }
+
+  const want={
+
+    runtime:'RTC',
+    rpm:'RPM',
+    tps:'TPS',
+    coolant:'CTS',
+    matTemp:'MAT',
+    transTemp:'Line Temp',
+    oilPress:'Oil Pressure',
+    fuelPress:'Fuel Pressure',
+    ethanol:'flex fuel',
+    battery:'Battery',
+    vss:'Speed',
+    afr:'AFR',
+    targetAfr:'Target AFR',
+    lambda:'Lambda',
+    targetLambda:'Target Lambda',
+    gear:'Gear',
+    fuelDuty:'Duty Cycle',
+    revLimit:'Main Rev Limit',
+    knock:'Knock Retard',
+    errors:'Sensor Warning',
+    warnings:'Sensor Caution',
+    converterLockup:'TCC Lockup',
+    transLinePress:'Line Pressure PSI',
+    boostPsig:'Boost PSIG',
+    fuelFlow:'Fuel Flow'
+
+  };
+
+  const colIdx={};
+
+  for(const k in want)colIdx[k]=idx(want[k]);
+
+  const out={
+    headers,
+    rows,
+    rowCount:rows.length,
+    sourceFormat:'holley'
+  };
+
+  for(const k in want)out[k]=[];
+
+  for(const row of rows){
+
+    for(const k in colIdx){
+
+      const ci=colIdx[k];
+
+      if(ci<0)continue;
+
+      const v=parseFloat(row[ci]);
+
+      out[k].push(Number.isFinite(v)?v:NaN);
+
     }
+
+  }
+
+  /*
+    Pressure — trust Holley's own declared unit directly rather
+    than guessing, since there's no per-user calibration table
+    that could be mismatched the way MaxxECU's can.
+  */
+
+  function pressureToPsiFactor(unit){
+
+    if(!unit)return 1;
+
+    const u=unit.toLowerCase();
+
+    if(u.includes('kpa'))return 0.145038;
+    if(u.includes('bar'))return 14.5038;
+
+    return 1;
+
+  }
+
+  if(out.fuelPress.some(Number.isFinite)){
+
+    const factor=pressureToPsiFactor(unitOf('Fuel Pressure'));
+
+    out.fuelPressSourceUnit=factor===1?'psi':(factor>1?'bar':'kpa');
+
+    out.fuelPressPsi=out.fuelPress.map(v=>
+      Number.isFinite(v)?v*factor:NaN
+    );
+
+  }
+
+  if(out.oilPress.some(Number.isFinite)){
+
+    const factor=pressureToPsiFactor(unitOf('Oil Pressure'));
+
+    out.oilPressSourceUnit=factor===1?'psi':(factor>1?'bar':'kpa');
+
+    out.oilPressPsi=out.oilPress.map(v=>
+      Number.isFinite(v)?v*factor:NaN
+    );
+
+  }
+
+  if(out.transLinePress.some(Number.isFinite) && out.transLinePress.some(v=>v>0)){
+
+    const factor=pressureToPsiFactor(unitOf('Line Pressure PSI'));
+
+    out.transLinePressPsi=out.transLinePress.map(v=>
+      Number.isFinite(v)?v*factor:NaN
+    );
+
+  }else{
+
+    out.transLinePress=[];
+    out.transLinePressPsi=undefined;
+
+  }
+
+
+  /*
+    Temperature — Holley logs CTS/MAT/Line Temp in °F. Convert
+    to Celsius for canonical storage so the existing c2f()-based
+    display/scoring logic (shared with MaxxECU logs) works
+    unchanged.
+  */
+
+  const f2c=f=>(f-32)*5/9;
+
+  if(out.coolant.some(Number.isFinite)){
+
+    out.coolant=out.coolant.map(v=>Number.isFinite(v)?f2c(v):NaN);
+
+    out.coolantF=out.coolant.map(v=>Number.isFinite(v)?c2f(v):NaN);
+
+  }
+
+  if(out.transTemp.some(Number.isFinite)){
+
+    out.transTemp=out.transTemp.map(v=>Number.isFinite(v)?f2c(v):NaN);
+
+    out.transTempF=out.transTemp.map(v=>Number.isFinite(v)?c2f(v):NaN);
+
+  }
+
+
+  /*
+    Speed — Holley logs MPH directly; canonical storage is km/h
+    to match the shared fmtSpeed()/kmh2mph() used for MaxxECU
+    VSS data.
+  */
+
+  if(out.vss.some(Number.isFinite)){
+
+    out.vss=out.vss.map(v=>Number.isFinite(v)?v*1.609344:NaN);
 
   }
 
 
   out.pulls=detectWotPulls(out);
 
-  out.upshiftEvents=detectButtonEvents(out,'upshift');
-  out.downshiftEvents=detectButtonEvents(out,'downshift');
-  out.tractionEvents=detectButtonEvents(out,'tractionCorrection',v=>v<0);
-  out.tractionDetailEvents=detectTractionEvents(out);
-
   return out;
+
 }
 
 
@@ -3740,34 +2914,6 @@ function min(a){
 function max(a){
   const x=clean(a);
   return x.length?Math.max(...x):null;
-}
-
-/*
-  For channels that can legitimately be logged either as a
-  negative delta (e.g. "-3.2°" = 3.2° pulled) or a positive
-  magnitude depending on the ECU/logger's convention — knock
-  retard chief among them. plain max() silently returns ~0 on
-  a log where retard is stored as negative, hiding real knock
-  events. This finds whichever finite value is furthest from
-  zero, keeping its original sign, so callers can decide how to
-  present it (Math.abs() for a "degrees pulled" style readout).
-*/
-function peakMagnitude(a){
-  const x=clean(a);
-  if(!x.length)return null;
-  return x.reduce((best,v)=>Math.abs(v)>Math.abs(best)?v:best,x[0]);
-}
-
-/*
-  Null-safe Math.abs(peakMagnitude(...)) — plain Math.abs(null)
-  coerces to 0, which would make an empty/no-data slice look
-  identical to "confirmed zero knock retard" everywhere this
-  feeds a Number.isFinite() gate. Use this instead so "no data"
-  stays null all the way through.
-*/
-function peakAbs(a){
-  const v=peakMagnitude(a);
-  return v==null?null:Math.abs(v);
 }
 
 
@@ -4080,25 +3226,44 @@ function derivedTargetAfr(d){
 
 function targetAfrInfo(d){
 
-  /*
-    parseLog() already substitutes the derived (Lambda target ×
-    Stoich AFR) array into d.targetAfr itself when this build
-    doesn't log a literal Target AFR channel, and sets
-    d.targetAfrDerived accordingly — so this just reads the one
-    array everything else reads too, instead of re-deriving its
-    own separate copy.
-  */
-
   const wot=wotValues(d,'targetAfr');
 
   if(wot.length>=8){
-    return{stats:smartAfr(wot),scope:'WOT',computed:!!d.targetAfrDerived};
+    return{stats:smartAfr(wot),scope:'WOT',computed:false};
   }
 
   const full=fullValues(d,'targetAfr');
 
   if(full.length){
-    return{stats:smartAfr(full),scope:'FULL LOG',computed:!!d.targetAfrDerived};
+    return{stats:smartAfr(full),scope:'FULL LOG',computed:false};
+  }
+
+  /*
+    Raw channel not logged on this build — fall back to the
+    computed value.
+  */
+
+  const derived=derivedTargetAfr(d);
+
+  if(derived){
+
+    const derivedObj={afrDerived:derived};
+
+    const wotD=wotValues(
+      {tps:d.tps,afrDerived:derived},
+      'afrDerived'
+    );
+
+    if(wotD.length>=8){
+      return{stats:smartAfr(wotD),scope:'WOT',computed:true};
+    }
+
+    const fullD=fullValues(derivedObj,'afrDerived');
+
+    if(fullD.length){
+      return{stats:smartAfr(fullD),scope:'FULL LOG',computed:true};
+    }
+
   }
 
   return{stats:null,scope:null,computed:false};
@@ -4187,6 +3352,29 @@ function lambdaDelta(d){
 }
 
 
+function richLeanLabel(delta,tight,loose){
+
+  /*
+    Higher AFR/lambda number = leaner mixture, lower = richer —
+    true for both scales since lambda is just normalized AFR.
+    So "actual minus target > 0" means actual came out leaner
+    than commanded, and "< 0" means richer, regardless of which
+    of the two scales the delta was computed on.
+  */
+
+  if(delta==null)return{text:'',cls:''};
+
+  const mag=Math.abs(delta);
+
+  if(mag<=tight)return{text:'ON TARGET',cls:'good'};
+
+  const dir=delta>0?'LEAN':'RICH';
+
+  return{text:mag<=loose?dir:dir+' \u2014 WATCH IT',cls:mag<=loose?'warn':'bad'};
+
+}
+
+
 function detectWotPulls(d){
 
   if(!d.tps)return [];
@@ -4263,329 +3451,6 @@ function detectWotPulls(d){
 }
 
 
-/*
-  Estimated acceleration times for a single WOT pull, computed
-  straight from the logged VSS + runtime samples — no assumed
-  drivetrain/tire numbers, just trapezoidal integration of the
-  actual speed trace to get distance over time.
-
-  Deliberately returns null for anything that isn't a real
-  standing-start pull (VSS above ~5mph at the moment WOT begins) —
-  a 3rd-gear roll-on pull isn't a "0-60" and showing a number for
-  one would just be wrong, in keeping with this app's rule of
-  saying "not available" instead of guessing.
-*/
-
-function computeAccelStats(d,pull){
-
-  if(!d.vss || !d.runtime)return null;
-
-  const idx=[];
-
-  for(let i=pull.start;i<=pull.end;i++){
-    if(Number.isFinite(d.vss[i]) && Number.isFinite(d.runtime[i])){
-      idx.push(i);
-    }
-  }
-
-  if(idx.length<3)return null;
-
-  const mph=i=>d.vss[i]/1.609;
-  const t0=d.runtime[idx[0]];
-
-  if(mph(idx[0])>5)return null;
-
-  const dist=[0];
-  let distMiles=0;
-
-  for(let k=1;k<idx.length;k++){
-
-    const i0=idx[k-1];
-    const i1=idx[k];
-
-    const dtHours=(d.runtime[i1]-d.runtime[i0])/3600;
-    const avgMph=(mph(i0)+mph(i1))/2;
-
-    distMiles+=Math.max(0,avgMph*dtHours);
-    dist.push(distMiles);
-
-  }
-
-  function timeToSpeed(target){
-
-    for(let k=1;k<idx.length;k++){
-
-      const s0=mph(idx[k-1]);
-      const s1=mph(idx[k]);
-
-      if(s0<target && s1>=target){
-
-        const frac=(target-s0)/(s1-s0);
-        const tt=d.runtime[idx[k-1]]+frac*(d.runtime[idx[k]]-d.runtime[idx[k-1]]);
-
-        return tt-t0;
-
-      }
-
-    }
-
-    return null;
-
-  }
-
-  function timeToDistance(targetMiles){
-
-    for(let k=1;k<dist.length;k++){
-
-      if(dist[k-1]<targetMiles && dist[k]>=targetMiles){
-
-        const frac=(targetMiles-dist[k-1])/(dist[k]-dist[k-1]);
-        const tt=d.runtime[idx[k-1]]+frac*(d.runtime[idx[k]]-d.runtime[idx[k-1]]);
-
-        return tt-t0;
-
-      }
-
-    }
-
-    return null;
-
-  }
-
-  return{
-    zeroToSixty:timeToSpeed(60),
-    eighthMile:timeToDistance(0.125),
-    sixtyFoot:timeToDistance(60/5280)
-  };
-
-}
-
-
-/*
-  Looks specifically at the first couple seconds of a pull —
-  the part that actually decides your ET at the track, and the
-  part the rest of the app doesn't zoom in on anywhere else.
-
-  Wheel slip / converter slip detection is a heuristic, not a
-  direct measurement: without wired gear ratios there's no way
-  to know the "correct" RPM-to-speed relationship, so this
-  instead looks for the tell — RPM climbing hard while VSS is
-  still reading ~0. A clean launch has RPM and speed rising
-  together almost immediately; a slipping tire or a converter
-  that hasn't coupled yet shows RPM running away on its own
-  first. 800 RPM of "free" rise before the car is rolling is a
-  deliberately conservative bar — small amounts of pre-load rev
-  are completely normal and shouldn't get flagged every time.
-*/
-function analyzeLaunch(d,p){
-
-  if(!d.runtime || !d.rpm)return null;
-
-  const t0=d.runtime[p.start];
-  const rpm0=d.rpm[p.start];
-
-  const SLIP_RPM_THRESHOLD=800;
-  const MOTION_MPH=3;
-  const WINDOW_SECONDS=2;
-
-  let motionIdx=null;
-
-  for(let i=p.start;i<=p.end;i++){
-
-    const t=d.runtime[i];
-
-    if(Number.isFinite(t) && Number.isFinite(t0) && t-t0>WINDOW_SECONDS)break;
-
-    if(d.vss && Number.isFinite(d.vss[i]) && d.vss[i]/1.609>=MOTION_MPH){
-      motionIdx=i;
-      break;
-    }
-
-  }
-
-  let rpmRiseBeforeMotion=null;
-
-  if(motionIdx!=null && Number.isFinite(rpm0) && Number.isFinite(d.rpm[motionIdx])){
-    rpmRiseBeforeMotion=d.rpm[motionIdx]-rpm0;
-  }
-
-  const accel=computeAccelStats(d,p);
-
-  return{
-
-    launchRpm:Number.isFinite(rpm0)?rpm0:null,
-
-    launchBoost:
-      d.mapPsi && Number.isFinite(d.mapPsi[p.start])
-        ?d.mapPsi[p.start]
-        :null,
-
-    sixtyFoot:accel?accel.sixtyFoot:null,
-
-    rpmRiseBeforeMotion,
-
-    slipDetected:
-      rpmRiseBeforeMotion!=null && rpmRiseBeforeMotion>=SLIP_RPM_THRESHOLD,
-
-    /*
-      No VSS>3mph seen at all within the window despite the pull
-      lasting past it — likely a roll-on pull that started already
-      moving, or VSS just isn't logged well enough here. Either
-      way, "no motion detected" is a more honest label than
-      silently reporting slipDetected:false as if launch behavior
-      was actually confirmed clean.
-    */
-    motionConfirmed:motionIdx!=null
-
-  };
-
-}
-
-
-/*
-  Pull consistency score — how much back-to-back WOT pulls in the
-  SAME session actually agree with each other. A single pull can
-  look clean in isolation and still be a fluke (wheel spin masked
-  as extra power, a stumble that quietly cost 20hp, a knock event
-  that only happened once); comparing every pull against the rest
-  of the session is what catches that. Needs 2+ pulls with a real
-  peak-power reading to mean anything — a lone pull has nothing to
-  be consistent WITH.
-
-  Score starts at 100 and loses points for: how far peak power
-  spreads between pulls (the dominant signal — a tune/airflow/fuel
-  problem usually shows up here first), how much average WOT AFR
-  drifts pull-to-pull (points to fuel delivery or heat soak
-  inconsistency), and any pull with detected wheel/converter slip
-  (reuses analyzeLaunch's existing heuristic rather than inventing
-  a second one). Floored at 0 so a genuinely rough session doesn't
-  show a confusing negative number.
-*/
-function computePullConsistency(d){
-
-  if(!d.pulls || d.pulls.length<2)return null;
-
-  const pulls=d.pulls.map((p,i)=>{
-
-    const peakPower=d.power?max(valuesAtIndices(d.power,p.start,p.end)):null;
-    const afr=smartAfr(valuesAtIndices(d.afr,p.start,p.end));
-
-    const knockPeak=
-      d.knockRetard
-        ?peakAbs(valuesAtIndices(d.knockRetard,p.start,p.end))
-        :(d.knock?max(valuesAtIndices(d.knock,p.start,p.end)):null);
-
-    const launch=analyzeLaunch(d,p);
-
-    return{
-      i,
-      peakPower,
-      afrAvg:afr?afr.average:null,
-      knockPeak,
-      slipDetected:launch?!!launch.slipDetected:false
-    };
-
-  });
-
-  const powerVals=pulls.map(x=>x.peakPower).filter(Number.isFinite);
-
-  if(powerVals.length<2)return null;
-
-  const meanPower=avg(powerVals);
-  const maxPower=Math.max(...powerVals);
-  const minPower=Math.min(...powerVals);
-  const powerSpreadPct=meanPower?((maxPower-minPower)/meanPower)*100:0;
-
-  const afrVals=pulls.map(x=>x.afrAvg).filter(Number.isFinite);
-  const afrSpread=afrVals.length>=2?Math.max(...afrVals)-Math.min(...afrVals):0;
-
-  const slipCount=pulls.filter(x=>x.slipDetected).length;
-
-  let score=100;
-  score-=Math.min(70,powerSpreadPct*4);
-  score-=Math.min(20,afrSpread*10);
-  score-=slipCount*12;
-  score=Math.max(0,Math.round(score));
-
-  const flagged=pulls.map(x=>{
-
-    const flags=[];
-
-    if(x.peakPower!=null && maxPower && ((maxPower-x.peakPower)/maxPower)*100>=8){
-      flags.push('LOW POWER OUTLIER');
-    }
-
-    if(x.slipDetected){
-      flags.push('WHEEL/CONVERTER SLIP');
-    }
-
-    return{
-      ...x,
-      deltaFromBestPct:
-        x.peakPower!=null && maxPower
-          ?((x.peakPower-maxPower)/maxPower)*100
-          :null,
-      flags
-    };
-
-  });
-
-  return{
-    score,
-    powerSpreadPct,
-    afrSpread,
-    meanPower,
-    maxPower,
-    pulls:flagged
-  };
-
-}
-
-
-/*
-  Like detectWotPulls' TPS-active-window logic, generalized to
-  any channel — returns every contiguous {start,end} run where
-  the channel reads "active" (value>0 by default; pass a custom
-  predicate for anything else). Used for nitrous activation
-  windows, where flagged-issue checks need the FULL window (to
-  know if a lean/knock sample fell inside it), not just the
-  single rising-edge moment detectButtonEvents() reports.
-*/
-function detectActiveWindows(d,key,predicate){
-
-  const arr=d[key];
-
-  if(!arr)return [];
-
-  const test=predicate||(v=>v>0);
-
-  const windows=[];
-  let start=-1;
-
-  for(let i=0;i<arr.length;i++){
-
-    const active=Number.isFinite(arr[i]) && test(arr[i]);
-
-    if(active && start<0){
-      start=i;
-    }
-
-    if(!active && start>=0){
-      windows.push({start,end:i-1});
-      start=-1;
-    }
-
-  }
-
-  if(start>=0){
-    windows.push({start,end:arr.length-1});
-  }
-
-  return windows;
-
-}
-
-
 function detectButtonEvents(d,key,predicate){
 
   /*
@@ -4651,358 +3516,6 @@ function detectButtonEvents(d,key,predicate){
   }
 
   return events;
-}
-
-
-function detectTractionEvents(d){
-
-  /*
-    detectButtonEvents (above) only records the single sample where
-    a traction correction STARTS — enough for a count and a "peak
-    pullback across the whole log" card, but not enough to answer
-    "what did it actually do" for any one intervention. This walks
-    the full correction WINDOW via detectActiveWindows so each
-    event carries its own duration and its own peak pullback, not
-    just the log-wide peak.
-
-    Adjacent windows separated by a short gap (<3 samples "off")
-    are merged into one intervention — the same debounce window
-    detectButtonEvents uses — so the event COUNT here lines up with
-    the "N interventions" dashboard card instead of drifting apart
-    from it.
-  */
-
-  const arr=d.tractionCorrection;
-
-  if(!arr)return [];
-
-  const rawWindows=detectActiveWindows(d,'tractionCorrection',v=>v<0);
-
-  if(!rawWindows.length)return [];
-
-  const merged=[];
-
-  rawWindows.forEach(w=>{
-
-    const prev=merged[merged.length-1];
-
-    if(prev && (w.start-prev.end)<=3){
-      prev.end=w.end;
-    }else{
-      merged.push({start:w.start,end:w.end});
-    }
-
-  });
-
-  return merged.map(w=>{
-
-    let peakCorrection=0;
-    let peakIndex=w.start;
-
-    for(let i=w.start;i<=w.end;i++){
-      if(Number.isFinite(arr[i]) && arr[i]<peakCorrection){
-        peakCorrection=arr[i];
-        peakIndex=i;
-      }
-    }
-
-    const startTime=d.runtime && Number.isFinite(d.runtime[w.start])?d.runtime[w.start]:null;
-    const endTime=d.runtime && Number.isFinite(d.runtime[w.end])?d.runtime[w.end]:null;
-
-    return {
-      start:w.start,
-      end:w.end,
-      time:startTime,
-      duration:(startTime!=null && endTime!=null)?Math.max(0,endTime-startTime):null,
-      rpm:d.rpm && Number.isFinite(d.rpm[w.start])?d.rpm[w.start]:null,
-      gear:d.gear && Number.isFinite(d.gear[w.start])?d.gear[w.start]:null,
-      peakCorrection,
-      peakRpm:d.rpm && Number.isFinite(d.rpm[peakIndex])?d.rpm[peakIndex]:null
-    };
-
-  });
-
-}
-
-
-/*
-  Scans every WOT pull for sample-level trouble: real knock,
-  a lean spot vs. the logged/computed target, a boost spike
-  relative to that pull's own average (no target-boost channel
-  needed), and heat-soaked intake air. Returns one entry PER
-  FLAGGED SAMPLE — groupIssueEvents() below collapses runs of
-  consecutive flagged samples into single events so a knock
-  event that spans 8 samples doesn't turn into 8 list entries.
-
-  Thresholds are deliberately conservative (real problems, not
-  every tiny wobble) since these get surfaced directly to the
-  user as "something's wrong here" — false positives erode
-  trust in the feature fast.
-*/
-function detectPullIssues(d){
-
-  if(!d.pulls || !d.pulls.length)return [];
-
-  const KNOCK_THRESHOLD=2;
-  const LEAN_THRESHOLD=1.0;
-  const BOOST_SPIKE_DELTA=3;
-  const IAT_THRESHOLD_F=140;
-
-  /*
-    Nitrous makes lean/knock events much more dangerous (a lean
-    nitrous hit is a classic way to put a hole in a piston), so
-    the SAME checks get a tighter bar while nitrous is active —
-    flagged as their own 'nitrousLean'/'nitrousKnock' types so
-    they read as more urgent than an ordinary lean spot or knock
-    event, instead of blending in.
-  */
-  const NITROUS_KNOCK_THRESHOLD=1.5;
-  const NITROUS_LEAN_THRESHOLD=0.5;
-
-  const nitrousActive=[];
-
-  if(d.nitrous){
-
-    detectActiveWindows(d,'nitrous').forEach(w=>{
-      for(let i=w.start;i<=w.end;i++)nitrousActive[i]=true;
-    });
-
-  }
-
-  const issues=[];
-
-  d.pulls.forEach(p=>{
-
-    const boostSlice=
-      d.mapPsi?valuesAtIndices(d.mapPsi,p.start,p.end):[];
-
-    const boostAvg=boostSlice.length?avg(boostSlice):null;
-
-    for(let i=p.start;i<=p.end;i++){
-
-      const onNitrous=!!nitrousActive[i];
-
-      if(
-        d.knockRetard &&
-        Number.isFinite(d.knockRetard[i]) &&
-        Math.abs(d.knockRetard[i])>=(onNitrous?NITROUS_KNOCK_THRESHOLD:KNOCK_THRESHOLD)
-      ){
-        issues.push({i,type:onNitrous?'nitrousKnock':'knock',value:d.knockRetard[i]});
-      }
-
-      if(
-        d.afr && d.targetAfr &&
-        Number.isFinite(d.afr[i]) &&
-        Number.isFinite(d.targetAfr[i])
-      ){
-
-        const delta=d.afr[i]-d.targetAfr[i];
-
-        if(delta>=(onNitrous?NITROUS_LEAN_THRESHOLD:LEAN_THRESHOLD)){
-          issues.push({i,type:onNitrous?'nitrousLean':'lean',value:delta});
-        }
-
-      }
-
-      if(
-        d.mapPsi && boostAvg!=null &&
-        Number.isFinite(d.mapPsi[i]) &&
-        d.mapPsi[i]-boostAvg>=BOOST_SPIKE_DELTA
-      ){
-        issues.push({i,type:'boost',value:d.mapPsi[i]});
-      }
-
-      if(
-        d.iatF &&
-        Number.isFinite(d.iatF[i]) &&
-        d.iatF[i]>=IAT_THRESHOLD_F
-      ){
-        issues.push({i,type:'heat',value:d.iatF[i]});
-      }
-
-    }
-
-  });
-
-  return issues;
-
-}
-
-
-/*
-  Collapses detectPullIssues()'s per-sample flags into discrete
-  events: consecutive same-type flags (gap of 3 samples or
-  fewer) become one event, represented by whichever sample had
-  the most extreme value. A sustained lean spot lasting 40
-  samples becomes ONE "lean spot" entry, not 40.
-*/
-function groupIssueEvents(issues,d){
-
-  const byType={};
-
-  issues.forEach(x=>{
-    (byType[x.type]=byType[x.type]||[]).push(x);
-  });
-
-  const events=[];
-
-  Object.keys(byType).forEach(type=>{
-
-    const arr=byType[type].sort((a,b)=>a.i-b.i);
-
-    let run=[];
-
-    function flush(){
-
-      if(!run.length)return;
-
-      const peak=run.reduce(
-        (best,v)=>Math.abs(v.value)>Math.abs(best.value)?v:best,
-        run[0]
-      );
-
-      events.push({
-        type,
-        i:peak.i,
-        value:peak.value,
-        count:run.length,
-        time:d.runtime && Number.isFinite(d.runtime[peak.i])?d.runtime[peak.i]:null,
-        rpm:d.rpm && Number.isFinite(d.rpm[peak.i])?d.rpm[peak.i]:null
-      });
-
-      run=[];
-
-    }
-
-    arr.forEach(x=>{
-
-      if(run.length && x.i-run[run.length-1].i>3){
-        flush();
-      }
-
-      run.push(x);
-
-    });
-
-    flush();
-
-  });
-
-  return events.sort((a,b)=>a.i-b.i);
-
-}
-
-
-function formatIssueLabel(ev){
-
-  const t=ev.time!=null?fmtTime(ev.time):'—';
-  const rpmStr=ev.rpm!=null?` @ ${Math.round(ev.rpm)} RPM`:'';
-
-  switch(ev.type){
-
-    case'knock':
-      return`Knock ${Math.abs(ev.value).toFixed(1)}° at ${t}${rpmStr}`;
-
-    case'lean':
-      return`Lean spot +${ev.value.toFixed(1)} over target at ${t}${rpmStr}`;
-
-    case'boost':
-      return`Boost spike ${ev.value.toFixed(1)} psi at ${t}${rpmStr}`;
-
-    case'heat':
-      return`High IAT ${Math.round(ev.value)}°F at ${t}${rpmStr}`;
-
-    case'nitrousKnock':
-      return`NITROUS KNOCK ${Math.abs(ev.value).toFixed(1)}° at ${t}${rpmStr}`;
-
-    case'nitrousLean':
-      return`NITROUS LEAN +${ev.value.toFixed(1)} over target at ${t}${rpmStr}`;
-
-    default:
-      return`Flagged at ${t}${rpmStr}`;
-
-  }
-
-}
-
-
-/*
-  Splits a single WOT pull into per-gear segments using the
-  logged gear channel — contiguous runs of the same rounded
-  gear value. Skips neutral/invalid (<=0) samples rather than
-  treating them as their own segment, so a brief gear-channel
-  glitch mid-pull doesn't fracture a real segment in two.
-  Returns null when there's no gear channel to work with.
-*/
-function detectGearSegments(d,p){
-
-  if(!d.gear)return null;
-
-  const segments=[];
-
-  let curGear=null;
-  let segStart=null;
-
-  for(let i=p.start;i<=p.end;i++){
-
-    const raw=d.gear[i];
-    const g=Number.isFinite(raw)?Math.round(raw):null;
-
-    if(g==null || g<=0)continue;
-
-    if(g!==curGear){
-
-      if(curGear!=null){
-        segments.push({gear:curGear,start:segStart,end:i-1});
-      }
-
-      curGear=g;
-      segStart=i;
-
-    }
-
-  }
-
-  if(curGear!=null){
-    segments.push({gear:curGear,start:segStart,end:p.end});
-  }
-
-  return segments;
-
-}
-
-
-function summarizeGearSegment(d,seg){
-
-  const rpmVals=valuesAtIndices(d.rpm,seg.start,seg.end);
-  const boostVals=d.mapPsi?valuesAtIndices(d.mapPsi,seg.start,seg.end):[];
-  const knockVals=d.knockRetard?valuesAtIndices(d.knockRetard,seg.start,seg.end):[];
-  const speedVals=d.vss?valuesAtIndices(d.vss,seg.start,seg.end):[];
-
-  const t0=d.runtime?d.runtime[seg.start]:null;
-  const t1=d.runtime?d.runtime[seg.end]:null;
-
-  return{
-
-    gear:seg.gear,
-
-    duration:
-      Number.isFinite(t0) && Number.isFinite(t1)
-        ?t1-t0
-        :null,
-
-    rpmStart:rpmVals.length?rpmVals[0]:null,
-    rpmEnd:rpmVals.length?rpmVals[rpmVals.length-1]:null,
-    rpmPeak:rpmVals.length?Math.max(...rpmVals):null,
-
-    speedStart:speedVals.length?speedVals[0]:null,
-    speedEnd:speedVals.length?speedVals[speedVals.length-1]:null,
-
-    boostPeak:boostVals.length?Math.max(...boostVals):null,
-    knockPeak:knockVals.length?peakAbs(knockVals):null
-
-  };
-
 }
 
 
@@ -5355,7 +3868,7 @@ function healthScore(d){
   }
 
 
-  if(d.knock && !hideKnock){
+  if(d.knock){
 
     const mx=max(d.knock);
 
@@ -5364,26 +3877,6 @@ function healthScore(d){
       mx>0?20:100,
       5,
       mx>0?'knock activity detected':'no knock activity'
-    );
-
-  }
-
-
-  if(d.knockRetard && d.knockRetard.some(Number.isFinite) && !hideKnock){
-
-    const mx=peakAbs(d.knockRetard);
-
-    let s=100;
-
-    if(mx>6)s=25;
-    else if(mx>3)s=55;
-    else if(mx>1)s=80;
-
-    add(
-      'Knock retard',
-      s,
-      5,
-      mx>0?`up to ${Math.round(mx)}° of timing pulled for knock`:'no timing pulled for knock'
     );
 
   }
@@ -5509,15 +4002,14 @@ function healthScore(d){
 
   /*
     AFR(25) + Fuel(20) + Oil(20) + Coolant(10) + Battery(10) +
-    Trans(5) + Knock(5) + Knock retard(5) + Injector duty(5) +
-    Errors(5) = 110.
+    Trans(5) + Knock(5) + Injector duty(5) + Errors(5) = 105.
     Transmission fault/limp-home flags are intentionally NOT
     counted here — they're rare safety flags, not routine
     sensor coverage, so they'd distort "how much of the car
     did we actually measure" if included in the denominator.
   */
 
-  const possibleWeight=110;
+  const possibleWeight=105;
   const confidence=Math.round(
     Math.min(100,(totalWeight/possibleWeight)*100)
   );
@@ -5647,21 +4139,9 @@ function healthUI(h){
 }
 
 
-function render(d,filename,prBadges){
-
-  prBadges=prBadges||[];
+function render(d,filename){
 
   lastParsed=d;
-
-  /*
-    Every render() rebuilds $('results').innerHTML from scratch, so
-    any dyno-curve Chart.js instances from the PREVIOUS render are
-    now attached to orphaned canvases — destroy them here rather
-    than leaking one Chart instance per re-render (unit toggle,
-    config change, etc. all call render() again on the same log).
-  */
-  dynoCharts.forEach(c=>{if(c)c.destroy();});
-  dynoCharts=[];
 
   $('status').style.display='none';
   $('results').style.display='block';
@@ -5686,10 +4166,11 @@ function render(d,filename,prBadges){
         </div>
 
         <div class="meta">
-          ${d.rowCount.toLocaleString()} rows
+          ${d.sourceFormat==='holley'?'HOLLEY CSV':'MAXXECU'}
+          · ${d.rowCount.toLocaleString()} rows
           · ${fmtTime(duration)}
           · ${d.headers.length} CHANNELS
-          · LIVE CONFIG
+          ${d.sourceFormat==='holley'?'':'· LIVE CONFIG'}
         </div>
 
       </div>
@@ -5712,21 +4193,11 @@ function render(d,filename,prBadges){
           COPY TUNER REPORT
         </button>
 
-        <button class="btn" id="shareReportBtn">
-          SHARE
-        </button>
-
-        <button class="btn" id="sessionCardBtn" title="Share a summary image of this whole session">
-          SESSION CARD
-        </button>
-
-        <button class="btn" id="printReportBtn">
-          PRINT / SAVE PDF
-        </button>
-
+        ${d.sourceFormat==='holley'?'':`
         <button class="btn" id="configBtn">
           CONFIG I/O
         </button>
+        `}
 
         <button class="btn" id="resetBtn">
           NEW LOG
@@ -5738,41 +4209,13 @@ function render(d,filename,prBadges){
 
     ${healthUI(h)}
 
-    ${prBadges.length?`
-      <div style="background:linear-gradient(135deg,#16220f,#0f1a14);border:1px solid var(--green);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px">
-
-        <div style="font-size:13px;font-weight:700;color:var(--green);letter-spacing:.5px;margin-bottom:10px">
-          \u{1F3C6} NEW PERSONAL RECORD${prBadges.length>1?'S':''} FOR ${escapeHTML(currentVehicleLabel||'THIS VEHICLE').toUpperCase()}
-        </div>
-
-        <div style="display:flex;flex-wrap:wrap;gap:10px 24px">
-          ${prBadges.map(pr=>`
-            <div style="font-size:13px;color:var(--text)">
-              <strong>${pr.label}:</strong> ${pr.display}
-              <span style="color:var(--dim)"> (was ${pr.prevDisplay})</span>
-            </div>
-          `).join('')}
-        </div>
-
-      </div>
-    `:''}
-
     <div class="sectionTitle">
       <div>Smart dashboard</div>
       <span>NO GENERIC LOG END VALUES</span>
     </div>
-  `;
 
-  /*
-    Dashboard cards get collected into a lookup keyed by a stable
-    card key instead of concatenated straight into html — that's
-    what lets the toggle row further down show/hide them without
-    re-deriving which cards are even available for this log.
-    activeDashCards (declared near activeSeries) defaults to just
-    the 5 most tuning-relevant cards so this isn't a wall of 18
-    cards on first look; anything else is one tap away.
-  */
-  const dashCardHTML={};
+    <div class="cards">
+  `;
 
 
   if(d.rpm){
@@ -5813,7 +4256,7 @@ function render(d,filename,prBadges){
 
     }
 
-    dashCardHTML.rpm=card({
+    html+=card({
       label:'RPM (in gear)',
       value:fmtRpm(peakInGear),
       stat:'PEAK WHILE DRIVING',
@@ -5840,105 +4283,12 @@ function render(d,filename,prBadges){
   */
 
 
-  if(d.mapPsi && d.mapPsi.some(Number.isFinite)){
-
-    const peakBoost=max(d.mapPsi);
-
-    dashCardHTML.boost=card({
-      label:'Boost (MAP)',
-      value:(peakBoost>=0?'+':'')+fmtPsi(peakBoost),
-      stat:'PEAK, EST. GAUGE',
-      range:`${fmtPsi(min(d.mapPsi))} – ${fmtPsi(max(d.mapPsi))} · sea-level baseline, not altitude-corrected`,
-      icon:'B',
-      accent:'var(--orange)'
-    });
-
-  }
-
-
-  if(d.iatF && d.iatF.some(Number.isFinite)){
-
-    dashCardHTML.iat=card({
-      label:'Intake air temp',
-      value:fmtTemp(avg(d.iatF)),
-      stat:'AVERAGE',
-      range:`${fmtTemp(min(d.iatF))} – ${fmtTemp(max(d.iatF))}`,
-      icon:'IAT',
-      accent:'var(--amber)'
-    });
-
-  }
-
-
-  if(d.ignTiming && d.ignTiming.some(Number.isFinite)){
-
-    dashCardHTML.ignTiming=card({
-      label:'Ignition timing',
-      value:Math.round(max(d.ignTiming))+'°',
-      stat:'PEAK ADVANCE',
-      range:`${Math.round(min(d.ignTiming))}° – ${Math.round(max(d.ignTiming))}°`,
-      icon:'IGN',
-      accent:'var(--blue)'
-    });
-
-  }
-
-
-  if(d.knockRetard && d.knockRetard.some(Number.isFinite) && !hideKnock){
-
-    const peakRetard=peakAbs(d.knockRetard);
-
-    dashCardHTML.knock=card({
-      label:'Knock retard',
-      value:Math.round(peakRetard)+'°',
-      stat:'PEAK PULLED',
-      range:peakRetard>0
-        ?'timing was pulled for knock during this log'
-        :'no timing pulled for knock',
-      icon:'K',
-      accent:peakRetard>2?'var(--red)':'var(--green)'
-    });
-
-  }
-
-
-  if(!hidePower && d.power && d.power.some(Number.isFinite)){
-
-    const peakPower=max(d.power);
-    const peakTorque=d.torqueLbFt && d.torqueLbFt.some(Number.isFinite)
-      ?max(d.torqueLbFt)
-      :null;
-
-    dashCardHTML.power=card({
-      label:'Peak power',
-      value:Math.round(peakPower)+' hp',
-      stat:'MAXXECU CALCULATED',
-      range:peakTorque!=null
-        ?`${Math.round(peakTorque)} lb-ft peak torque · from fuel flow, not a dyno`
-        :'from fuel flow, not a dyno',
-      icon:'HP',
-      accent:'var(--green)'
-    });
-
-    /*
-      Fuel-burned was previously offered here as its own dashboard
-      card (with the BSFC-preset toggle embedded in it). Removed as
-      a dashboard card per user request to keep the default view
-      focused on what a newcomer actually needs to read a log — the
-      underlying estimate is still used in the shareable pull-card
-      image and the copyable text report, so nothing downstream
-      broke by dropping just this card.
-    */
-
-  }
-
-
   const waInfo=afrInfo(d);
   const wa=waInfo.stats;
 
   if(wa){
 
-    dashCardHTML.afr=card({
+    html+=card({
       label:waInfo.scope==='WOT'?'WOT AFR':'AFR (full log)',
       value:fmtAfr(wa.average),
       stat:'SPIKE FILTERED',
@@ -5946,57 +4296,6 @@ function render(d,filename,prBadges){
       icon:'A',
       accent:'var(--purple)'
     });
-
-  }
-
-
-  if(d.nitrous && d.nitrous.some(Number.isFinite)){
-
-    const nitrousWindows=detectActiveWindows(d,'nitrous');
-
-    if(nitrousWindows.length){
-
-      let worstLean=null;
-      let worstKnock=null;
-      let totalDuration=0;
-
-      nitrousWindows.forEach(w=>{
-
-        if(d.runtime && Number.isFinite(d.runtime[w.start]) && Number.isFinite(d.runtime[w.end])){
-          totalDuration+=d.runtime[w.end]-d.runtime[w.start];
-        }
-
-        if(d.afr && d.targetAfr){
-          for(let i=w.start;i<=w.end;i++){
-            if(Number.isFinite(d.afr[i]) && Number.isFinite(d.targetAfr[i])){
-              const delta=d.afr[i]-d.targetAfr[i];
-              if(worstLean==null || delta>worstLean)worstLean=delta;
-            }
-          }
-        }
-
-        if(d.knockRetard){
-          const k=peakAbs(valuesAtIndices(d.knockRetard,w.start,w.end));
-          if(k!=null && (worstKnock==null || k>worstKnock))worstKnock=k;
-        }
-
-      });
-
-      const nitrousDanger=(worstLean!=null && worstLean>=0.5) || (worstKnock!=null && worstKnock>=1.5);
-
-      dashCardHTML.nitrous=card({
-        label:nitrousDanger?'Nitrous ⚠':'Nitrous',
-        value:`${nitrousWindows.length} activation${nitrousWindows.length===1?'':'s'}`,
-        stat:`${fmtTime(totalDuration)} TOTAL ACTIVE TIME`,
-        range:
-          worstLean!=null
-            ?`worst AFR during N2O: ${worstLean>=0?'+':''}${worstLean.toFixed(1)} vs. target${worstKnock&&worstKnock>0?` · ${Math.round(worstKnock)}° knock seen`:''}`
-            :'no AFR data during activation',
-        icon:'N2O',
-        accent:nitrousDanger?'var(--red)':'var(--green)'
-      });
-
-    }
 
   }
 
@@ -6009,7 +4308,7 @@ function render(d,filename,prBadges){
 
     if(fp){
 
-      dashCardHTML.fuelPress=card({
+      html+=card({
         label:mismatch?'Fuel pressure \u26a0':'Fuel pressure',
         value:mismatch?'UNRELIABLE':fmtPsi(fp.average),
         stat:mismatch?'CALIBRATION MISMATCH':`AUTO-DETECTED ${d.fuelPressSourceUnit?d.fuelPressSourceUnit.toUpperCase():''} SOURCE`,
@@ -6029,7 +4328,7 @@ function render(d,filename,prBadges){
 
     const oilMismatch=calibrationMismatch(d,'oilPress','cfgOil');
 
-    dashCardHTML.oilPress=card({
+    html+=card({
       label:oilMismatch?'Oil pressure \u26a0':'Oil pressure',
       value:oilMismatch?'UNRELIABLE':fmtPsi(avg(d.oilPressPsi)),
       stat:oilMismatch?'CALIBRATION MISMATCH':`AUTO-DETECTED ${d.oilPressSourceUnit?d.oilPressSourceUnit.toUpperCase():''} SOURCE`,
@@ -6045,7 +4344,7 @@ function render(d,filename,prBadges){
 
   if(d.coolantF){
 
-    dashCardHTML.coolant=card({
+    html+=card({
       label:'Coolant',
       value:fmtTemp(avg(d.coolantF)),
       stat:'AVERAGE',
@@ -6059,7 +4358,7 @@ function render(d,filename,prBadges){
 
   if(d.transTempF){
 
-    dashCardHTML.transTemp=card({
+    html+=card({
       label:'Transmission',
       value:fmtTemp(avg(d.transTempF)),
       stat:'AVERAGE',
@@ -6073,7 +4372,7 @@ function render(d,filename,prBadges){
 
   if(d.battery){
 
-    dashCardHTML.battery=card({
+    html+=card({
       label:'Battery',
       value:fmtVolt(avg(d.battery)),
       stat:'AVERAGE',
@@ -6094,7 +4393,7 @@ function render(d,filename,prBadges){
 
     const peakDuty=max(d.fuelDuty);
 
-    dashCardHTML.injDuty=card({
+    html+=card({
       label:'Injector duty',
       value:fmtPct(peakDuty),
       stat:'PEAK',
@@ -6110,7 +4409,7 @@ function render(d,filename,prBadges){
 
   if(d.ethanol){
 
-    dashCardHTML.ethanol=card({
+    html+=card({
       label:'Ethanol',
       value:fmtPct(avg(d.ethanol)),
       stat:'AVERAGE',
@@ -6124,7 +4423,7 @@ function render(d,filename,prBadges){
 
   if(d.vss){
 
-    dashCardHTML.vss=card({
+    html+=card({
       label:'Vehicle speed',
       value:fmtSpeed(max(d.vss)),
       stat:'PEAK',
@@ -6138,7 +4437,7 @@ function render(d,filename,prBadges){
 
   if(d.gear && d.gear.some(Number.isFinite)){
 
-    dashCardHTML.gear=card({
+    html+=card({
       label:'Gear range',
       value:`${Math.round(min(d.gear))}–${Math.round(max(d.gear))}`,
       stat:'ACTUAL GEAR',
@@ -6150,54 +4449,38 @@ function render(d,filename,prBadges){
   }
 
 
-  /*
-    Converter lockup and line pressure dashboard cards removed per
-    user request — trimming default-visible clutter to keep the
-    tool focused on making a log easy to read for someone new to
-    it. The underlying d.converterLockup channel is still parsed
-    and still used in the copyable text report.
-  */
+  if(d.converterLockup && d.converterLockup.some(Number.isFinite)){
 
+    const engaged=d.converterLockup.filter(Number.isFinite);
+    const pct=engaged.filter(v=>v>0).length/engaged.length*100;
 
-  {
-
-    const availableDash=DASH_CARD_META.filter(m=>dashCardHTML[m.key]);
-
-    if(availableDash.length){
-
-      html+=`<div class="actions" style="flex-wrap:wrap;margin-bottom:14px">`;
-
-      html+=availableDash.map(m=>`
-        <button
-          class="toggle dashToggle ${activeDashCards[m.key]?'on':''}"
-          data-dashkey="${m.key}"
-        >${escapeHTML(m.label)}</button>
-      `).join('');
-
-      html+=`</div>`;
-
-    }
-
-    html+=`<div class="cards">`;
-
-    let anyDashShown=false;
-
-    availableDash.forEach(m=>{
-
-      if(activeDashCards[m.key]){
-        html+=dashCardHTML[m.key];
-        anyDashShown=true;
-      }
-
+    html+=card({
+      label:'Converter lockup',
+      value:Math.round(pct)+'%',
+      stat:'OF LOG ENGAGED',
+      range:'torque converter lockup duty',
+      icon:'L',
+      accent:'var(--purple)'
     });
 
-    html+=`</div>`;
+  }
 
-    if(availableDash.length && !anyDashShown){
-      html+=`<div class="empty" style="margin-bottom:20px">All dashboard cards are hidden — tap one above to show it.</div>`;
-    }
+
+  if(d.transLinePressPsi && d.transLinePressPsi.some(Number.isFinite)){
+
+    html+=card({
+      label:'Line pressure',
+      value:fmtPsi(max(d.transLinePressPsi)),
+      stat:'PEAK',
+      range:`${fmtPsi(min(d.transLinePressPsi))} – ${fmtPsi(max(d.transLinePressPsi))}`,
+      icon:'P',
+      accent:'var(--cyan)'
+    });
 
   }
+
+
+  html+=`</div>`;
 
 
   const afrI=afrInfo(d);
@@ -6251,6 +4534,7 @@ function render(d,filename,prBadges){
 
         <div class="targetBox">
           <div class="targetLabel">AFR: actual − target</div>
+          ${(()=>{const rl=richLeanLabel(delta,.5,1); return rl.text?`<div class="richLeanBadge ${rl.cls}">${rl.text}</div>`:'';})()}
           <div class="targetMain delta ${
             delta==null?'':Math.abs(delta)<=.5?'good':
             Math.abs(delta)<=1?'warn':'bad'
@@ -6258,7 +4542,7 @@ function render(d,filename,prBadges){
             ${delta==null?'N/A':(delta>0?'+':'')+delta.toFixed(2)}
           </div>
           <div class="targetSub">
-            ${delta==null?'needs both actual and target':'AFR difference'}
+            ${delta==null?'needs both actual and target':'positive = leaner than target, negative = richer'}
           </div>
         </div>
 
@@ -6284,6 +4568,7 @@ function render(d,filename,prBadges){
 
         <div class="targetBox">
           <div class="targetLabel">Lambda: actual − target</div>
+          ${(()=>{const rl=richLeanLabel(ldelta,.03,.06); return rl.text?`<div class="richLeanBadge ${rl.cls}">${rl.text}</div>`:'';})()}
           <div class="targetMain delta ${
             ldelta==null?'':Math.abs(ldelta)<=.03?'good':
             Math.abs(ldelta)<=.06?'warn':'bad'
@@ -6291,7 +4576,7 @@ function render(d,filename,prBadges){
             ${ldelta==null?'N/A':(ldelta>0?'+':'')+ldelta.toFixed(3)}
           </div>
           <div class="targetSub">
-            ${ldelta==null?'needs both actual and target':'lambda difference'}
+            ${ldelta==null?'needs both actual and target':'matches MaxxECU\u2019s own \u201cLambda target error\u201d channel exactly \u2014 verified sample-for-sample on a real log'}
           </div>
         </div>
 
@@ -6314,17 +4599,9 @@ function render(d,filename,prBadges){
 
         <div class="toggles" id="seriesToggles"></div>
 
-        <div style="display:flex;gap:7px;flex-wrap:wrap">
-
-          <button class="btn" id="resetZoom">
-            RESET ZOOM
-          </button>
-
-          <button class="btn" id="saveChartBtn">
-            SAVE CHART IMAGE
-          </button>
-
-        </div>
+        <button class="btn" id="resetZoom">
+          RESET ZOOM
+        </button>
 
       </div>
 
@@ -6381,15 +4658,6 @@ function render(d,filename,prBadges){
   html+=`</div>`;
 
 
-  /*
-    Filled inside the block below, but declared out here so the
-    button-wiring code further down (after $('results').innerHTML=html
-    puts these buttons in the DOM) can still reach it — a const
-    declared inside the if(d.pulls.length){...} block would fall out
-    of scope the moment that block ends.
-  */
-  let pullCardData=[];
-
   if(d.pulls.length){
 
     html+=`
@@ -6412,12 +4680,6 @@ function render(d,filename,prBadges){
               <th>AFR</th>
               <th>Target</th>
               <th>Δ</th>
-              <th>0-60</th>
-              <th>1/8 mi</th>
-              <th>Boost</th>
-              ${hideKnock?'':'<th>Knock</th>'}
-              <th>HP</th>
-              <th>Card</th>
             </tr>
           </thead>
 
@@ -6433,40 +4695,6 @@ function render(d,filename,prBadges){
         a && t
           ?a.average-t.average
           :null;
-
-      const accel=computeAccelStats(d,p);
-
-      const pullBoost=
-        d.mapPsi
-          ?max(valuesAtIndices(d.mapPsi,p.start,p.end))
-          :null;
-
-      const pullKnock=
-        d.knockRetard
-          ?peakAbs(valuesAtIndices(d.knockRetard,p.start,p.end))
-          :(d.knock?max(valuesAtIndices(d.knock,p.start,p.end)):null);
-
-      const pullPower=
-        d.power
-          ?max(valuesAtIndices(d.power,p.start,p.end))
-          :null;
-
-      const pullTorque=
-        d.torqueLbFt
-          ?max(valuesAtIndices(d.torqueLbFt,p.start,p.end))
-          :null;
-
-      const pullRpm=
-        d.rpm
-          ?max(valuesAtIndices(d.rpm,p.start,p.end))
-          :null;
-
-      const pullSpeed=
-        d.vss
-          ?max(valuesAtIndices(d.vss,p.start,p.end))
-          :null;
-
-      pullCardData.push({p,i,a,t,delta,accel,pullBoost,pullKnock,pullPower,pullTorque,pullRpm,pullSpeed});
 
       html+=`
 
@@ -6499,40 +4727,6 @@ function render(d,filename,prBadges){
               :(delta>0?'+':'')+delta.toFixed(2)}
           </td>
 
-          <td>
-            ${accel && accel.zeroToSixty!=null
-              ?accel.zeroToSixty.toFixed(2)+'s'
-              :'—'}
-          </td>
-
-          <td>
-            ${accel && accel.eighthMile!=null
-              ?accel.eighthMile.toFixed(2)+'s'
-              :'—'}
-          </td>
-
-          <td>
-            ${Number.isFinite(pullBoost)?fmtPsi(pullBoost):'—'}
-          </td>
-
-          ${hideKnock?'':`
-            <td>
-              ${Number.isFinite(pullKnock)
-                ?(pullKnock>0?'⚠ '+Math.round(pullKnock):'clean')
-                :'—'}
-            </td>
-          `}
-
-          <td>
-            ${Number.isFinite(pullPower)?Math.round(pullPower):'—'}
-          </td>
-
-          <td>
-            <button class="btn" id="pullCard-${i}" style="padding:4px 8px;font-size:9px" title="Share this pull as an image">
-              CARD
-            </button>
-          </td>
-
         </tr>
       `;
 
@@ -6543,370 +4737,6 @@ function render(d,filename,prBadges){
         </table>
       </div>
     `;
-
-  }
-
-
-  /*
-    Flagged issues — every knock/lean/boost-spike/heat event
-    found across all pulls, collapsed to one entry per event.
-    Stashed on d._issueEvents so buildChart() (called later,
-    at the bottom of render()) can drop matching markers on the
-    timeline chart without recomputing any of this.
-  */
-  const issueEvents=groupIssueEvents(detectPullIssues(d),d)
-    .filter(ev=>!hideKnock || (ev.type!=='knock' && ev.type!=='nitrousKnock'));
-
-  d._issueEvents=issueEvents;
-
-  if(issueEvents.length){
-
-    const issueColor={
-      knock:'var(--red)',
-      lean:'var(--amber)',
-      boost:'var(--purple)',
-      heat:'var(--orange)',
-      nitrousKnock:'#ff00c8',
-      nitrousLean:'#ff00c8'
-    };
-
-    html+=`
-      <div class="sectionTitle">
-        <div>Flagged issues</div>
-        <span>${issueEvents.length} EVENT${issueEvents.length===1?'':'S'} DETECTED</span>
-      </div>
-
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
-        ${issueEvents.map(ev=>`
-          <div style="font-size:12px;padding:6px 10px;border-radius:8px;border:1px solid ${issueColor[ev.type]||'var(--line)'};color:${issueColor[ev.type]||'var(--text)'};background:var(--panel2)">
-            ⚠ ${escapeHTML(formatIssueLabel(ev))}${ev.count>1?` · ×${ev.count} samples`:''}
-          </div>
-        `).join('')}
-      </div>
-    `;
-
-  }
-
-
-  /*
-    Launch analysis — the first couple seconds of each pull,
-    since that's what actually decides ET at the track and
-    nothing else on the page zooms in on it specifically.
-    Only listed for standing-start pulls (analyzeLaunch requires
-    d.vss+d.runtime and computeAccelStats already restricts
-    zeroToSixty/eighthMile/sixtyFoot to genuine standing starts —
-    a 3rd-gear roll-on pull correctly shows blanks here rather
-    than a made-up number).
-  */
-  const launchRows=d.pulls
-    .map((p,i)=>({i,launch:analyzeLaunch(d,p)}))
-    .filter(x=>x.launch);
-
-  if(launchRows.length){
-
-    html+=`
-      <div class="sectionTitle">
-        <div>Launch analysis</div>
-        <span>${launchRows.length} PULL${launchRows.length===1?'':'S'}</span>
-      </div>
-
-      <div class="tableWrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Pull</th>
-              <th>Launch RPM</th>
-              <th>Launch boost</th>
-              <th>60-ft</th>
-              <th>Launch behavior</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${launchRows.map(({i,launch})=>`
-              <tr>
-                <td>#${i+1}</td>
-                <td>${launch.launchRpm!=null?Math.round(launch.launchRpm):'—'}</td>
-                <td>${launch.launchBoost!=null?fmtPsi(launch.launchBoost):'—'}</td>
-                <td>${launch.sixtyFoot!=null?launch.sixtyFoot.toFixed(2)+'s':'—'}</td>
-                <td>
-                  ${
-                    !launch.motionConfirmed
-                      ?'no clean launch detected'
-                      :launch.slipDetected
-                        ?`⚠ possible wheel/converter slip · +${Math.round(launch.rpmRiseBeforeMotion)} RPM before moving`
-                        :'clean'
-                  }
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-
-      <div style="font-size:11px;color:var(--dim);margin:-8px 0 20px">
-        Slip detection is a heuristic (RPM rising hard before the car is actually
-        rolling), not a direct wheel-speed-vs-driveshaft measurement — treat a
-        flag here as "worth a look," not a confirmed diagnosis.
-      </div>
-    `;
-
-  }
-
-
-  /* WEATHER-CORRECTED POWER */
-
-  const weatherRows=d.pulls
-    .map((p,i)=>({i,wc:weatherCorrectedPower(d,[p])}))
-    .filter(x=>x.wc);
-
-  if(weatherRows.length){
-
-    const isBoosted=d.mapPsi && d.mapPsi.some(v=>Number.isFinite(v) && v>3);
-
-    html+=`
-      <div class="sectionTitle">
-        <div>Weather-corrected power</div>
-        <span>${weatherRows.length} PULL${weatherRows.length===1?'':'S'}</span>
-      </div>
-
-      <div class="tableWrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Pull</th>
-              <th>Baro</th>
-              <th>IAT</th>
-              <th>CF</th>
-              <th>Raw peak HP</th>
-              <th>Corrected HP</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${weatherRows.map(({i,wc})=>`
-              <tr>
-                <td>#${i+1}</td>
-                <td>${wc.avgBaro!=null?(wc.avgBaro*0.2953).toFixed(2)+' inHg':'—'}</td>
-                <td>${fmtTemp(c2f(wc.avgIat))}</td>
-                <td>${wc.cf.toFixed(3)}</td>
-                <td>${wc.peakPower!=null?Math.round(wc.peakPower):'—'}</td>
-                <td><b>${wc.correctedPower!=null?Math.round(wc.correctedPower):'—'}</b></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-
-      <div class="hint">
-        Corrected to standard conditions (101.325 kPa / 60°F) using an SAE-style
-        dry-air approximation — there's no logged humidity/dewpoint channel, so
-        treat this as "in the right neighborhood," not a lab-grade number.
-        ${isBoosted?' This car looks boosted — a forced-induction ECU targets an absolute boost pressure regardless of weather, so density correction means a lot less here than it does on an N/A engine.':''}
-      </div>
-    `;
-
-  }
-
-
-  /* PULL CONSISTENCY */
-
-  const consistency=computePullConsistency(d);
-
-  if(consistency){
-
-    const scoreLabel=
-      consistency.score>=90?'very consistent':
-      consistency.score>=75?'mostly consistent':
-      consistency.score>=50?'somewhat inconsistent':
-      'inconsistent — worth digging into';
-
-    const scoreColor=
-      consistency.score>=90?'var(--green)':
-      consistency.score>=75?'var(--amber)':
-      'var(--red)';
-
-    html+=`
-      <div class="sectionTitle">
-        <div>Pull consistency</div>
-        <span>${consistency.pulls.length} PULLS COMPARED</span>
-      </div>
-
-      <div class="cards" style="margin-bottom:16px">
-        ${card({
-          label:'Consistency score',
-          value:consistency.score+'/100',
-          stat:scoreLabel.toUpperCase(),
-          range:`peak power spread ${consistency.powerSpreadPct.toFixed(1)}% across this session`,
-          icon:'C',
-          accent:scoreColor
-        })}
-      </div>
-
-      <div class="tableWrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Pull</th>
-              <th>Peak HP</th>
-              <th>Δ from best</th>
-              <th>Flags</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${consistency.pulls.map(x=>`
-              <tr>
-                <td>#${x.i+1}</td>
-                <td>${x.peakPower!=null?Math.round(x.peakPower):'—'}</td>
-                <td>${x.deltaFromBestPct!=null?(x.deltaFromBestPct>=0?'best':x.deltaFromBestPct.toFixed(1)+'%'):'—'}</td>
-                <td>${x.flags.length?x.flags.join(', '):'—'}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-
-      <div class="hint">
-        Score weighs peak-power spread most heavily, with smaller penalties for
-        WOT AFR drift and any pull with detected wheel/converter slip. A low
-        score means the pulls disagree with each other, not necessarily that
-        any one of them is "wrong" — check the flagged pulls first.
-      </div>
-    `;
-
-  }
-
-
-  /* GEAR-BY-GEAR BREAKDOWN */
-
-  const gearBreakdowns=d.pulls
-    .map((p,i)=>{
-      const segs=detectGearSegments(d,p);
-      return segs && segs.length>=2
-        ?{i,segs:segs.map(s=>summarizeGearSegment(d,s))}
-        :null;
-    })
-    .filter(Boolean);
-
-  if(gearBreakdowns.length){
-
-    html+=`
-      <div class="sectionTitle">
-        <div>Gear-by-gear breakdown</div>
-        <span>${gearBreakdowns.length} MULTI-GEAR PULL${gearBreakdowns.length===1?'':'S'}</span>
-      </div>
-    `;
-
-    gearBreakdowns.forEach(gb=>{
-
-      html+=`
-        <details style="margin-bottom:10px">
-          <summary style="cursor:pointer;color:var(--dim);font-size:12px;padding:8px 0;font-weight:700;letter-spacing:.3px">
-            PULL #${gb.i+1} — ${gb.segs.length} GEARS (tap to expand)
-          </summary>
-
-          <div class="tableWrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Gear</th>
-                  <th>Time in gear</th>
-                  <th>RPM in</th>
-                  <th>RPM out</th>
-                  <th>Peak RPM</th>
-                  <th>Speed in</th>
-                  <th>Speed out</th>
-                  <th>Boost peak</th>
-                  ${hideKnock?'':'<th>Knock</th>'}
-                </tr>
-              </thead>
-              <tbody>
-                ${gb.segs.map(s=>`
-                  <tr>
-                    <td>${s.gear}</td>
-                    <td>${fmtTime(s.duration)}</td>
-                    <td>${s.rpmStart!=null?Math.round(s.rpmStart):'—'}</td>
-                    <td>${s.rpmEnd!=null?Math.round(s.rpmEnd):'—'}</td>
-                    <td>${s.rpmPeak!=null?Math.round(s.rpmPeak):'—'}</td>
-                    <td>${s.speedStart!=null?fmtSpeed(s.speedStart):'—'}</td>
-                    <td>${s.speedEnd!=null?fmtSpeed(s.speedEnd):'—'}</td>
-                    <td>${s.boostPeak!=null?fmtPsi(s.boostPeak):'—'}</td>
-                    ${hideKnock?'':`<td>${s.knockPeak!=null && s.knockPeak>0?'⚠ '+Math.round(s.knockPeak):'clean'}</td>`}
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        </details>
-      `;
-
-    });
-
-  }
-
-
-  /*
-    Power/torque curve per pull — RPM on the x-axis instead of
-    time, so you can actually see WHERE in the rev range the
-    power is made instead of just a single peak number. Only
-    listed for pulls with real power-channel coverage; the
-    canvases are built AFTER $('results').innerHTML is set below
-    (a canvas can't be drawn on before it exists in the DOM).
-  */
-  const dynoPullIndices=(d.power && !hidePower)
-    ?d.pulls
-      .map((p,i)=>i)
-      .filter(i=>{
-        const p=d.pulls[i];
-        let count=0;
-        for(let k=p.start;k<=p.end;k++){
-          if(Number.isFinite(d.rpm?.[k]) && Number.isFinite(d.power[k]))count++;
-        }
-        return count>=5;
-      })
-    :[];
-
-  if(dynoPullIndices.length){
-
-    html+=`
-      <div class="sectionTitle">
-        <div>Power / torque curves</div>
-        <span>${dynoPullIndices.length} PULL${dynoPullIndices.length===1?'':'S'}</span>
-      </div>
-
-      <div style="font-size:11px;color:var(--dim);margin:-6px 0 12px">
-        Engine-side estimate from MaxxECU's fuel-flow calculation, not a wheel-HP
-        reading off a chassis dyno — no drivetrain loss is subtracted, so expect
-        this to read higher than what a dyno would show at the wheels.
-      </div>
-    `;
-
-    if(dynoPullIndices.length>=2){
-
-      html+=`
-        <div class="chartPanel" style="margin-bottom:16px">
-          <div style="font-size:11px;color:var(--dim);margin-bottom:8px;font-weight:700;letter-spacing:.3px">
-            OVERLAY — ALL PULLS, POWER ONLY
-          </div>
-          <canvas id="dynoOverlayChart" style="height:260px!important"></canvas>
-        </div>
-      `;
-
-    }
-
-    dynoPullIndices.forEach(i=>{
-
-      html+=`
-        <details style="margin-bottom:10px" ${dynoPullIndices.length===1?'open':''}>
-          <summary style="cursor:pointer;color:var(--dim);font-size:12px;padding:8px 0;font-weight:700;letter-spacing:.3px">
-            PULL #${i+1} — POWER/TORQUE VS RPM (tap to expand)
-          </summary>
-
-          <div class="chartPanel">
-            <canvas id="dynoChart-${i}" style="height:260px!important"></canvas>
-          </div>
-        </details>
-      `;
-
-    });
 
   }
 
@@ -7119,54 +4949,6 @@ function render(d,filename,prBadges){
 
     }
 
-    if(d.tractionDetailEvents && d.tractionDetailEvents.length){
-
-      html+=`
-        <div class="sectionTitle">
-          <div>Traction control events</div>
-          <span>${d.tractionDetailEvents.length} INTERVENTION${d.tractionDetailEvents.length===1?'':'S'}</span>
-        </div>
-
-        <div class="tableWrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Gear</th>
-                <th>RPM at trigger</th>
-                <th>Duration</th>
-                <th>Peak pullback</th>
-              </tr>
-            </thead>
-            <tbody>
-      `;
-
-      d.tractionDetailEvents.forEach(e=>{
-
-        html+=`
-          <tr>
-            <td>${fmtTime(e.time)}</td>
-            <td>${e.gear!=null?Math.round(e.gear):'—'}</td>
-            <td>${e.rpm!=null?Math.round(e.rpm)+' RPM':'—'}</td>
-            <td>${e.duration!=null?e.duration.toFixed(2)+'s':'—'}</td>
-            <td>${fmtAfr(e.peakCorrection)}</td>
-          </tr>
-        `;
-
-      });
-
-      html+=`
-            </tbody>
-          </table>
-        </div>
-
-        <div class="hint">
-          "Peak pullback" is the raw traction-correction channel value from your tune — more negative means a bigger cut. Duration is how long that correction stayed active in one continuous intervention (short gaps are merged, same debounce as the intervention count above).
-        </div>
-      `;
-
-    }
-
   }
 
 
@@ -7182,20 +4964,6 @@ function render(d,filename,prBadges){
 
 
   $('results').innerHTML=html;
-
-
-  document.querySelectorAll('.dashToggle').forEach(btn=>{
-
-    btn.onclick=()=>{
-
-      activeDashCards[btn.dataset.dashkey]=!activeDashCards[btn.dataset.dashkey];
-
-      render(d,filename,prBadges);
-
-    };
-
-  });
-
 
 
   $('resetBtn').onclick=()=>{
@@ -7214,9 +4982,6 @@ function render(d,filename,prBadges){
       chart.destroy();
       chart=null;
     }
-
-    dynoCharts.forEach(c=>{if(c)c.destroy();});
-    dynoCharts=[];
 
   };
 
@@ -7245,22 +5010,26 @@ function render(d,filename,prBadges){
   });
 
 
-  $('configBtn').onclick=()=>{
+  if($('configBtn')){
 
-    document.querySelectorAll('.tabs button')
-      .forEach(x=>x.classList.remove('active'));
+    $('configBtn').onclick=()=>{
 
-    document.querySelectorAll('.view')
-      .forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.tabs button')
+        .forEach(x=>x.classList.remove('active'));
 
-    document.querySelector('[data-tab="config"]')
-      .classList.add('active');
+      document.querySelectorAll('.view')
+        .forEach(x=>x.classList.remove('active'));
 
-    $('view-config').classList.add('active');
+      document.querySelector('[data-tab="config"]')
+        .classList.add('active');
 
-    refreshConfigUI();
+      $('view-config').classList.add('active');
 
-  };
+      refreshConfigUI();
+
+    };
+
+  }
 
 
   $('copyReportBtn').onclick=async()=>{
@@ -7286,1179 +5055,7 @@ function render(d,filename,prBadges){
   };
 
 
-  $('shareReportBtn').onclick=async()=>{
-
-    const text=generateReport(d,h);
-    const shareTitle='PULLSHEET report — '+filename;
-
-    /*
-      Web Share API — this is what makes "SHARE" actually open the
-      native iOS share sheet (Messages, AirDrop, Files, etc.)
-      instead of just copying. Falls back to clipboard copy on
-      desktop browsers / older Safari where it isn't available.
-    */
-
-    if(navigator.share){
-
-      try{
-
-        await navigator.share({
-          title:shareTitle,
-          text
-        });
-
-      }catch(err){
-
-        /* AbortError just means the user cancelled the share sheet */
-        if(err.name!=='AbortError'){
-          console.error(err);
-        }
-
-      }
-
-    }else{
-
-      try{
-
-        await navigator.clipboard.writeText(text);
-        alert('Sharing isn\'t available in this browser — report copied to your clipboard instead.');
-
-      }catch(e){
-
-        alert('Could not share or copy the report.');
-
-      }
-
-    }
-
-  };
-
-
-  $('printReportBtn').onclick=()=>{
-
-    $('printArea').textContent=generateReport(d,h);
-    window.print();
-
-  };
-
-
-  $('saveChartBtn').onclick=async()=>{
-
-    if(!chart)return;
-
-    const dataUrl=chart.toBase64Image('image/png',1);
-    const cleanName=filename.replace(/\.(MaxxECU-Zip-log|MaxxECU-Log|log|zip|csv)$/i,'');
-
-    await shareOrDownloadImage(dataUrl,cleanName+'-chart.png');
-
-  };
-
-
-  $('sessionCardBtn').onclick=async()=>{
-
-    const dataUrl=buildSessionCardImage(d,h,prBadges,d._issueEvents,filename);
-    const cleanName=filename.replace(/\.(MaxxECU-Zip-log|MaxxECU-Log|log|zip|csv)$/i,'');
-
-    await shareOrDownloadImage(dataUrl,cleanName+'-session-card.png');
-
-  };
-
-
-  /*
-    Power/torque-vs-RPM curve per pull. Built here rather than
-    inline where the <details> HTML was written, since the
-    canvases don't exist in the DOM until $('results').innerHTML
-    is actually set — which already happened above this point.
-  */
-  dynoPullIndices.forEach(i=>{
-
-    const c=buildDynoCurve(d,d.pulls[i],'dynoChart-'+i);
-
-    if(c)dynoCharts.push(c);
-
-  });
-
-  if(dynoPullIndices.length>=2){
-
-    const overlay=buildDynoOverlayChart(d,dynoPullIndices,'dynoOverlayChart');
-
-    if(overlay)dynoCharts.push(overlay);
-
-  }
-
-
-  /*
-    One CARD button per detected WOT pull — generates a square,
-    social-friendly summary image (0-60/eighth mile, peak boost,
-    peak knock, peak power) for that specific pull and shares/
-    downloads it the same way the chart image does. pullCardData
-    was filled above while the table HTML was being built, so no
-    re-computation is needed here.
-  */
-  pullCardData.forEach(pc=>{
-
-    const btn=$('pullCard-'+pc.i);
-
-    if(!btn)return;
-
-    btn.onclick=async()=>{
-
-      const dataUrl=buildPullCardImage(d,pc,filename);
-
-      const cleanName=filename.replace(/\.(MaxxECU-Zip-log|MaxxECU-Log|log|zip|csv)$/i,'');
-
-      await shareOrDownloadImage(dataUrl,cleanName+'-pull'+(pc.i+1)+'-card.png');
-
-    };
-
-  });
-
-
   buildChart(d);
-}
-
-
-/*
-  Shared by the chart-image button and every per-pull CARD button:
-  prefer handing the image straight to the native share sheet
-  (drops right into Messages/AirDrop/Files on iOS) and only fall
-  back to a plain download when the browser can't share files —
-  canShare with a files array is the correct feature check here,
-  navigator.share alone isn't enough since text-only sharing is
-  more widely supported than file sharing.
-*/
-async function shareOrDownloadImage(dataUrl,imgFilename){
-
-  try{
-
-    const blob=await (await fetch(dataUrl)).blob();
-    const file=new File([blob],imgFilename,{type:'image/png'});
-
-    if(navigator.canShare && navigator.canShare({files:[file]})){
-
-      await navigator.share({
-        files:[file],
-        title:imgFilename
-      });
-
-      return;
-
-    }
-
-  }catch(err){
-
-    if(err.name==='AbortError')return;
-    console.error(err);
-
-  }
-
-  const a=document.createElement('a');
-  a.href=dataUrl;
-  a.download=imgFilename;
-  a.click();
-
-}
-
-
-/*
-  Draws a small power-vs-RPM curve straight onto an existing
-  Canvas 2D context — used inside the shareable pull/session
-  card images (buildPullCardImage / buildSessionCardImage),
-  which are hand-drawn Canvas 2D art already, not Chart.js.
-  Torque is deliberately left off this mini version: sharing one
-  y-axis with power at card-thumbnail size makes the power curve
-  look flatter than it is (torque's raw numbers usually run
-  higher than power's below ~5252 RPM), and there's no room for
-  a second axis at this scale — torque still gets its own number
-  in the stat boxes around this graph.
-
-  curveData is computeDynoCurveData()'s return shape, or null —
-  drawn as a "not enough data" placeholder rather than skipped
-  outright, so the card's layout doesn't shift depending on
-  what a given pull happened to log.
-*/
-function drawMiniPowerCurve(ctx,x,y,w,h,curveData,COL){
-
-  ctx.fillStyle=COL.panel;
-  ctx.fillRect(x,y,w,h);
-  ctx.strokeStyle=COL.line;
-  ctx.lineWidth=1;
-  ctx.strokeRect(x,y,w,h);
-
-  ctx.fillStyle=COL.dim;
-  ctx.textAlign='left';
-  ctx.textBaseline='alphabetic';
-  ctx.font='700 16px JetBrains Mono, monospace';
-  ctx.fillText('POWER (HP) vs RPM',x+16,y+28);
-
-  if(!curveData || curveData.powerCurve.length<3){
-
-    ctx.fillStyle=COL.dim;
-    ctx.textAlign='center';
-    ctx.font='400 18px JetBrains Mono, monospace';
-    ctx.fillText('NOT ENOUGH RPM SPREAD TO PLOT',x+w/2,y+h/2);
-
-    return;
-
-  }
-
-  const{rpmKeys,powerCurve}=curveData;
-
-  const leftPad=16,rightPad=16,topPad=44,bottomPad=34;
-
-  const px0=x+leftPad,px1=x+w-rightPad;
-  const py0=y+topPad,py1=y+h-bottomPad;
-
-  const rpmMin=rpmKeys[0],rpmMax=rpmKeys[rpmKeys.length-1];
-  const powerMax=Math.max(...powerCurve)*1.12;
-  const rpmSpan=Math.max(1,rpmMax-rpmMin);
-
-  const mapX=r=>px0+(r-rpmMin)/rpmSpan*(px1-px0);
-  const mapY=p=>py1-Math.max(0,p)/powerMax*(py1-py0);
-
-  /* filled area under the curve */
-  ctx.beginPath();
-  ctx.moveTo(mapX(rpmKeys[0]),py1);
-  rpmKeys.forEach((r,i)=>ctx.lineTo(mapX(r),mapY(powerCurve[i])));
-  ctx.lineTo(mapX(rpmKeys[rpmKeys.length-1]),py1);
-  ctx.closePath();
-  ctx.fillStyle=COL.green+'26';
-  ctx.fill();
-
-  /* the curve itself */
-  ctx.beginPath();
-  rpmKeys.forEach((r,i)=>{
-    const px=mapX(r),py=mapY(powerCurve[i]);
-    i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
-  });
-  ctx.strokeStyle=COL.green;
-  ctx.lineWidth=3;
-  ctx.stroke();
-
-  /* peak marker */
-  let peakIdx=0;
-  powerCurve.forEach((v,i)=>{if(v>powerCurve[peakIdx])peakIdx=i;});
-
-  const peakX=mapX(rpmKeys[peakIdx]);
-  const peakY=mapY(powerCurve[peakIdx]);
-
-  ctx.beginPath();
-  ctx.arc(peakX,peakY,5,0,Math.PI*2);
-  ctx.fillStyle=COL.amber;
-  ctx.fill();
-
-  ctx.fillStyle=COL.amber;
-  ctx.textAlign='center';
-  ctx.font='700 15px JetBrains Mono, monospace';
-  ctx.fillText(
-    Math.round(powerCurve[peakIdx])+' hp @ '+rpmKeys[peakIdx],
-    Math.min(Math.max(peakX,px0+60),px1-60),
-    peakY-14
-  );
-
-  /* x-axis RPM range labels */
-  ctx.fillStyle=COL.dim;
-  ctx.font='400 14px JetBrains Mono, monospace';
-  ctx.textAlign='left';
-  ctx.fillText(rpmMin+' rpm',px0,py1+22);
-  ctx.textAlign='right';
-  ctx.fillText(rpmMax+' rpm',px1,py1+22);
-
-}
-
-
-/*
-  Draws a square, screenshot/text-friendly summary card for one
-  WOT pull — the kind of thing that's actually shareable in a
-  group chat, as opposed to the full tuner report (too long) or
-  the raw trace chart (unreadable at thumbnail size). Pure
-  Canvas 2D drawing, no external image loads, so this can stay
-  synchronous.
-*/
-function buildPullCardImage(d,pc,filename){
-
-  const W=1080,H=1080;
-
-  const canvas=document.createElement('canvas');
-  canvas.width=W;
-  canvas.height=H;
-
-  const ctx=canvas.getContext('2d');
-
-  const COL={
-    bg:'#080a0c',
-    panel:'#12161a',
-    line:'#293238',
-    text:'#edf1ef',
-    dim:'#7f8a91',
-    amber:'#ffb627',
-    green:'#72d43c',
-    red:'#ff5c4d',
-    blue:'#49a7ff'
-  };
-
-  ctx.fillStyle=COL.bg;
-  ctx.fillRect(0,0,W,H);
-
-  /* header: PS mark + wordmark */
-  ctx.fillStyle=COL.amber;
-  ctx.fillRect(64,64,72,72);
-  ctx.fillStyle=COL.bg;
-  ctx.font='700 34px JetBrains Mono, monospace';
-  ctx.textAlign='center';
-  ctx.textBaseline='middle';
-  ctx.fillText('PS',100,102);
-
-  ctx.fillStyle=COL.text;
-  ctx.textAlign='left';
-  ctx.textBaseline='alphabetic';
-  ctx.font='700 40px JetBrains Mono, monospace';
-  ctx.fillText('PULLSHEET',154,98);
-
-  ctx.fillStyle=COL.dim;
-  ctx.font='400 20px JetBrains Mono, monospace';
-  ctx.fillText('WOT PULL #'+(pc.i+1),154,128);
-
-  const vehicleOrFile=currentVehicleLabel||filename;
-  ctx.fillStyle=COL.dim;
-  ctx.textAlign='right';
-  ctx.font='400 20px JetBrains Mono, monospace';
-  ctx.fillText(
-    (vehicleOrFile.length>28?vehicleOrFile.slice(0,26)+'…':vehicleOrFile),
-    W-64,88
-  );
-  ctx.fillText(new Date().toLocaleDateString(),W-64,116);
-
-  ctx.strokeStyle=COL.line;
-  ctx.lineWidth=2;
-  ctx.beginPath();
-  ctx.moveTo(64,168);
-  ctx.lineTo(W-64,168);
-  ctx.stroke();
-
-  /* hero stat — the single most brag-worthy number available */
-  let heroValue='—',heroLabel='TIME';
-
-  if(pc.accel && pc.accel.zeroToSixty!=null){
-    heroValue=pc.accel.zeroToSixty.toFixed(2)+'s';
-    heroLabel='0-60 MPH';
-  }else if(pc.accel && pc.accel.eighthMile!=null){
-    heroValue=pc.accel.eighthMile.toFixed(2)+'s';
-    heroLabel='1/8 MILE';
-  }else if(Number.isFinite(pc.pullPower)){
-    heroValue=Math.round(pc.pullPower)+' hp';
-    heroLabel='PEAK POWER';
-  }else if(Number.isFinite(pc.pullBoost)){
-    heroValue=pc.pullBoost.toFixed(1)+' psi';
-    heroLabel='PEAK BOOST';
-  }
-
-  ctx.fillStyle=COL.amber;
-  ctx.textAlign='center';
-  ctx.font='700 92px JetBrains Mono, monospace';
-  ctx.fillText(heroValue,W/2,272);
-
-  ctx.fillStyle=COL.dim;
-  ctx.font='700 24px JetBrains Mono, monospace';
-  ctx.fillText(heroLabel,W/2,306);
-
-  /* mini dyno curve — power only, see drawMiniPowerCurve() for why */
-  const curveData=computeDynoCurveData(d,[pc.p]);
-
-  drawMiniPowerCurve(ctx,64,336,W-128,268,curveData,COL);
-
-  /* secondary stat row */
-  const stats=[
-    {
-      label:'PEAK POWER',
-      value:Number.isFinite(pc.pullPower)?Math.round(pc.pullPower)+' hp':'—',
-      color:COL.green
-    },
-    {
-      label:'PEAK TORQUE',
-      value:Number.isFinite(pc.pullTorque)?Math.round(pc.pullTorque)+' lb-ft':'—',
-      color:COL.blue
-    },
-    {
-      label:'PEAK BOOST',
-      value:Number.isFinite(pc.pullBoost)?pc.pullBoost.toFixed(1)+' psi':'—',
-      color:COL.amber
-    },
-    /*
-      No knock sensor on this car (per the I/O Config toggle) — a
-      "KNOCK: CLEAN" box would just be reporting the absence of a
-      sensor as if it were a real all-clear, so swap it for average
-      AFR instead of leaving a misleading box on the shared image.
-    */
-    hideKnock
-      ? {
-          label:'AVG AFR',
-          value:pc.a && Number.isFinite(pc.a.average)?pc.a.average.toFixed(2):'—',
-          color:COL.green
-        }
-      : {
-          label:'KNOCK',
-          value:Number.isFinite(pc.pullKnock)
-            ?(pc.pullKnock>0?Math.round(pc.pullKnock)+'°':'CLEAN')
-            :'—',
-          color:Number.isFinite(pc.pullKnock) && pc.pullKnock>2?COL.red:COL.green
-        }
-  ];
-
-  const boxW=(W-128-3*24)/4;
-  const boxY=632;
-  const boxH=150;
-
-  stats.forEach((s,idx)=>{
-
-    const x=64+idx*(boxW+24);
-
-    ctx.fillStyle=COL.panel;
-    ctx.fillRect(x,boxY,boxW,boxH);
-    ctx.strokeStyle=COL.line;
-    ctx.lineWidth=1;
-    ctx.strokeRect(x,boxY,boxW,boxH);
-
-    ctx.fillStyle=s.color;
-    ctx.textAlign='center';
-
-    /* shrink to fit rather than overflow the box on longer values */
-    let fontSize=28;
-    ctx.font=`700 ${fontSize}px JetBrains Mono, monospace`;
-    while(ctx.measureText(s.value).width>boxW-16 && fontSize>15){
-      fontSize-=2;
-      ctx.font=`700 ${fontSize}px JetBrains Mono, monospace`;
-    }
-
-    ctx.fillText(s.value,x+boxW/2,boxY+boxH/2+8);
-
-    ctx.fillStyle=COL.dim;
-    ctx.font='600 14px JetBrains Mono, monospace';
-    ctx.fillText(s.label,x+boxW/2,boxY+boxH-18);
-
-  });
-
-  /* estimated fuel burned + a one-line reminder of how the hp number is derived */
-  const fuelLb=estimateFuelBurnedLb(d,[pc.p]);
-  const fuelGal=lbToGal(fuelLb);
-  const fuelTankPct=pctOfTank(fuelGal);
-
-  ctx.fillStyle=COL.text;
-  ctx.textAlign='left';
-  ctx.font='700 18px JetBrains Mono, monospace';
-  ctx.fillText(
-    'EST. FUEL BURNED THIS PULL: '+(fuelGal!=null?fuelGal.toFixed(2)+' gal':'—'),
-    64,824
-  );
-
-  ctx.fillStyle=COL.dim;
-  ctx.font='400 15px JetBrains Mono, monospace';
-  ctx.fillText(
-    (fuelLb!=null?fuelLb.toFixed(2)+' lb':'—')+
-    (fuelTankPct!=null?` · ${fuelTankPct<0.1?'<0.1':fuelTankPct.toFixed(1)}% of a ${currentTankGal}gal tank`:''),
-    64,850
-  );
-  ctx.fillText('HOW: power = fuel flow ÷ assumed BSFC · torque = power × 5252 ÷ RPM',64,872);
-
-  /* footer */
-  ctx.strokeStyle=COL.line;
-  ctx.beginPath();
-  ctx.moveTo(64,H-120);
-  ctx.lineTo(W-64,H-120);
-  ctx.stroke();
-
-  ctx.fillStyle=COL.dim;
-  ctx.textAlign='left';
-  ctx.font='400 18px JetBrains Mono, monospace';
-  ctx.fillText('@whiiskerzbuilt · pullsheet-app.netlify.app',64,H-72);
-
-  ctx.textAlign='right';
-  ctx.fillText('LOCAL ANALYSIS · DATA NEVER LEAVES YOUR BROWSER',W-64,H-72);
-
-  return canvas.toDataURL('image/png',1);
-
-}
-
-
-/*
-  Bins raw per-sample RPM/power/torque pairs into 100rpm buckets
-  and averages within each bucket — shared by the single-pull
-  dyno curve, the multi-pull overlay, and the mini graphs drawn
-  onto the shareable card images, so all four smooth the same
-  way. Takes an ARRAY of {start,end} ranges rather than a single
-  pull — pass [onePull] for a single-pull curve, or d.pulls (or
-  any subset) to blend multiple pulls into one session-wide
-  curve. Raw samples are noisy (log rate + normal sensor jitter);
-  this is what turns them into a curve worth looking at without
-  needing a real signal-processing library. Returns null when
-  there isn't enough RPM spread across the given ranges to plot
-  anything meaningful.
-*/
-function computeDynoCurveData(d,ranges){
-
-  const BIN=100;
-  const bins={};
-
-  ranges.forEach(p=>{
-
-    for(let i=p.start;i<=p.end;i++){
-
-      const rpm=d.rpm?.[i];
-      const power=d.power?.[i];
-
-      if(!Number.isFinite(rpm) || !Number.isFinite(power))continue;
-
-      const bin=Math.round(rpm/BIN)*BIN;
-
-      if(!bins[bin]){
-        bins[bin]={powerSum:0,powerCount:0,torqueSum:0,torqueCount:0};
-      }
-
-      bins[bin].powerSum+=power;
-      bins[bin].powerCount++;
-
-      const torque=d.torqueLbFt?.[i];
-
-      if(Number.isFinite(torque)){
-        bins[bin].torqueSum+=torque;
-        bins[bin].torqueCount++;
-      }
-
-    }
-
-  });
-
-  const rpmKeys=Object.keys(bins).map(Number).sort((a,b)=>a-b);
-
-  if(rpmKeys.length<3)return null;
-
-  const powerCurve=rpmKeys.map(r=>bins[r].powerSum/bins[r].powerCount);
-
-  const hasTorque=rpmKeys.some(r=>bins[r].torqueCount>0);
-
-  const torqueCurve=rpmKeys.map(r=>
-    bins[r].torqueCount?bins[r].torqueSum/bins[r].torqueCount:null
-  );
-
-  return{rpmKeys,powerCurve,torqueCurve,hasTorque};
-
-}
-
-
-/*
-  Estimated fuel burned, in pounds, over a set of index ranges.
-  There's no confirmed, reliably-named raw fuel-flow channel to
-  read directly (MaxxECU's own power/torque channels are already
-  the output of ITS internal fuel-flow math, not the flow rate
-  itself), so this works BACKWARDS from the power channel using
-  the BSFC preset picked on the "Est. fuel burned" card (see
-  BSFC_PRESETS / currentBsfc() near the top of the script) —
-  consistent with the same "engine-side estimate, not a lab
-  measurement" honesty as the power number itself. Integrated with
-  a simple trapezoidal sum over d.runtime so it accounts for the
-  real (uneven) sample spacing rather than assuming a fixed log
-  rate.
-*/
-
-function estimateFuelBurnedLb(d,ranges){
-
-  if(!d.power || !d.runtime)return null;
-
-  let totalLb=0;
-  let sawAny=false;
-
-  ranges.forEach(p=>{
-
-    for(let i=p.start;i<p.end;i++){
-
-      const p0=d.power[i];
-      const p1=d.power[i+1];
-      const t0=d.runtime[i];
-      const t1=d.runtime[i+1];
-
-      if(!Number.isFinite(p0) || !Number.isFinite(p1)){
-        continue;
-      }
-
-      if(!Number.isFinite(t0) || !Number.isFinite(t1) || t1<=t0){
-        continue;
-      }
-
-      const dtHours=(t1-t0)/3600;
-      const avgPower=Math.max(0,(p0+p1)/2);
-
-      totalLb+=avgPower*currentBsfc()*dtHours;
-      sawAny=true;
-
-    }
-
-  });
-
-  return sawAny?totalLb:null;
-
-}
-
-
-/*
-  Weather-corrected power — a standard-conditions correction so a
-  pull made on a cool dry day and a pull made on a hot humid one
-  can actually be compared apples-to-apples, the same idea as a
-  real chassis dyno correcting to STP. Uses the classic SAE-style
-  dry-air approximation:
-
-    CF = (101.325 / baroKpa) * sqrt((iatC + 273.15) / 288.71)
-
-  which is the kPa/Celsius form of the textbook
-  CF = (29.92/Pb) * sqrt((460+T)/519.67) formula (29.92 inHg,
-  60°F reference conditions). This is a DRY-AIR approximation —
-  there's no logged humidity/dewpoint channel to correct for
-  moisture the way the full SAE J1349 spec does, so treat the
-  result as "in the right neighborhood," not a lab-grade number.
-  It's also written with naturally-aspirated engines in mind — a
-  boosted engine's ECU is already targeting an absolute boost
-  pressure regardless of the weather, so density correction means
-  a lot less for it. Callers should show that caveat; this function
-  just does the math.
-
-  Returns null if baro/IAT aren't in a physically plausible range
-  (a bad channel mapping is a much more likely explanation than a
-  freak weather day) rather than silently returning a wild CF.
-*/
-function weatherCorrectionFactor(baroKpa,iatC){
-
-  if(!Number.isFinite(baroKpa) || !Number.isFinite(iatC))return null;
-
-  // ~70kPa is roughly 9,000ft density altitude; ~108kPa is well
-  // above anything earth's weather actually produces at any
-  // elevation a car gets driven at — outside that band this is
-  // almost certainly a mismapped channel, not real air.
-  if(baroKpa<70 || baroKpa>108)return null;
-
-  // -40°C to 70°C — implausible intake air outside that range.
-  if(iatC<-40 || iatC>70)return null;
-
-  return (101.325/baroKpa)*Math.sqrt((iatC+273.15)/288.71);
-
-}
-
-
-function weatherCorrectedPower(d,ranges){
-
-  if(!d.baro || !d.iat || !d.power)return null;
-  if(!ranges || !ranges.length)return null;
-
-  let baroVals=[];
-  let iatVals=[];
-  let powerVals=[];
-  let torqueVals=[];
-
-  ranges.forEach(p=>{
-    baroVals=baroVals.concat(valuesAtIndices(d.baro,p.start,p.end));
-    iatVals=iatVals.concat(valuesAtIndices(d.iat,p.start,p.end));
-    powerVals=powerVals.concat(valuesAtIndices(d.power,p.start,p.end));
-    if(d.torqueLbFt)torqueVals=torqueVals.concat(valuesAtIndices(d.torqueLbFt,p.start,p.end));
-  });
-
-  const avgBaro=avg(baroVals);
-  const avgIat=avg(iatVals);
-  const peakPower=max(powerVals);
-
-  if(avgBaro==null || avgIat==null || peakPower==null)return null;
-
-  const cf=weatherCorrectionFactor(avgBaro,avgIat);
-
-  if(cf==null)return null;
-
-  const peakTorque=torqueVals.length?max(torqueVals):null;
-
-  return{
-    cf,
-    avgBaro,
-    avgIat,
-    peakPower,
-    correctedPower:peakPower*cf,
-    peakTorque,
-    correctedTorque:peakTorque!=null?peakTorque*cf:null
-  };
-
-}
-
-
-/*
-  Dyno-style power/torque-vs-RPM curve for a single pull, drawn
-  onto an already-mounted canvas. Unlike the main timeline chart
-  (x = time), this puts RPM on the x-axis — the same layout a
-  real dyno sheet uses — so you can see where the powerband
-  actually falls instead of just a single peak-hp number.
-*/
-function buildDynoCurve(d,p,canvasId){
-
-  const canvas=$(canvasId);
-
-  if(!canvas)return null;
-
-  const curveData=computeDynoCurveData(d,[p]);
-
-  if(!curveData)return null;
-
-  const{rpmKeys,powerCurve,torqueCurve,hasTorque}=curveData;
-
-  const datasets=[{
-    label:'Power (hp)',
-    data:powerCurve,
-    borderColor:'#72d43c',
-    backgroundColor:'#72d43c18',
-    borderWidth:2,
-    pointRadius:0,
-    tension:.2,
-    spanGaps:true,
-    yAxisID:'power'
-  }];
-
-  if(hasTorque){
-
-    datasets.push({
-      label:'Torque (lb-ft)',
-      data:torqueCurve,
-      borderColor:'#c48cff',
-      backgroundColor:'#c48cff18',
-      borderWidth:2,
-      borderDash:[5,5],
-      pointRadius:0,
-      tension:.2,
-      spanGaps:true,
-      yAxisID:'power'
-    });
-
-  }
-
-  return new Chart(canvas,{
-
-    type:'line',
-
-    data:{
-      labels:rpmKeys.map(String),
-      datasets
-    },
-
-    options:{
-
-      responsive:true,
-      maintainAspectRatio:false,
-      animation:false,
-
-      interaction:{mode:'index',intersect:false},
-
-      plugins:{
-
-        legend:{
-          display:true,
-          labels:{color:'#9aa4ab',boxWidth:14,font:{size:11}}
-        },
-
-        tooltip:{
-          callbacks:{
-            title:c=>c[0].label+' RPM'
-          }
-        }
-
-      },
-
-      scales:{
-
-        x:{
-          grid:{color:'#20262a'},
-          ticks:{color:'#667178',maxTicksLimit:10},
-          title:{display:true,text:'RPM',color:'#667178'}
-        },
-
-        power:{
-          position:'left',
-          grid:{color:'#20262a'},
-          ticks:{color:'#72d43c'},
-          title:{display:true,text:'hp / lb-ft',color:'#72d43c'}
-        }
-
-      }
-
-    }
-
-  });
-
-}
-
-
-/*
-  Overlays multiple pulls' POWER curves (torque is left out here —
-  with several pulls on screen at once, power+torque×N lines gets
-  unreadable fast) on one RPM-based chart, one distinctly colored
-  line per pull. This is what actually answers "did that tune
-  change help" — two single-pull curves side by side make you
-  eyeball it, one overlay makes the answer obvious.
-*/
-function buildDynoOverlayChart(d,pullIndices,canvasId){
-
-  const canvas=$(canvasId);
-
-  if(!canvas)return null;
-
-  const COLORS=['#72d43c','#49a7ff','#ffb627','#c48cff','#ff5c4d','#42dada','#ff8757','#f5d76e'];
-
-  const curves=pullIndices
-    .map(i=>({i,curve:computeDynoCurveData(d,[d.pulls[i]])}))
-    .filter(x=>x.curve);
-
-  if(curves.length<2)return null;
-
-  /*
-    Each pull was binned independently and may not share the
-    same RPM range, so the shared x-axis is the UNION of every
-    pull's RPM bins — otherwise Chart.js would silently misalign
-    pull #1's 4000rpm point with pull #2's 4000rpm point if their
-    bin sets differ at all.
-  */
-  const allRpm=new Set();
-
-  curves.forEach(({curve})=>{
-    curve.rpmKeys.forEach(r=>allRpm.add(r));
-  });
-
-  const rpmKeys=[...allRpm].sort((a,b)=>a-b);
-
-  const datasets=curves.map(({i,curve},idx)=>{
-
-    const lookup={};
-
-    curve.rpmKeys.forEach((r,k)=>{lookup[r]=curve.powerCurve[k];});
-
-    const data=rpmKeys.map(r=>r in lookup?lookup[r]:null);
-
-    const color=COLORS[idx%COLORS.length];
-
-    return{
-      label:'Pull #'+(i+1),
-      data,
-      borderColor:color,
-      backgroundColor:color+'18',
-      borderWidth:2,
-      pointRadius:0,
-      tension:.2,
-      spanGaps:true,
-      yAxisID:'power'
-    };
-
-  });
-
-  return new Chart(canvas,{
-
-    type:'line',
-
-    data:{
-      labels:rpmKeys.map(String),
-      datasets
-    },
-
-    options:{
-
-      responsive:true,
-      maintainAspectRatio:false,
-      animation:false,
-
-      interaction:{mode:'index',intersect:false},
-
-      plugins:{
-
-        legend:{
-          display:true,
-          labels:{color:'#9aa4ab',boxWidth:14,font:{size:11}}
-        },
-
-        tooltip:{
-          callbacks:{
-            title:c=>c[0].label+' RPM'
-          }
-        }
-
-      },
-
-      scales:{
-
-        x:{
-          grid:{color:'#20262a'},
-          ticks:{color:'#667178',maxTicksLimit:10},
-          title:{display:true,text:'RPM',color:'#667178'}
-        },
-
-        power:{
-          position:'left',
-          grid:{color:'#20262a'},
-          ticks:{color:'#72d43c'},
-          title:{display:true,text:'hp',color:'#72d43c'}
-        }
-
-      }
-
-    }
-
-  });
-
-}
-
-
-/*
-  Draws a square, shareable summary of the WHOLE session — not
-  one pull. Leads with the most brag-worthy thing that happened
-  (a personal record beats everything else; otherwise the best
-  0-60/eighth-mile/power/boost in that order), then a stat row
-  covering health, peak boost, peak power, and how many issues
-  got flagged. Same Canvas 2D approach and visual language as
-  buildPullCardImage() so the two feel like one product.
-*/
-function buildSessionCardImage(d,h,prBadges,issueEvents,filename){
-
-  const W=1080,H=1080;
-
-  const canvas=document.createElement('canvas');
-  canvas.width=W;
-  canvas.height=H;
-
-  const ctx=canvas.getContext('2d');
-
-  const COL={
-    bg:'#080a0c',
-    panel:'#12161a',
-    line:'#293238',
-    text:'#edf1ef',
-    dim:'#7f8a91',
-    amber:'#ffb627',
-    green:'#72d43c',
-    red:'#ff5c4d',
-    blue:'#49a7ff'
-  };
-
-  ctx.fillStyle=COL.bg;
-  ctx.fillRect(0,0,W,H);
-
-  ctx.fillStyle=COL.amber;
-  ctx.fillRect(64,64,72,72);
-  ctx.fillStyle=COL.bg;
-  ctx.font='700 34px JetBrains Mono, monospace';
-  ctx.textAlign='center';
-  ctx.textBaseline='middle';
-  ctx.fillText('PS',100,102);
-
-  ctx.fillStyle=COL.text;
-  ctx.textAlign='left';
-  ctx.textBaseline='alphabetic';
-  ctx.font='700 40px JetBrains Mono, monospace';
-  ctx.fillText('PULLSHEET',154,98);
-
-  ctx.fillStyle=COL.dim;
-  ctx.font='400 20px JetBrains Mono, monospace';
-  ctx.fillText('SESSION SUMMARY',154,128);
-
-  const vehicleOrFile=currentVehicleLabel||filename;
-  ctx.fillStyle=COL.dim;
-  ctx.textAlign='right';
-  ctx.font='400 20px JetBrains Mono, monospace';
-  ctx.fillText(
-    (vehicleOrFile.length>28?vehicleOrFile.slice(0,26)+'…':vehicleOrFile),
-    W-64,88
-  );
-  ctx.fillText(new Date().toLocaleDateString(),W-64,116);
-
-  ctx.strokeStyle=COL.line;
-  ctx.lineWidth=2;
-  ctx.beginPath();
-  ctx.moveTo(64,168);
-  ctx.lineTo(W-64,168);
-  ctx.stroke();
-
-  const peakPower=d.power && d.power.some(Number.isFinite)?max(d.power):null;
-
-  let bestZeroToSixty=null,bestEighthMile=null;
-
-  (d.pulls||[]).forEach(p=>{
-
-    const accel=computeAccelStats(d,p);
-
-    if(!accel)return;
-
-    if(accel.zeroToSixty!=null && (bestZeroToSixty==null || accel.zeroToSixty<bestZeroToSixty)){
-      bestZeroToSixty=accel.zeroToSixty;
-    }
-
-    if(accel.eighthMile!=null && (bestEighthMile==null || accel.eighthMile<bestEighthMile)){
-      bestEighthMile=accel.eighthMile;
-    }
-
-  });
-
-  /* hero — a personal record beats everything else available */
-  let heroValue='—',heroLabel='HEALTH SCORE',heroIsRecord=false;
-
-  if(prBadges && prBadges.length){
-
-    heroValue=prBadges[0].display;
-    heroLabel='NEW PR — '+prBadges[0].label.toUpperCase();
-    heroIsRecord=true;
-
-  }else if(bestZeroToSixty!=null){
-
-    heroValue=bestZeroToSixty.toFixed(2)+'s';
-    heroLabel='BEST 0-60 MPH';
-
-  }else if(bestEighthMile!=null){
-
-    heroValue=bestEighthMile.toFixed(2)+'s';
-    heroLabel='BEST 1/8 MILE';
-
-  }else if(peakPower!=null){
-
-    heroValue=Math.round(peakPower)+' hp';
-    heroLabel='PEAK POWER';
-
-  }else if(h.score!=null){
-
-    heroValue=h.score+'/100';
-    heroLabel='HEALTH SCORE';
-
-  }
-
-  if(heroIsRecord){
-
-    ctx.fillStyle=COL.green;
-    ctx.textAlign='center';
-    ctx.font='700 22px JetBrains Mono, monospace';
-    ctx.fillText('\u{1F3C6} PERSONAL RECORD',W/2,200);
-
-  }
-
-  ctx.fillStyle=heroIsRecord?COL.green:COL.amber;
-  ctx.textAlign='center';
-  ctx.font='700 90px JetBrains Mono, monospace';
-  ctx.fillText(heroValue,W/2,272);
-
-  ctx.fillStyle=COL.dim;
-  ctx.font='700 24px JetBrains Mono, monospace';
-  ctx.fillText(heroLabel,W/2,306);
-
-  /* mini dyno curve — blends every pull in the session into one
-     power-vs-RPM curve, see drawMiniPowerCurve() for why torque
-     isn't also plotted here */
-  const sessionCurve=d.pulls && d.pulls.length?computeDynoCurveData(d,d.pulls):null;
-
-  drawMiniPowerCurve(ctx,64,336,W-128,268,sessionCurve,COL);
-
-  const issueCount=issueEvents?issueEvents.length:0;
-
-  const peakTorque=d.torqueLbFt && d.torqueLbFt.some(Number.isFinite)?max(d.torqueLbFt):null;
-
-  const stats=[
-    {
-      label:'PEAK POWER',
-      value:peakPower!=null?Math.round(peakPower)+' hp':'—',
-      color:COL.green
-    },
-    {
-      label:'PEAK TORQUE',
-      value:peakTorque!=null?Math.round(peakTorque)+' lb-ft':'—',
-      color:COL.blue
-    },
-    {
-      label:'HEALTH',
-      value:h.score!=null?h.score+'/100':'—',
-      color:COL.amber
-    },
-    {
-      label:'ISSUES FLAGGED',
-      value:issueCount?String(issueCount):'CLEAN',
-      color:issueCount?COL.red:COL.green
-    }
-  ];
-
-  const boxW=(W-128-3*24)/4;
-  const boxY=632;
-  const boxH=150;
-
-  stats.forEach((s,idx)=>{
-
-    const x=64+idx*(boxW+24);
-
-    ctx.fillStyle=COL.panel;
-    ctx.fillRect(x,boxY,boxW,boxH);
-    ctx.strokeStyle=COL.line;
-    ctx.lineWidth=1;
-    ctx.strokeRect(x,boxY,boxW,boxH);
-
-    let fontSize=28;
-    ctx.font=`700 ${fontSize}px JetBrains Mono, monospace`;
-
-    while(ctx.measureText(s.value).width>boxW-16 && fontSize>15){
-      fontSize-=2;
-      ctx.font=`700 ${fontSize}px JetBrains Mono, monospace`;
-    }
-
-    ctx.fillStyle=s.color;
-    ctx.textAlign='center';
-    ctx.fillText(s.value,x+boxW/2,boxY+boxH/2+8);
-
-    ctx.fillStyle=COL.dim;
-    ctx.font='600 14px JetBrains Mono, monospace';
-    ctx.fillText(s.label,x+boxW/2,boxY+boxH-18);
-
-  });
-
-  /* estimated fuel burned across every pull this session + how-calculated reminder */
-  const fuelLb=d.pulls && d.pulls.length?estimateFuelBurnedLb(d,d.pulls):null;
-  const fuelGal=lbToGal(fuelLb);
-  const fuelTankPct=pctOfTank(fuelGal);
-
-  ctx.fillStyle=COL.text;
-  ctx.textAlign='left';
-  ctx.font='700 18px JetBrains Mono, monospace';
-  ctx.fillText(
-    'EST. FUEL BURNED THIS SESSION: '+(fuelGal!=null?fuelGal.toFixed(2)+' gal':'—'),
-    64,808
-  );
-
-  ctx.fillStyle=COL.dim;
-  ctx.font='400 15px JetBrains Mono, monospace';
-  ctx.fillText(
-    (fuelLb!=null?fuelLb.toFixed(2)+' lb':'—')+
-    (fuelTankPct!=null?` · ${fuelTankPct<0.1?'<0.1':fuelTankPct.toFixed(1)}% of a ${currentTankGal}gal tank`:''),
-    64,834
-  );
-  ctx.fillText('HOW: power = fuel flow ÷ assumed BSFC · torque = power × 5252 ÷ RPM',64,856);
-
-  /* pull count strip */
-  ctx.fillStyle=COL.dim;
-  ctx.textAlign='left';
-  ctx.font='600 18px JetBrains Mono, monospace';
-
-  const pullCount=d.pulls?d.pulls.length:0;
-
-  ctx.fillText(
-    `${pullCount} WOT PULL${pullCount===1?'':'S'} DETECTED THIS SESSION`,
-    64,884
-  );
-
-  ctx.strokeStyle=COL.line;
-  ctx.beginPath();
-  ctx.moveTo(64,H-120);
-  ctx.lineTo(W-64,H-120);
-  ctx.stroke();
-
-  ctx.fillStyle=COL.dim;
-  ctx.textAlign='left';
-  ctx.font='400 18px JetBrains Mono, monospace';
-  ctx.fillText('@whiiskerzbuilt · pullsheet-app.netlify.app',64,H-72);
-
-  ctx.textAlign='right';
-  ctx.fillText('LOCAL ANALYSIS · DATA NEVER LEAVES YOUR BROWSER',W-64,H-72);
-
-  return canvas.toDataURL('image/png',1);
-
 }
 
 
@@ -8527,42 +5124,6 @@ const SERIES={
     label:'Trans °F',
     color:'#ff5c4d',
     axis:'temp'
-  },
-
-  map:{
-    label:'Boost PSI',
-    color:'#ff8757',
-    axis:'map'
-  },
-
-  iat:{
-    label:'IAT °F',
-    color:'#f5d76e',
-    axis:'temp'
-  },
-
-  ignTiming:{
-    label:'Timing °',
-    color:'#8fd3ff',
-    axis:'timing'
-  },
-
-  knockRetard:{
-    label:'Knock retard °',
-    color:'#ff4f6d',
-    axis:'timing'
-  },
-
-  power:{
-    label:'Power hp',
-    color:'#72d43c',
-    axis:'power'
-  },
-
-  torque:{
-    label:'Torque lb-ft',
-    color:'#c48cff',
-    axis:'power'
   }
 
 };
@@ -8624,10 +5185,6 @@ function buildChart(d){
 
     if(key==='fuelPress')available=!!d.fuelPressPsi;
     else if(key==='oilPress')available=!!d.oilPressPsi;
-    else if(key==='map')available=!!d.mapPsi;
-    else if(key==='iat')available=!!d.iatF;
-    else if(key==='torque')available=!hidePower && !!d.torqueLbFt;
-    else if(key==='power')available=!hidePower && !!d.power;
     else available=!!d[key];
 
     if(!available)return;
@@ -8665,9 +5222,6 @@ function buildChart(d){
     if(key==='oilPress')return d.oilPressPsi;
     if(key==='coolant')return d.coolantF;
     if(key==='transTemp')return d.transTempF;
-    if(key==='map')return d.mapPsi;
-    if(key==='iat')return d.iatF;
-    if(key==='torque')return d.torqueLbFt;
 
     return d[key];
 
@@ -8675,8 +5229,6 @@ function buildChart(d){
 
 
   Object.keys(SERIES).forEach(key=>{
-
-    if(hidePower && (key==='power' || key==='torque'))return;
 
     const arr=getArray(key);
 
@@ -8721,65 +5273,6 @@ function buildChart(d){
   });
 
 
-  /*
-    Flagged-issue markers (knock/lean/boost spike/heat, from
-    detectPullIssues()+groupIssueEvents() in render()) drawn as
-    triangles along a hidden 0-1 "events" strip so they line up
-    with the time axis without needing a real y-scale of their
-    own. Skipped entirely when there's nothing to flag.
-  */
-  const issueEvents=d._issueEvents||[];
-
-  const issueColors={
-    knock:'#ff5c4d',
-    lean:'#ffb627',
-    boost:'#b88cff',
-    heat:'#ff8757',
-    nitrousKnock:'#ff00c8',
-    nitrousLean:'#ff00c8'
-  };
-
-  let hasIssueMarkers=false;
-
-  if(issueEvents.length){
-
-    const markerData=new Array(labels.length).fill(null);
-    const markerColors=new Array(labels.length).fill(null);
-    const markerMeta=new Array(labels.length).fill(null);
-
-    issueEvents.forEach(ev=>{
-
-      const labelIdx=Math.round(ev.i/step);
-
-      if(labelIdx<0 || labelIdx>=labels.length)return;
-
-      markerData[labelIdx]=0.5;
-      markerColors[labelIdx]=issueColors[ev.type]||'#fff';
-      markerMeta[labelIdx]=ev;
-      hasIssueMarkers=true;
-
-    });
-
-    if(hasIssueMarkers){
-
-      datasets.push({
-        label:'Issues',
-        data:markerData,
-        yAxisID:'events',
-        showLine:false,
-        pointRadius:markerData.map(v=>v==null?0:6),
-        pointHoverRadius:markerData.map(v=>v==null?0:7),
-        pointStyle:'triangle',
-        pointBackgroundColor:markerColors,
-        pointBorderColor:markerColors,
-        _issueMeta:markerMeta
-      });
-
-    }
-
-  }
-
-
   const scales={
 
     x:{
@@ -8792,10 +5285,6 @@ function buildChart(d){
     }
 
   };
-
-  if(hasIssueMarkers){
-    scales.events={display:false,min:0,max:1};
-  }
 
 
   if(activeSeries.rpm && d.rpm){
@@ -8872,8 +5361,7 @@ function buildChart(d){
 
   if(
     (activeSeries.coolant && d.coolantF) ||
-    (activeSeries.transTemp && d.transTempF) ||
-    (activeSeries.iat && d.iatF)
+    (activeSeries.transTemp && d.transTempF)
   ){
 
     scales.temp={
@@ -8883,60 +5371,6 @@ function buildChart(d){
       title:{
         display:true,
         text:'°F',
-        color:'#72d43c'
-      }
-    };
-
-  }
-
-
-  if(activeSeries.map && d.mapPsi){
-
-    scales.map={
-      position:'right',
-      grid:{display:false},
-      ticks:{color:'#ff8757'},
-      title:{
-        display:true,
-        text:'Boost PSI',
-        color:'#ff8757'
-      }
-    };
-
-  }
-
-
-  if(
-    (activeSeries.ignTiming && d.ignTiming) ||
-    (activeSeries.knockRetard && d.knockRetard)
-  ){
-
-    scales.timing={
-      position:'right',
-      grid:{display:false},
-      ticks:{color:'#8fd3ff'},
-      title:{
-        display:true,
-        text:'° (timing)',
-        color:'#8fd3ff'
-      }
-    };
-
-  }
-
-
-  if(
-    (activeSeries.power && d.power) ||
-    (activeSeries.torque && d.torqueLbFt)
-  ){
-
-    scales.power={
-      position:'right',
-      grid:{display:false},
-      ticks:{color:'#72d43c'},
-      title:{
-        display:true,
-        text:'hp / lb-ft',
         color:'#72d43c'
       }
     };
@@ -8971,35 +5405,9 @@ function buildChart(d){
         },
 
         tooltip:{
-
-          /*
-            Without this, 'index' mode shows a line for every
-            dataset at the hovered x — including the Issues
-            marker dataset's null (non-event) points on every
-            single hover. Only show items that actually have a
-            value at this x.
-          */
-          filter:item=>item.raw!=null,
-
           callbacks:{
-
             title:c=>
-              'TIME '+c[0].label+'s',
-
-            label:c=>{
-
-              if(c.dataset.label==='Issues'){
-
-                const ev=c.dataset._issueMeta && c.dataset._issueMeta[c.dataIndex];
-
-                return ev?'⚠ '+formatIssueLabel(ev):'⚠ flagged';
-
-              }
-
-              return`${c.dataset.label}: ${c.formattedValue}`;
-
-            }
-
+              'TIME '+c[0].label+'s'
           }
         },
 
@@ -9046,7 +5454,7 @@ function generateReport(d,h){
 
   let r='';
 
-  r+='PULLSHEET — TUNER REPORT\n';
+  r+='SHOP TALK — TUNER REPORT\n';
   r+='========================================\n\n';
 
   r+=`HEALTH: ${h.score==null?'N/A':h.score+'/100'}\n`;
@@ -9063,45 +5471,7 @@ function generateReport(d,h){
     r+=`TPS AVG: ${fmtPct(avg(d.tps))}\n`;
   }
 
-  if(d.mapPsi && d.mapPsi.some(Number.isFinite)){
-    r+=`BOOST PEAK (est. gauge, sea-level baseline): ${fmtPsi(max(d.mapPsi))}\n`;
-  }
-
-  if(d.iatF && d.iatF.some(Number.isFinite)){
-    r+=`INTAKE AIR TEMP AVG: ${fmtTemp(avg(d.iatF))}\n`;
-    r+=`INTAKE AIR TEMP PEAK: ${fmtTemp(max(d.iatF))}\n`;
-  }
-
-  if(d.power && d.power.some(Number.isFinite)){
-    r+=`PEAK POWER (MaxxECU calculated from fuel flow, not a dyno): ${Math.round(max(d.power))} hp\n`;
-  }
-
-  if(d.torqueLbFt && d.torqueLbFt.some(Number.isFinite)){
-    r+=`PEAK TORQUE (MaxxECU calculated from fuel flow, not a dyno): ${Math.round(max(d.torqueLbFt))} lb-ft\n`;
-  }
-
   r+='\n';
-
-
-  if(
-    (d.ignTiming && d.ignTiming.some(Number.isFinite)) ||
-    (d.knockRetard && d.knockRetard.some(Number.isFinite))
-  ){
-
-    r+='IGNITION\n';
-    r+='----------------------------------------\n';
-
-    if(d.ignTiming && d.ignTiming.some(Number.isFinite)){
-      r+=`TIMING RANGE: ${Math.round(min(d.ignTiming))}° - ${Math.round(max(d.ignTiming))}°\n`;
-    }
-
-    if(d.knockRetard && d.knockRetard.some(Number.isFinite) && !hideKnock){
-      r+=`KNOCK RETARD PEAK: ${Math.round(peakAbs(d.knockRetard))}°\n`;
-    }
-
-    r+='\n';
-
-  }
 
 
   r+='FUELING\n';
@@ -9121,7 +5491,8 @@ function generateReport(d,h){
   }
 
   if(afrDelta(d)!=null){
-    r+=`AFR DELTA: ${afrDelta(d)>0?'+':''}${afrDelta(d).toFixed(2)}\n`;
+    const rl=richLeanLabel(afrDelta(d),.5,1);
+    r+=`AFR DELTA: ${afrDelta(d)>0?'+':''}${afrDelta(d).toFixed(2)} (${rl.text})\n`;
   }
 
   const wlR=lambdaInfo(d);
@@ -9136,7 +5507,8 @@ function generateReport(d,h){
   }
 
   if(lambdaDelta(d)!=null){
-    r+=`LAMBDA DELTA: ${lambdaDelta(d)>0?'+':''}${lambdaDelta(d).toFixed(3)}\n`;
+    const rl=richLeanLabel(lambdaDelta(d),.03,.06);
+    r+=`LAMBDA DELTA: ${lambdaDelta(d)>0?'+':''}${lambdaDelta(d).toFixed(3)} (${rl.text})\n`;
   }
 
   if(d.ethanol){
@@ -9262,31 +5634,7 @@ function generateReport(d,h){
 
   r+=`WOT PULLS: ${d.pulls.length}\n`;
 
-  if(d.pulls.length){
-
-    const accelTimes=d.pulls
-      .map(p=>computeAccelStats(d,p))
-      .filter(a=>a && a.zeroToSixty!=null);
-
-    if(accelTimes.length){
-
-      const best0to60=Math.min(...accelTimes.map(a=>a.zeroToSixty));
-
-      r+=`BEST 0-60 (est. from VSS trace): ${best0to60.toFixed(2)}s\n`;
-
-      const eighths=accelTimes
-        .map(a=>a.eighthMile)
-        .filter(v=>v!=null);
-
-      if(eighths.length){
-        r+=`BEST 1/8 MILE (est.): ${Math.min(...eighths).toFixed(2)}s\n`;
-      }
-
-    }
-
-  }
-
-  if(d.knock && !hideKnock){
+  if(d.knock){
     r+=`KNOCK MAX: ${max(d.knock)}\n`;
   }
 
@@ -9321,70 +5669,8 @@ function generateReport(d,h){
   r+='Target AFR/lambda is pulled from the log when available.\n';
   r+='Manual I/O selection overrides automatic detection.\n';
   r+='Limp-home and TCU fault flags are weighted heavily when present.\n';
-  r+='0-60/eighth-mile times are estimated by integrating the logged VSS trace and only shown for pulls that actually start near a stop.\n';
-  r+='Boost is MAP converted to gauge PSI against a fixed sea-level baseline, not corrected for altitude/weather.\n';
 
   return r;
-}
-
-
-/*
-  Compares this log's entry against every prior entry for the
-  SAME vehicle already in history, per metric, and reports which
-  metrics just got beaten. Requires at least one prior entry with
-  a finite value for that metric — otherwise every brand-new
-  vehicle's very first log would trigger a wall of meaningless
-  "records" (there's nothing to have beaten yet).
-*/
-function detectPRs(entry,priorHistoryForVehicle){
-
-  const metrics=[
-    {key:'zeroToSixty',label:'0-60',better:'lower',fmt:v=>v.toFixed(2)+'s'},
-    {key:'eighthMile',label:'1/8 mile',better:'lower',fmt:v=>v.toFixed(2)+'s'},
-    {key:'power',label:'Peak power',better:'higher',fmt:v=>Math.round(v)+' hp'},
-    {key:'torque',label:'Peak torque',better:'higher',fmt:v=>Math.round(v)+' lb-ft'},
-    {key:'boost',label:'Peak boost',better:'higher',fmt:v=>v.toFixed(1)+' psi'}
-  ];
-
-  const prs=[];
-
-  metrics.forEach(m=>{
-
-    const val=entry[m.key];
-
-    if(val==null || !Number.isFinite(val))return;
-
-    const priorVals=priorHistoryForVehicle
-      .map(h=>h[m.key])
-      .filter(Number.isFinite);
-
-    if(!priorVals.length)return;
-
-    const priorBest=
-      m.better==='lower'
-        ?Math.min(...priorVals)
-        :Math.max(...priorVals);
-
-    const isRecord=
-      m.better==='lower'
-        ?val<priorBest
-        :val>priorBest;
-
-    if(isRecord){
-
-      prs.push({
-        key:m.key,
-        label:m.label,
-        display:m.fmt(val),
-        prevDisplay:m.fmt(priorBest)
-      });
-
-    }
-
-  });
-
-  return prs;
-
 }
 
 
@@ -9392,62 +5678,10 @@ function saveHistory(d,filename){
 
   const h=healthScore(d);
 
-  /*
-    Worst-pull AFR delta from target (signed, so the trend chart
-    can show whether the tune is drifting leaner or richer over
-    time) — same delta math as the WOT pulls table, just kept to
-    whichever single pull deviated furthest from target in this log.
-
-    Also tracks this log's BEST 0-60, best 1/8 mile, and peak
-    power/torque across all its pulls — feeds the personal-record
-    check below and the performance history trend chart.
-  */
-  let afrDeltaWorst=null;
-  let bestZeroToSixty=null;
-  let bestEighthMile=null;
-
-  if(d.pulls && d.pulls.length){
-
-    d.pulls.forEach(p=>{
-
-      const a=smartAfr(valuesAtIndices(d.afr,p.start,p.end));
-      const t=smartAfr(valuesAtIndices(d.targetAfr,p.start,p.end));
-
-      if(a && t){
-
-        const delta=a.average-t.average;
-
-        if(afrDeltaWorst==null || Math.abs(delta)>Math.abs(afrDeltaWorst)){
-          afrDeltaWorst=delta;
-        }
-
-      }
-
-      const accel=computeAccelStats(d,p);
-
-      if(accel){
-
-        if(accel.zeroToSixty!=null && (bestZeroToSixty==null || accel.zeroToSixty<bestZeroToSixty)){
-          bestZeroToSixty=accel.zeroToSixty;
-        }
-
-        if(accel.eighthMile!=null && (bestEighthMile==null || accel.eighthMile<bestEighthMile)){
-          bestEighthMile=accel.eighthMile;
-        }
-
-      }
-
-    });
-
-  }
-
   const entry={
 
-    id:Date.now()+'-'+Math.random().toString(36).slice(2,8),
     filename,
     date:Date.now(),
-    vehicle:currentVehicleLabel||'',
-    note:currentBuildNote||'',
 
     rpm:d.rpm?max(d.rpm):null,
 
@@ -9471,22 +5705,6 @@ function saveHistory(d,filename){
       ?avg(d.ethanol)
       :null,
 
-    boost:d.mapPsi && d.mapPsi.some(Number.isFinite)
-      ?max(d.mapPsi)
-      :null,
-
-    knock:d.knockRetard && d.knockRetard.some(Number.isFinite)
-      ?peakAbs(d.knockRetard)
-      :null,
-
-    afrDelta:afrDeltaWorst,
-
-    zeroToSixty:bestZeroToSixty,
-    eighthMile:bestEighthMile,
-
-    power:d.power && d.power.some(Number.isFinite)?max(d.power):null,
-    torque:d.torqueLbFt && d.torqueLbFt.some(Number.isFinite)?max(d.torqueLbFt):null,
-
     health:h.score,
     confidence:h.confidence
 
@@ -9502,14 +5720,6 @@ function saveHistory(d,filename){
     history=[];
   }
 
-  const vehicleKey=entry.vehicle||'';
-
-  const priorForVehicle=history.filter(
-    hEntry=>(hEntry.vehicle||'')===vehicleKey
-  );
-
-  const prs=detectPRs(entry,priorForVehicle);
-
   history.push(entry);
 
   if(history.length>100){
@@ -9520,119 +5730,6 @@ function saveHistory(d,filename){
     'logbook-history',
     JSON.stringify(history)
   );
-
-  return prs;
-}
-
-
-/*
-  Looks for a problem building slowly across recent logs for ONE
-  vehicle — the kind of thing that's invisible log-to-log but
-  obvious once you look at a run of them. Only meaningful within
-  a single vehicle's history (mixing two different cars' knock
-  numbers together would be noise, not signal), so callers should
-  only run this against a vehicle-filtered history array.
-
-  Walks backward from the most recent entry counting consecutive
-  "this log is worse than the one before it" steps, requiring
-  every entry in the window to actually have that metric logged
-  (a run with gaps doesn't count as a trend). A streak of 2+
-  worsening steps (3+ logs) triggers an alert — short enough to
-  catch a real problem early, long enough that normal log-to-log
-  noise mostly won't false-positive.
-*/
-function detectTrendAlerts(history){
-
-  const WINDOW=5;
-  const recent=history.slice(-WINDOW);
-
-  if(recent.length<3)return [];
-
-  const alerts=[];
-
-  function checkMetric(key,label,direction,minStep,fmt){
-
-    const vals=recent.map(h=>h[key]);
-
-    if(!vals.every(Number.isFinite))return;
-
-    let streak=0;
-
-    for(let i=vals.length-1;i>0;i--){
-
-      const delta=vals[i]-vals[i-1];
-      const worsened=direction==='up'?delta>=minStep:delta<=-minStep;
-
-      if(worsened){
-        streak++;
-      }else{
-        break;
-      }
-
-    }
-
-    if(streak>=2){
-
-      const first=vals[vals.length-1-streak];
-      const last=vals[vals.length-1];
-
-      alerts.push({
-        key,
-        message:`${label} has been trending ${direction==='up'?'up':'down'} over your last ${streak+1} logs for this vehicle: ${fmt(first)} → ${fmt(last)}.`
-      });
-
-    }
-
-  }
-
-  checkMetric('knock','Knock retard','up',0.5,v=>Math.abs(v).toFixed(1)+'°');
-  checkMetric('coolant','Coolant temp','up',3,v=>Math.round(v)+'°F');
-  checkMetric('trans','Trans temp','up',3,v=>Math.round(v)+'°F');
-  checkMetric('health','Health score','down',3,v=>Math.round(v));
-
-  /*
-    AFR gets its own check — the SIGNED delta (not magnitude)
-    decides whether to call it "lean" or "rich", but the trend
-    itself is measured on magnitude (distance from target
-    growing), since drifting either direction is the problem.
-  */
-  {
-
-    const vals=recent.map(h=>h.afrDelta);
-
-    if(vals.every(Number.isFinite)){
-
-      const magnitudes=vals.map(Math.abs);
-
-      let streak=0;
-
-      for(let i=magnitudes.length-1;i>0;i--){
-
-        if(magnitudes[i]-magnitudes[i-1]>=.15){
-          streak++;
-        }else{
-          break;
-        }
-
-      }
-
-      if(streak>=2){
-
-        const dirWord=vals[vals.length-1]>0?'lean':'rich';
-
-        alerts.push({
-          key:'afrDelta',
-          message:`AFR has been drifting ${dirWord} vs. target over your last ${streak+1} logs for this vehicle — worth a look at fueling.`
-        });
-
-      }
-
-    }
-
-  }
-
-  return alerts;
-
 }
 
 
@@ -9640,120 +5737,25 @@ function renderHistory(){
 
   const el=$('historyContent');
 
-  let allHistory=[];
+  let history=[];
 
   try{
-    allHistory=JSON.parse(
+    history=JSON.parse(
       localStorage.getItem('logbook-history')||'[]'
     );
   }catch(e){}
 
 
-  const vehicleLabelBar=`
-    <div class="configItem" style="margin-bottom:16px">
-      <label>Vehicle label for new sessions</label>
-      <input
-        id="vehicleLabelInput"
-        type="text"
-        placeholder="e.g. LS Swap Camaro"
-        value="${escapeHTML(currentVehicleLabel)}"
-        style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;outline:none"
-      >
-    </div>
+  if(!history.length){
 
-    <div class="configItem" style="margin-bottom:16px">
-      <label>Build note for new sessions (tags what changed on the car)</label>
-      <input
-        id="buildNoteInput"
-        type="text"
-        placeholder="e.g. installed 212/224 cam, tune rev 4"
-        value="${escapeHTML(currentBuildNote)}"
-        style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;outline:none"
-      >
-    </div>
-  `;
-
-  if(!allHistory.length){
-
-    el.innerHTML=vehicleLabelBar+`
+    el.innerHTML=`
       <div class="empty">
         NO LOG HISTORY YET.<br><br>
         Analyze a log and it will appear here.
       </div>
     `;
 
-    wireVehicleLabelInput();
-    wireBuildNoteInput();
-
     return;
-
-  }
-
-
-  /*
-    Older entries saved before vehicle tagging existed have no
-    .vehicle field — group those under "Unlabeled" rather than
-    silently dropping them from the filter.
-  */
-
-  const vehicles=[...new Set(
-    allHistory.map(h=>h.vehicle||'Unlabeled')
-  )];
-
-  if(!vehicles.includes(historyVehicleFilter) && historyVehicleFilter!=='__all__'){
-    historyVehicleFilter='__all__';
-  }
-
-  const history=
-    historyVehicleFilter==='__all__'
-      ?allHistory
-      :allHistory.filter(h=>(h.vehicle||'Unlabeled')===historyVehicleFilter);
-
-
-  /*
-    Only meaningful for one specific vehicle at a time — with
-    "ALL VEHICLES" selected, two different cars' knock numbers
-    would get compared against each other, which is noise, not
-    a trend. Only shows once a vehicle is actually picked.
-  */
-  const trendAlerts=
-    historyVehicleFilter==='__all__'
-      ?[]
-      :detectTrendAlerts(history);
-
-  const alertsBar=trendAlerts.length?`
-    <div style="background:linear-gradient(135deg,#241a12,#1a120f);border:1px solid var(--red);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px">
-
-      <div style="font-size:13px;font-weight:700;color:var(--red);letter-spacing:.5px;margin-bottom:10px">
-        ⚠ TREND ALERT${trendAlerts.length>1?'S':''}
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:6px">
-        ${trendAlerts.map(a=>`
-          <div style="font-size:13px;color:var(--text)">${escapeHTML(a.message)}</div>
-        `).join('')}
-      </div>
-
-    </div>
-  `:'';
-
-
-  let filterBar='';
-
-  if(vehicles.length>1){
-
-    filterBar=`
-      <div class="configItem" style="margin-bottom:16px">
-        <label>Showing history for</label>
-        <select id="historyVehicleFilter" style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;outline:none">
-          <option value="__all__" ${historyVehicleFilter==='__all__'?'selected':''}>ALL VEHICLES (${allHistory.length})</option>
-          ${vehicles.map(v=>{
-            const count=allHistory.filter(h=>(h.vehicle||'Unlabeled')===v).length;
-            return `<option value="${escapeHTML(v)}" ${historyVehicleFilter===v?'selected':''}>${escapeHTML(v)} (${count})</option>`;
-          }).join('')}
-        </select>
-      </div>
-    `;
 
   }
 
@@ -9775,45 +5777,18 @@ function renderHistory(){
 
   if(history.length>=2){
 
-    /*
-      Prepend the trend chart in front of the already-built "Past
-      logs" header rather than rebuilding it — keeps this a single
-      unclosed .historyList div (closed once, below), instead of
-      duplicating that markup per branch.
-    */
-
     html=`
       <div class="sectionTitle">
         <div>Trend across saved drives</div>
         <span>${history.length} SESSIONS</span>
       </div>
 
-      <div class="actions" style="margin-bottom:10px">
-        <button class="btn ${historyChartMode==='reliability'?'primary':''}" id="historyModeReliability">
-          RELIABILITY
-        </button>
-        <button class="btn ${historyChartMode==='performance'?'primary':''}" id="historyModePerformance">
-          PERFORMANCE
-        </button>
-        <button class="btn ${historyChartMode==='power'?'primary':''}" id="historyModePower">
-          POWER
-        </button>
-      </div>
-
       <div class="chartPanel" style="margin-bottom:20px">
         <canvas id="historyChart" style="height:220px!important"></canvas>
       </div>
-
-      ${historyChartMode==='power'?`
-        <div class="hint" style="margin-top:-12px">
-          Bigger dot = a log with a build note attached — hover it for what changed. Build notes are set from the field above, and apply to every log saved while they're active, so a mod usually tags several logs in a row instead of just the first one after it.
-        </div>
-      `:''}
     `+html;
 
   }
-
-  html=vehicleLabelBar+filterBar+alertsBar+html;
 
 
   [...history].reverse().forEach(h=>{
@@ -9826,16 +5801,10 @@ function renderHistory(){
 
           <div class="historyName">
             ${escapeHTML(h.filename)}
-            ${vehicles.length>1?`<span style="color:var(--dim);font:9px JetBrains Mono;margin-left:8px">${escapeHTML(h.vehicle||'Unlabeled')}</span>`:''}
           </div>
 
           <div class="historyDate">
             ${new Date(h.date).toLocaleString()}
-          </div>
-
-          <div style="font-size:11px;color:var(--dim);margin-top:2px;display:flex;align-items:center;gap:6px">
-            ${h.note?`<span>📝 ${escapeHTML(h.note)}</span>`:'<span style="opacity:.6">no build note</span>'}
-            ${h.id?`<button class="btn" onclick="editHistoryNote('${h.id}')" style="padding:2px 6px;font-size:9px">${h.note?'EDIT':'ADD'}</button>`:''}
           </div>
 
         </div>
@@ -9872,18 +5841,6 @@ function renderHistory(){
               :''
           }
 
-          ${
-            h.boost!=null
-              ?`<span>boost <b>${h.boost.toFixed(1)} psi</b></span>`
-              :''
-          }
-
-          ${
-            h.knock!=null
-              ?`<span>knock <b>${h.knock>0?Math.round(h.knock)+'°':'clean'}</b></span>`
-              :''
-          }
-
         </div>
 
       </div>
@@ -9898,44 +5855,14 @@ function renderHistory(){
   el.innerHTML=html;
 
   if(history.length>=2){
-
     buildHistoryChart(history);
-
-    $('historyModeReliability').onclick=()=>{
-      historyChartMode='reliability';
-      renderHistory();
-    };
-
-    $('historyModePerformance').onclick=()=>{
-      historyChartMode='performance';
-      renderHistory();
-    };
-
-    $('historyModePower').onclick=()=>{
-      historyChartMode='power';
-      renderHistory();
-    };
-
   }
 
   $('clearHistory').onclick=()=>{
 
-    if(confirm(
-      historyVehicleFilter==='__all__'
-        ?'Clear all PULLSHEET history?'
-        :`Clear history for "${historyVehicleFilter}" only? Other vehicles' history is kept.`
-    )){
+    if(confirm('Clear all SHOP TALK history?')){
 
-      if(historyVehicleFilter==='__all__'){
-
-        localStorage.removeItem('logbook-history');
-
-      }else{
-
-        const kept=allHistory.filter(h=>(h.vehicle||'Unlabeled')!==historyVehicleFilter);
-        localStorage.setItem('logbook-history',JSON.stringify(kept));
-
-      }
+      localStorage.removeItem('logbook-history');
 
       if(historyChart){
         historyChart.destroy();
@@ -9947,87 +5874,6 @@ function renderHistory(){
     }
 
   };
-
-  wireVehicleLabelInput();
-  wireBuildNoteInput();
-
-  if(vehicles.length>1){
-
-    $('historyVehicleFilter').onchange=(e)=>{
-      historyVehicleFilter=e.target.value;
-      renderHistory();
-    };
-
-  }
-
-}
-
-
-function wireVehicleLabelInput(){
-
-  const input=$('vehicleLabelInput');
-
-  if(!input)return;
-
-  input.addEventListener('change',()=>{
-
-    currentVehicleLabel=input.value.trim();
-    localStorage.setItem('logbook-vehicle',currentVehicleLabel);
-
-  });
-
-}
-
-
-function wireBuildNoteInput(){
-
-  const input=$('buildNoteInput');
-
-  if(!input)return;
-
-  input.addEventListener('change',()=>{
-
-    currentBuildNote=input.value.trim();
-    localStorage.setItem('logbook-buildnote',currentBuildNote);
-
-  });
-
-}
-
-
-function editHistoryNote(entryId){
-
-  /*
-    Retroactive edit for a log already saved to history — lets a
-    note get added/fixed after the fact instead of only being
-    capturable at save time. Uses the plain browser prompt() the
-    same way clearHistory() already uses confirm() elsewhere in
-    this file; there's no in-place editable table cell here, and
-    a real modal would be a lot of markup for something used
-    occasionally.
-  */
-
-  let history=[];
-
-  try{
-    history=JSON.parse(localStorage.getItem('logbook-history')||'[]');
-  }catch(e){
-    return;
-  }
-
-  const entry=history.find(h=>h.id===entryId);
-
-  if(!entry)return;
-
-  const next=prompt('Build note for this log:',entry.note||'');
-
-  if(next===null)return;
-
-  entry.note=next.trim();
-
-  localStorage.setItem('logbook-history',JSON.stringify(history));
-
-  renderHistory();
 
 }
 
@@ -10049,221 +5895,47 @@ function buildHistoryChart(history){
     new Date(h.date).toLocaleDateString(undefined,{month:'short',day:'numeric'})
   );
 
-  /*
-    Note markers — power mode is the "build timeline" view, so
-    points where a build note was active get drawn bigger and get
-    the note text appended to their tooltip via the callback below.
-    Computed once here regardless of mode; only power mode's point
-    styling actually uses it, but the tooltip callback checks every
-    mode so a note is never hidden just because you're looking at
-    the reliability or performance chart instead.
-  */
-  const notePointRadius=sorted.map(h=>h.note?6:3);
-
-  /*
-    Three modes instead of one crowded chart — health/coolant/trans,
-    boost/knock/AFR, and peak power/torque all live on genuinely
-    different scales (0-100, °F, psi, degrees, +/-AFR, hp/lb-ft),
-    and cramming all of them onto one 220px-tall chart with 5+ Y
-    axes would be unreadable. Each mode keeps to 2 visible axes
-    plus, in performance mode, one hidden axis for AFR delta (its
-    own tooltip still shows the value — it just doesn't need a 3rd
-    set of gridlines fighting for space).
-  */
-
-  let datasets;
-
-  if(historyChartMode==='performance'){
-
-    datasets=[
-        {
-          label:'Peak boost (psi)',
-          data:sorted.map(h=>h.boost),
-          borderColor:'#ff8757',
-          backgroundColor:'#ff875718',
-          yAxisID:'boost',
-          pointRadius:3,
-          borderWidth:1.8,
-          tension:.15,
-          spanGaps:true
-        },
-        {
-          label:'Peak knock (°)',
-          data:sorted.map(h=>h.knock),
-          borderColor:'#ff4f6d',
-          backgroundColor:'#ff4f6d18',
-          yAxisID:'knock',
-          pointRadius:3,
-          borderWidth:1.8,
-          tension:.15,
-          spanGaps:true
-        },
-        {
-          label:'AFR delta (worst pull)',
-          data:sorted.map(h=>h.afrDelta),
-          borderColor:'#b88cff',
-          backgroundColor:'#b88cff18',
-          yAxisID:'afrDelta',
-          pointRadius:3,
-          borderWidth:1.8,
-          tension:.15,
-          spanGaps:true
-        }
-    ];
-
-  }else if(historyChartMode==='power'){
-
-    datasets=[
-      {
-        label:'Peak power (hp)',
-        data:sorted.map(h=>h.power),
-        borderColor:'#3ddc84',
-        backgroundColor:'#3ddc8418',
-        yAxisID:'power',
-        pointRadius:notePointRadius,
-        pointBackgroundColor:sorted.map(h=>h.note?'#3ddc84':'#3ddc8499'),
-        borderWidth:1.8,
-        tension:.15,
-        spanGaps:true
-      },
-      {
-        label:'Peak torque (lb-ft)',
-        data:sorted.map(h=>h.torque),
-        borderColor:'#4fb3ff',
-        backgroundColor:'#4fb3ff18',
-        yAxisID:'power',
-        pointRadius:notePointRadius,
-        pointBackgroundColor:sorted.map(h=>h.note?'#4fb3ff':'#4fb3ff99'),
-        borderWidth:1.8,
-        tension:.15,
-        spanGaps:true
-      }
-    ];
-
-  }else{
-
-    datasets=[
-      {
-        label:'Health score',
-        data:sorted.map(h=>h.health),
-        borderColor:'#ffb627',
-        backgroundColor:'#ffb62718',
-        yAxisID:'health',
-        pointRadius:3,
-        borderWidth:1.8,
-        tension:.15,
-        spanGaps:true
-      },
-      {
-        label:'Trans °F',
-        data:sorted.map(h=>h.trans),
-        borderColor:'#ff5c4d',
-        backgroundColor:'#ff5c4d18',
-        yAxisID:'temp',
-        pointRadius:3,
-        borderWidth:1.8,
-        tension:.15,
-        spanGaps:true
-      },
-      {
-        label:'Coolant °F',
-        data:sorted.map(h=>h.coolant),
-        borderColor:'#72d43c',
-        backgroundColor:'#72d43c18',
-        yAxisID:'temp',
-        pointRadius:3,
-        borderWidth:1.8,
-        tension:.15,
-        spanGaps:true
-      }
-    ];
-
-  }
-
-  let scales;
-
-  if(historyChartMode==='performance'){
-
-    scales={
-        x:{
-          grid:{color:'#20262a'},
-          ticks:{color:'#667178',font:{size:9}}
-        },
-
-        boost:{
-          position:'left',
-          grid:{color:'#20262a'},
-          ticks:{color:'#ff8757',font:{size:9}},
-          title:{display:true,text:'Boost psi',color:'#ff8757',font:{size:9}}
-        },
-
-        knock:{
-          position:'right',
-          grid:{display:false},
-          ticks:{color:'#ff4f6d',font:{size:9}},
-          title:{display:true,text:'Knock °',color:'#ff4f6d',font:{size:9}}
-        },
-
-        /*
-          Deliberately not shown — a 3rd set of gridlines/ticks in
-          this small a chart reads as noise. The line still plots
-          and its tooltip still shows the real AFR delta value.
-        */
-        afrDelta:{
-          display:false
-        }
-    };
-
-  }else if(historyChartMode==='power'){
-
-    scales={
-      x:{
-        grid:{color:'#20262a'},
-        ticks:{color:'#667178',font:{size:9}}
-      },
-
-      power:{
-        position:'left',
-        grid:{color:'#20262a'},
-        ticks:{color:'#3ddc84',font:{size:9}},
-        title:{display:true,text:'hp / lb-ft',color:'#3ddc84',font:{size:9}}
-      }
-    };
-
-  }else{
-
-    scales={
-      x:{
-        grid:{color:'#20262a'},
-        ticks:{color:'#667178',font:{size:9}}
-      },
-
-      health:{
-        position:'left',
-        min:0,
-        max:100,
-        grid:{color:'#20262a'},
-        ticks:{color:'#ffb627',font:{size:9}},
-        title:{display:true,text:'Health',color:'#ffb627',font:{size:9}}
-      },
-
-      temp:{
-        position:'right',
-        grid:{display:false},
-        ticks:{color:'#72d43c',font:{size:9}},
-        title:{display:true,text:'°F',color:'#72d43c',font:{size:9}}
-      }
-    };
-
-  }
-
   historyChart=new Chart(canvas,{
 
     type:'line',
 
     data:{
       labels,
-      datasets
+      datasets:[
+        {
+          label:'Health score',
+          data:sorted.map(h=>h.health),
+          borderColor:'#ffb627',
+          backgroundColor:'#ffb62718',
+          yAxisID:'health',
+          pointRadius:3,
+          borderWidth:1.8,
+          tension:.15,
+          spanGaps:true
+        },
+        {
+          label:'Trans °F',
+          data:sorted.map(h=>h.trans),
+          borderColor:'#ff5c4d',
+          backgroundColor:'#ff5c4d18',
+          yAxisID:'temp',
+          pointRadius:3,
+          borderWidth:1.8,
+          tension:.15,
+          spanGaps:true
+        },
+        {
+          label:'Coolant °F',
+          data:sorted.map(h=>h.coolant),
+          borderColor:'#72d43c',
+          backgroundColor:'#72d43c18',
+          yAxisID:'temp',
+          pointRadius:3,
+          borderWidth:1.8,
+          tension:.15,
+          spanGaps:true
+        }
+      ]
     },
 
     options:{
@@ -10278,26 +5950,33 @@ function buildHistoryChart(history){
         legend:{
           display:true,
           labels:{color:'#7f8a91',font:{size:9},boxWidth:10}
-        },
-        tooltip:{
-          callbacks:{
-            /*
-              Surfaces the build note on whichever point is being
-              hovered, in ANY chart mode — not just power mode — so
-              "why did this jump" is answerable no matter which
-              trend you're looking at. sorted/dataIndex line up
-              1:1 with the datasets built above.
-            */
-            afterBody(items){
-              const idx=items && items[0] ? items[0].dataIndex : null;
-              const h=idx!=null ? sorted[idx] : null;
-              return h && h.note ? ['📝 '+h.note] : [];
-            }
-          }
         }
       },
 
-      scales
+      scales:{
+
+        x:{
+          grid:{color:'#20262a'},
+          ticks:{color:'#667178',font:{size:9}}
+        },
+
+        health:{
+          position:'left',
+          min:0,
+          max:100,
+          grid:{color:'#20262a'},
+          ticks:{color:'#ffb627',font:{size:9}},
+          title:{display:true,text:'Health',color:'#ffb627',font:{size:9}}
+        },
+
+        temp:{
+          position:'right',
+          grid:{display:false},
+          ticks:{color:'#72d43c',font:{size:9}},
+          title:{display:true,text:'°F',color:'#72d43c',font:{size:9}}
+        }
+
+      }
 
     }
 
@@ -10330,128 +6009,8 @@ $('importConfigInput').addEventListener('change',e=>{
   }
 });
 
-{
-
-  const tankInput=$('tankGalInput');
-
-  if(tankInput){
-
-    tankInput.value=currentTankGal;
-
-    tankInput.addEventListener('change',()=>{
-
-      const v=parseFloat(tankInput.value);
-
-      if(Number.isFinite(v) && v>0){
-        currentTankGal=v;
-      }else{
-        currentTankGal=16.9;
-      }
-
-      tankInput.value=currentTankGal;
-      localStorage.setItem('logbook-tankgal',String(currentTankGal));
-
-      if(lastParsed){
-        render(lastParsed,lastFilename);
-      }
-
-    });
-
-  }
-
-}
-
-{
-
-  const hideKnockInput=$('hideKnockInput');
-
-  if(hideKnockInput){
-
-    hideKnockInput.checked=hideKnock;
-
-    hideKnockInput.addEventListener('change',()=>{
-
-      hideKnock=hideKnockInput.checked;
-      localStorage.setItem('logbook-hideknock',String(hideKnock));
-
-      if(lastParsed){
-        render(lastParsed,lastFilename);
-      }
-
-    });
-
-  }
-
-}
-
-{
-
-  const hidePowerInput=$('hidePowerInput');
-
-  if(hidePowerInput){
-
-    hidePowerInput.checked=hidePower;
-
-    hidePowerInput.addEventListener('change',()=>{
-
-      hidePower=hidePowerInput.checked;
-      localStorage.setItem('logbook-hidepower',String(hidePower));
-
-      if(lastParsed){
-        render(lastParsed,lastFilename);
-      }
-
-    });
-
-  }
-
-}
-
 restoreConfig();
 renderHistory();
-
-/*
-  Registers the service worker that caches the app shell (this
-  page, the vendored JSZip/Chart.js/Hammer/zoom-plugin scripts,
-  icons) so the app still opens and analyzes logs with zero signal.
-  Google Fonts is intentionally left uncached/cross-origin — it
-  just falls back to system fonts offline, which is a fine trade
-  for not needing to self-host a font family.
-*/
-if('serviceWorker' in navigator){
-
-  /*
-    Without this, shipping a new version doesn't actually show up
-    for someone who already has the app open/installed — the new
-    service worker installs and (thanks to skipWaiting()+clients.
-    claim() in sw.js) takes control in the background, but the
-    ALREADY-LOADED page keeps running on old JS until something
-    reloads it. That's exactly what happened testing v1.4.1: Netlify
-    had the new version live, but the open tab kept showing "v1.3"
-    until reloaded. controllerchange fires the moment a new worker
-    takes over, so reload here once — the `refreshing` guard stops
-    a loop if it somehow fires more than once.
-  */
-  let refreshingForUpdate=false;
-
-  navigator.serviceWorker.addEventListener('controllerchange',()=>{
-
-    if(refreshingForUpdate)return;
-    refreshingForUpdate=true;
-
-    window.location.reload();
-
-  });
-
-  window.addEventListener('load',()=>{
-
-    navigator.serviceWorker.register('sw.js').catch(err=>{
-      console.error('Service worker registration failed:',err);
-    });
-
-  });
-
-}
 
 </script>
 
