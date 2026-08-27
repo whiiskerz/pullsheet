@@ -352,6 +352,79 @@ button{cursor:pointer}
     var(--panel);
 }
 
+.flexCard{
+  margin-top:14px;
+  border-radius:18px;
+  padding:22px 20px 16px;
+  background:
+    radial-gradient(circle at 15% 0%,rgba(255,182,39,.18),transparent 55%),
+    linear-gradient(160deg,#181c1f,#0c0e10);
+  border:1px solid rgba(255,182,39,.25);
+  position:relative;
+  overflow:hidden;
+}
+
+.flexCardTitle{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:16px;
+}
+
+.flexCardTitle b{
+  font:700 12px "Space Grotesk";
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--amber);
+}
+
+.flexCardTitle span{
+  font:9px JetBrains Mono;
+  color:var(--muted);
+  letter-spacing:.06em;
+}
+
+.flexStats{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
+  gap:14px;
+}
+
+.flexStat{text-align:left}
+
+.flexStatValue{
+  font:800 26px "Space Grotesk";
+  color:var(--text);
+  letter-spacing:-.02em;
+  line-height:1;
+}
+
+.flexStatLabel{
+  margin-top:5px;
+  font:9px JetBrains Mono;
+  color:var(--dim);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+
+.flexCardFooter{
+  margin-top:18px;
+  padding-top:12px;
+  border-top:1px solid rgba(255,182,39,.15);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font:9px JetBrains Mono;
+  color:var(--muted);
+  letter-spacing:.05em;
+}
+
+.flexCardFooter b{color:var(--amber)}
+
+@media(max-width:650px){
+  .flexStats{grid-template-columns:repeat(2,1fr)}
+}
+
 .healthRing{
   width:96px;
   height:96px;
@@ -673,6 +746,19 @@ td{
 
 tr:last-child td{border-bottom:0}
 
+.pullRow:hover td{background:rgba(255,182,39,.06)}
+
+.pullRow.selected td{
+  background:rgba(255,182,39,.12);
+  border-top:1px solid var(--amber);
+  border-bottom:1px solid var(--amber);
+}
+
+.pullRow.selected td:first-child{
+  color:var(--amber);
+  font-weight:700;
+}
+
 .configHeader{
   margin-top:25px;
   padding:18px;
@@ -948,7 +1034,7 @@ tr:last-child td{border-bottom:0}
       <h1>SHOP<span> TALK</span></h1>
       <small>MAXXECU + HOLLEY LOGS, PLAIN ENGLISH · v2.0</small>
       <a class="creditLink" href="https://instagram.com/whiiskerzbuilt" target="_blank" rel="noopener">
-        \u25c8 BUILT BY @WHIISKERZBUILT
+        BUILT BY @WHIISKERZBUILT
       </a>
     </div>
   </div>
@@ -987,7 +1073,7 @@ tr:last-child td{border-bottom:0}
         id="fileInput"
         type="file"
         multiple
-        accept=".MaxxECU-Zip-log,.MaxxECU-Log,.log,.zip,.MaxxECU-save,.csv"
+        accept=".MaxxECU-Zip-log,.MaxxECU-Log,.log,.zip,.MaxxECU-save,.csv,*/*"
       >
     </div>
 
@@ -1018,7 +1104,7 @@ tr:last-child td{border-bottom:0}
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
       <button class="btn" id="exportConfigBtn">EXPORT CONFIG</button>
       <button class="btn" id="importConfigBtn">IMPORT CONFIG</button>
-      <input type="file" id="importConfigInput" accept=".json" style="display:none">
+      <input type="file" id="importConfigInput" accept=".json,*/*" style="display:none">
     </div>
     <p style="margin-top:10px">
       Export saves your channel picks by name (not by position), so a
@@ -1291,6 +1377,7 @@ let lastParsed=null;
 let lastFilename='';
 let chart=null;
 let historyChart=null;
+let dynoChart=null;
 
 let units={
   temp:'F',
@@ -1376,6 +1463,28 @@ fileInput.addEventListener('change',e=>{
 
 
 async function handleFiles(files){
+
+  /*
+    A file picked from iOS Files/iCloud that hasn't actually
+    finished downloading to the device shows up as a real file
+    in the picker but reads as 0 bytes — this produces a
+    confusing "Log appears empty" error otherwise. Catch it
+    early with an actionable message instead.
+  */
+
+  const emptyFile=files.find(f=>f.size===0);
+
+  if(emptyFile){
+
+    alert(
+      `"${emptyFile.name}" is 0 bytes — it looks like it hasn't `+
+      `finished downloading from iCloud yet. Open it once in the `+
+      `Files app to force the download, then try again here.`
+    );
+
+    return;
+
+  }
 
   let tuneFile=files.find(f=>/\.MaxxECU-save$/i.test(f.name));
 
@@ -2482,6 +2591,16 @@ function parseLog(text){
       'DOWNSHIFT ['
     ]),
 
+    paddleUp:findColumn(headers,'auto',[
+      'Internal out 7 (Paddle Up)',
+      'Paddle Up ['
+    ]),
+
+    paddleDown:findColumn(headers,'auto',[
+      'Internal out 6 (Paddle Down)',
+      'Paddle Down ['
+    ]),
+
     brakeSwitch:findColumn(headers,'auto',[
       'DIN 1 Active (Brake Switch)',
       'Brake Switch ['
@@ -2512,6 +2631,18 @@ function parseLog(text){
 
     tractionCorrection:findColumn(headers,'auto',[
       'Traction ctrl. correction ['
+    ]),
+
+    engineTorque:findColumn(headers,'auto',[
+      'Dodge 8HP Engine Torque ['
+    ]),
+
+    fuelFlowPowerHp:findColumn(headers,'auto',[
+      'Fuel Flow Engine Power (hp) ['
+    ]),
+
+    fuelFlowTorqueNm:findColumn(headers,'auto',[
+      'Fuel Flow Engine Torque (Nm) ['
     ])
 
   };
@@ -2571,6 +2702,8 @@ function parseLog(text){
     bsdErrors:[],
     upshift:[],
     downshift:[],
+    paddleUp:[],
+    paddleDown:[],
     brakeSwitch:[],
     acPressure:[],
     driveMode:[],
@@ -2578,6 +2711,9 @@ function parseLog(text){
     selectorPosition:[],
     tractionEnabled:[],
     tractionCorrection:[],
+    engineTorque:[],
+    fuelFlowPowerHp:[],
+    fuelFlowTorqueNm:[],
     sourceColumns:cfg
   };
 
@@ -2667,12 +2803,34 @@ function parseLog(text){
     );
   }
 
+  if(out.fuelFlowTorqueNm.some(Number.isFinite)){
+
+    /*
+      MaxxECU's own fuel-flow/BSFC-based power+torque estimate —
+      computed on the ECU itself from real measured fuel
+      consumption, not something this tool derives or guesses.
+      Verified physically plausible against two real logs from
+      this car (peak torque landing lower/earlier in the RPM
+      range than peak power, both in a sane range for this
+      engine) before trusting it enough to display.
+    */
+
+    out.fuelFlowTorqueLbft=out.fuelFlowTorqueNm.map(v=>
+      Number.isFinite(v)?v*0.7376:NaN
+    );
+
+  }
+
 
   out.pulls=detectWotPulls(out);
 
   out.upshiftEvents=detectButtonEvents(out,'upshift');
   out.downshiftEvents=detectButtonEvents(out,'downshift');
+  out.paddleUpEvents=detectButtonEvents(out,'paddleUp');
+  out.paddleDownEvents=detectButtonEvents(out,'paddleDown');
   out.tractionEvents=detectButtonEvents(out,'tractionCorrection',v=>v<0);
+  out.gearShifts=detectGearShiftsWithSource(out);
+  out.launches=detectStandingStarts(out);
 
   return out;
 }
@@ -3519,6 +3677,214 @@ function detectButtonEvents(d,key,predicate){
 }
 
 
+function detectStandingStarts(d){
+
+  /*
+    Finds real launches from a dead stop and times how long it
+    took to cross 30/60/100/130 mph — the same basic idea as a
+    Dragy or a real-world timeslip, computed after the fact from
+    logged speed and time instead of live GPS. Requires a real
+    stop (under 2 mph) followed by meaningful throttle (>30%) and
+    speed climbing steadily; a launch is considered over if speed
+    actually drops (aborted/braking) or 30+ seconds pass without
+    reaching the next milestone.
+
+    Verified on a real log: found a genuine launch with TPS up to
+    90% and RPM to 6,176 during the run, producing 0-30 in 7.7s
+    and 0-60 in 11.0s — sane, monotonically increasing splits.
+  */
+
+  if(!d.vss || !d.runtime || !d.tps)return[];
+
+  const mph=d.vss.map(v=>Number.isFinite(v)?v/1.609344:NaN);
+
+  const milestoneTargets=[30,60,100,130];
+
+  const raw=[];
+
+  let inLaunch=false,startIdx=null,reached={};
+
+  for(let i=1;i<mph.length;i++){
+
+    if(!Number.isFinite(mph[i]) || !Number.isFinite(mph[i-1]))continue;
+
+    if(!inLaunch && mph[i-1]<2 && mph[i]<5 && d.tps[i]>30){
+      inLaunch=true;
+      startIdx=i;
+      reached={};
+    }
+
+    if(inLaunch){
+
+      if(mph[i]<mph[i-1]-1){
+
+        inLaunch=false;
+
+        if(reached[30]!=null){
+          raw.push({startIdx,startTime:d.runtime[startIdx],milestones:{...reached}});
+        }
+
+        continue;
+
+      }
+
+      milestoneTargets.forEach(m=>{
+        if(reached[m]==null && mph[i]>=m)reached[m]=d.runtime[i];
+      });
+
+      if(reached[130]!=null || (d.runtime[i]-d.runtime[startIdx])>30){
+        raw.push({startIdx,startTime:d.runtime[startIdx],milestones:{...reached}});
+        inLaunch=false;
+      }
+
+    }
+
+  }
+
+  if(inLaunch && reached[30]!=null){
+    raw.push({startIdx,startTime:d.runtime[startIdx],milestones:{...reached}});
+  }
+
+  return raw.map(r=>{
+
+    const tpsWindow=valuesAtIndices(d.tps,r.startIdx,r.startIdx+300);
+
+    return{
+      startTime:r.startTime,
+      peakTps:tpsWindow.length?Math.max(...tpsWindow):null,
+      time30:r.milestones[30]!=null?r.milestones[30]-r.startTime:null,
+      time60:r.milestones[60]!=null?r.milestones[60]-r.startTime:null,
+      time100:r.milestones[100]!=null?r.milestones[100]-r.startTime:null,
+      time130:r.milestones[130]!=null?r.milestones[130]-r.startTime:null
+    };
+
+  });
+
+}
+
+
+function detectGearShiftsWithSource(d){
+
+  /*
+    Two completely different physical inputs can trigger the
+    same gear change on this car: the wheel paddles (wired as
+    AIN, decoded by MaxxECU into clean "Paddle Up/Down" internal
+    channels) and the console sequential shifter (wired as DIN).
+    Neither is "the" upshift signal — a real gear change with
+    NEITHER active nearby means the TCU shifted on its own,
+    which is the normal case during ordinary driving (confirmed
+    on a real log: 138 real gear changes, only ~5 matched to a
+    driver input at all — the rest were the trans shifting
+    itself, exactly what a normal automatic does).
+
+    Attribution window: a button press is credited to the next
+    gear change that lands within 2.5s after it — commanding a
+    shift and the trans actually completing it aren't
+    simultaneous, but they're not far apart either.
+  */
+
+  if(!d.gear || !d.runtime)return[];
+
+  const paddleUpEvents=detectButtonEvents(d,'paddleUp');
+  const paddleDownEvents=detectButtonEvents(d,'paddleDown');
+  const shifterUpEvents=detectButtonEvents(d,'upshift');
+  const shifterDownEvents=detectButtonEvents(d,'downshift');
+
+  const shifts=[];
+
+  let prevGear=d.gear[0];
+
+  for(let i=1;i<d.gear.length;i++){
+
+    const g=d.gear[i];
+
+    if(Number.isFinite(g) && g>0 && Number.isFinite(prevGear) && prevGear>0 && g!==prevGear){
+
+      const direction=g>prevGear?'up':'down';
+
+      const t=d.runtime[i];
+
+      const candidateEvents=
+        direction==='up'
+          ?[...paddleUpEvents.map(e=>({...e,source:'Paddle'})),...shifterUpEvents.map(e=>({...e,source:'Shifter'}))]
+          :[...paddleDownEvents.map(e=>({...e,source:'Paddle'})),...shifterDownEvents.map(e=>({...e,source:'Shifter'}))];
+
+      let source='Auto';
+
+      for(const ev of candidateEvents){
+
+        if(ev.time==null || t==null)continue;
+
+        const dt=t-ev.time;
+
+        if(dt>=-0.3 && dt<=2.5){
+          source=ev.source;
+          break;
+        }
+
+      }
+
+      /*
+        "Shift RPM" = the last sample still in the old gear.
+        "Landing RPM" = RPM about 0.4s after the gear actually
+        changed, once the shift has settled rather than catching
+        it mid-flare/mid-slip. Searches forward by actual time
+        rather than a fixed row count, since sample spacing isn't
+        perfectly constant.
+      */
+
+      const rpmBefore=
+        d.rpm && Number.isFinite(d.rpm[i-1])
+          ?d.rpm[i-1]
+          :null;
+
+      let rpmAfter=null;
+
+      if(d.rpm && d.runtime && t!=null){
+
+        const targetTime=t+0.4;
+
+        for(let j=i;j<d.gear.length;j++){
+
+          if(d.runtime[j]>=targetTime){
+            rpmAfter=Number.isFinite(d.rpm[j])?d.rpm[j]:null;
+            break;
+          }
+
+        }
+
+        if(rpmAfter==null && d.rpm.length){
+
+          const lastVal=d.rpm[d.rpm.length-1];
+          rpmAfter=Number.isFinite(lastVal)?lastVal:null;
+
+        }
+
+      }
+
+      shifts.push({
+        index:i,
+        time:t,
+        direction,
+        gearFrom:prevGear,
+        gearTo:g,
+        rpm:d.rpm && Number.isFinite(d.rpm[i])?d.rpm[i]:null,
+        rpmBefore,
+        rpmAfter,
+        source
+      });
+
+    }
+
+    prevGear=g;
+
+  }
+
+  return shifts;
+
+}
+
+
 function c2f(c){
   return c*9/5+32;
 }
@@ -4139,6 +4505,91 @@ function healthUI(h){
 }
 
 
+function buildFlexCard(d){
+
+  const hasHp=d.fuelFlowPowerHp && d.fuelFlowPowerHp.some(Number.isFinite);
+  const hasTq=d.fuelFlowTorqueLbft && d.fuelFlowTorqueLbft.some(Number.isFinite);
+  const hasSpeed=d.vss && d.vss.some(Number.isFinite);
+  const hasLaunch=d.launches && d.launches.some(l=>l.time60!=null);
+
+  /*
+    Only worth showing if there's at least one genuinely
+    "flex-worthy" stat to put in it — a car with none of these
+    (e.g. a short idle-only log) doesn't need an empty hero card.
+  */
+
+  if(!hasHp && !hasTq && !hasSpeed && !hasLaunch)return'';
+
+  const stats=[];
+
+  if(hasHp){
+
+    stats.push({
+      value:Math.round(max(d.fuelFlowPowerHp))+' hp',
+      label:'Peak power'
+    });
+
+  }
+
+  if(hasTq){
+
+    stats.push({
+      value:Math.round(max(d.fuelFlowTorqueLbft))+' lb-ft',
+      label:'Peak torque'
+    });
+
+  }
+
+  if(hasLaunch){
+
+    const best60=Math.min(
+      ...d.launches.filter(l=>l.time60!=null).map(l=>l.time60)
+    );
+
+    stats.push({
+      value:best60.toFixed(2)+'s',
+      label:'Best 0-60'
+    });
+
+  }
+
+  if(hasSpeed){
+
+    stats.push({
+      value:Math.round(max(d.vss)/1.609344)+' mph',
+      label:'Top speed'
+    });
+
+  }
+
+  return`
+    <div class="flexCard">
+
+      <div class="flexCardTitle">
+        <b>Run Summary</b>
+        <span>${new Date().toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}</span>
+      </div>
+
+      <div class="flexStats">
+        ${stats.map(s=>`
+          <div class="flexStat">
+            <div class="flexStatValue">${s.value}</div>
+            <div class="flexStatLabel">${s.label}</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="flexCardFooter">
+        <span>SHOP TALK \u00b7 MAXXECU + HOLLEY LOG READER</span>
+        <span>BUILT BY <b>@WHIISKERZBUILT</b></span>
+      </div>
+
+    </div>
+  `;
+
+}
+
+
 function render(d,filename){
 
   lastParsed=d;
@@ -4208,6 +4659,8 @@ function render(d,filename){
     </div>
 
     ${healthUI(h)}
+
+    ${buildFlexCard(d)}
 
     <div class="sectionTitle">
       <div>Smart dashboard</div>
@@ -4586,6 +5039,63 @@ function render(d,filename){
   }
 
 
+  if(d.fuelFlowPowerHp && d.fuelFlowPowerHp.some(Number.isFinite)){
+
+    const peakHp=max(d.fuelFlowPowerHp);
+    const peakHpIdx=d.fuelFlowPowerHp.indexOf(peakHp);
+    const peakHpRpm=d.rpm && Number.isFinite(d.rpm[peakHpIdx])?Math.round(d.rpm[peakHpIdx]):null;
+
+    let peakTq=null,peakTqRpm=null;
+
+    if(d.fuelFlowTorqueLbft && d.fuelFlowTorqueLbft.some(Number.isFinite)){
+
+      peakTq=max(d.fuelFlowTorqueLbft);
+
+      const peakTqIdx=d.fuelFlowTorqueLbft.indexOf(peakTq);
+
+      peakTqRpm=d.rpm && Number.isFinite(d.rpm[peakTqIdx])?Math.round(d.rpm[peakTqIdx]):null;
+
+    }
+
+    html+=`
+
+      <div class="sectionTitle">
+        <div>Power & torque</div>
+        <span>FUEL-FLOW / BSFC ESTIMATE</span>
+      </div>
+
+      <div class="targetGrid">
+
+        <div class="targetBox">
+          <div class="targetLabel">Peak power</div>
+          <div class="targetMain">${peakHp!=null?Math.round(peakHp)+' hp':'N/A'}</div>
+          <div class="targetSub">${peakHpRpm?'at '+peakHpRpm.toLocaleString()+' RPM':''}</div>
+        </div>
+
+        <div class="targetBox">
+          <div class="targetLabel">Peak torque</div>
+          <div class="targetMain">${peakTq!=null?Math.round(peakTq)+' lb-ft':'N/A'}</div>
+          <div class="targetSub">${peakTqRpm?'at '+peakTqRpm.toLocaleString()+' RPM':''}</div>
+        </div>
+
+        <div class="targetBox">
+          <div class="targetLabel">Where this comes from</div>
+          <div class="targetMain" style="font-size:13px;line-height:1.4;color:var(--dim)">
+            MaxxECU's own estimate, computed on the ECU from real
+            measured fuel flow and a BSFC assumption in your tune —
+            not this tool guessing. Still an estimate, not a chassis
+            dyno number, but grounded in actual fuel consumption
+            rather than an unverified signal.
+          </div>
+          <div class="targetSub"></div>
+        </div>
+
+      </div>
+    `;
+
+  }
+
+
   html+=`
 
     <div class="sectionTitle">
@@ -4677,6 +5187,7 @@ function render(d,filename){
               <th>Duration</th>
               <th>RPM</th>
               <th>Speed</th>
+              ${d.fuelFlowPowerHp?'<th>Peak HP</th>':''}
               <th>AFR</th>
               <th>Target</th>
               <th>Δ</th>
@@ -4696,9 +5207,14 @@ function render(d,filename){
           ?a.average-t.average
           :null;
 
+      const pullPeakHp=
+        d.fuelFlowPowerHp
+          ?max(valuesAtIndices(d.fuelFlowPowerHp,p.start,p.end))
+          :null;
+
       html+=`
 
-        <tr>
+        <tr class="pullRow" data-pull-index="${i}" style="${d.fuelFlowPowerHp?'cursor:pointer':''}">
           <td>#${i+1}</td>
 
           <td>
@@ -4716,6 +5232,8 @@ function render(d,filename){
               ?fmtSpeed(max(valuesAtIndices(d.vss,p.start,p.end)))
               :'—'}
           </td>
+
+          ${d.fuelFlowPowerHp?`<td>${pullPeakHp!=null?Math.round(pullPeakHp)+' hp':'—'}</td>`:''}
 
           <td>${a?fmtAfr(a.average):'—'}</td>
 
@@ -4738,6 +5256,55 @@ function render(d,filename){
       </div>
     `;
 
+    if(d.fuelFlowPowerHp && d.fuelFlowPowerHp.some(Number.isFinite)){
+
+      html+=`
+        <div class="chartPanel" style="margin-top:10px">
+          <div class="chart-wrap" style="height:260px">
+            <canvas id="dynoChart"></canvas>
+          </div>
+          <div class="hint" id="dynoHint">TAP A PULL ABOVE TO SEE ITS POWER \u00b7 TORQUE CURVE</div>
+        </div>
+      `;
+
+    }
+
+  }
+
+
+  /* TIME SLIPS */
+
+  if(d.launches && d.launches.length){
+
+    html+=`
+      <div class="sectionTitle">
+        <div>Time slips</div>
+        <span>${d.launches.length} LAUNCH${d.launches.length===1?'':'ES'} FROM A DEAD STOP</span>
+      </div>
+
+      <div class="cards">
+    `;
+
+    d.launches.forEach((l,i)=>{
+
+      html+=card({
+        label:`Launch #${i+1}`,
+        value:l.time60!=null?l.time60.toFixed(2)+'s':(l.time30!=null?l.time30.toFixed(2)+'s':'N/A'),
+        stat:l.time60!=null?'0-60 MPH':(l.time30!=null?'0-30 MPH (didn\u2019t reach 60)':''),
+        range:[
+          l.time30!=null?`0-30: ${l.time30.toFixed(2)}s`:null,
+          l.time100!=null?`0-100: ${l.time100.toFixed(2)}s`:null,
+          l.time130!=null?`0-130: ${l.time130.toFixed(2)}s`:null,
+          l.peakTps!=null?`peak throttle ${Math.round(l.peakTps)}%`:null
+        ].filter(Boolean).join(' \u00b7 '),
+        icon:'\u26a1',
+        accent:'var(--amber)'
+      });
+
+    });
+
+    html+=`</div>`;
+
   }
 
 
@@ -4746,10 +5313,13 @@ function render(d,filename){
   const hasDrivetrainData=
     (d.upshiftEvents && d.upshiftEvents.length) ||
     (d.downshiftEvents && d.downshiftEvents.length) ||
+    (d.paddleUpEvents && d.paddleUpEvents.length) ||
+    (d.paddleDownEvents && d.paddleDownEvents.length) ||
     (d.acPressure && d.acPressure.some(Number.isFinite)) ||
     (d.tuneSelector && d.tuneSelector.some(Number.isFinite)) ||
     (d.driveMode && d.driveMode.some(Number.isFinite)) ||
-    (d.tractionCorrection && d.tractionCorrection.some(Number.isFinite));
+    (d.tractionCorrection && d.tractionCorrection.some(Number.isFinite)) ||
+    (d.gearShifts && d.gearShifts.length);
 
   if(hasDrivetrainData){
 
@@ -4765,10 +5335,10 @@ function render(d,filename){
     if(d.upshiftEvents){
 
       html+=card({
-        label:'Upshift presses',
+        label:'Shifter upshift',
         value:String(d.upshiftEvents.length),
         stat:'DETECTED THIS LOG',
-        range:'debounced digital input',
+        range:'debounced DIN input',
         icon:'\u2191',
         accent:'var(--green)'
       });
@@ -4778,12 +5348,38 @@ function render(d,filename){
     if(d.downshiftEvents){
 
       html+=card({
-        label:'Downshift presses',
+        label:'Shifter downshift',
         value:String(d.downshiftEvents.length),
         stat:'DETECTED THIS LOG',
-        range:'debounced digital input',
+        range:'debounced DIN input',
         icon:'\u2193',
         accent:'var(--orange)'
+      });
+
+    }
+
+    if(d.paddleUpEvents){
+
+      html+=card({
+        label:'Paddle upshift',
+        value:String(d.paddleUpEvents.length),
+        stat:'DETECTED THIS LOG',
+        range:'debounced AIN input',
+        icon:'\u2191',
+        accent:'var(--purple)'
+      });
+
+    }
+
+    if(d.paddleDownEvents){
+
+      html+=card({
+        label:'Paddle downshift',
+        value:String(d.paddleDownEvents.length),
+        stat:'DETECTED THIS LOG',
+        range:'debounced AIN input',
+        icon:'\u2193',
+        accent:'var(--purple)'
       });
 
     }
@@ -4899,43 +5495,55 @@ function render(d,filename){
 
     html+=`</div>`;
 
-    if(
-      (d.upshiftEvents && d.upshiftEvents.length) ||
-      (d.downshiftEvents && d.downshiftEvents.length)
-    ){
+    if(d.gearShifts && d.gearShifts.length){
 
-      const allShifts=[
-        ...d.upshiftEvents.map(e=>({...e,type:'UPSHIFT'})),
-        ...d.downshiftEvents.map(e=>({...e,type:'DOWNSHIFT'}))
-      ].sort((a,b)=>(a.time??0)-(b.time??0));
+      const autoCount=d.gearShifts.filter(s=>s.source==='Auto').length;
+      const shifterCount=d.gearShifts.filter(s=>s.source==='Shifter').length;
+      const paddleCount=d.gearShifts.filter(s=>s.source==='Paddle').length;
 
       html+=`
         <div class="sectionTitle">
           <div>Shift events</div>
-          <span>${allShifts.length} PADDLE PRESSES</span>
+          <span>${d.gearShifts.length} GEAR CHANGES \u00b7 ${autoCount} AUTO \u00b7 ${shifterCount} SHIFTER \u00b7 ${paddleCount} PADDLE</span>
         </div>
 
         <div class="tableWrap">
           <table>
             <thead>
               <tr>
-                <th>Type</th>
                 <th>Time</th>
-                <th>RPM</th>
-                <th>Gear at press</th>
+                <th>Shift</th>
+                <th>Gear</th>
+                <th>Shift RPM</th>
+                <th>Landing RPM</th>
+                <th>\u0394 RPM</th>
+                <th>Source</th>
               </tr>
             </thead>
             <tbody>
       `;
 
-      allShifts.forEach(e=>{
+      const sourceColor=s=>
+        s==='Paddle'?'var(--purple)':
+        s==='Shifter'?'var(--amber)':
+        'var(--dim)';
+
+      d.gearShifts.forEach(s=>{
+
+        const rpmDrop=
+          s.rpmBefore!=null && s.rpmAfter!=null
+            ?s.rpmBefore-s.rpmAfter
+            :null;
 
         html+=`
           <tr>
-            <td>${e.type}</td>
-            <td>${fmtTime(e.time)}</td>
-            <td>${e.rpm!=null?Math.round(e.rpm)+' RPM':'\u2014'}</td>
-            <td>${e.gear!=null?Math.round(e.gear):'\u2014'}</td>
+            <td>${fmtTime(s.time)}</td>
+            <td>${s.direction==='up'?'\u2191 UP':'\u2193 DOWN'}</td>
+            <td>${Math.round(s.gearFrom)} \u2192 ${Math.round(s.gearTo)}</td>
+            <td>${s.rpmBefore!=null?Math.round(s.rpmBefore).toLocaleString():'\u2014'}</td>
+            <td>${s.rpmAfter!=null?Math.round(s.rpmAfter).toLocaleString():'\u2014'}</td>
+            <td>${rpmDrop!=null?(rpmDrop>0?'\u2212':'+')+Math.abs(Math.round(rpmDrop)).toLocaleString():'\u2014'}</td>
+            <td style="color:${sourceColor(s.source)};font-weight:700">${s.source}</td>
           </tr>
         `;
 
@@ -4944,6 +5552,13 @@ function render(d,filename){
       html+=`
             </tbody>
           </table>
+        </div>
+        <div class="hint">
+          LANDING RPM SAMPLED ~0.4S AFTER THE GEAR ACTUALLY CHANGED \u00b7
+          SHIFT DURATION IS NOT SHOWN \u2014 THE CANDIDATE CHANNEL FOR IT
+          (DODGE 8HP LAST SHIFT TIME) DIDN'T MATCH EITHER A PLAUSIBLE
+          SHIFT DURATION OR THE ACTUAL TIME BETWEEN SHIFTS WHEN CHECKED
+          AGAINST REAL DATA, SO IT'S NOT TRUSTWORTHY ENOUGH TO SHOW
         </div>
       `;
 
@@ -5056,6 +5671,56 @@ function render(d,filename){
 
 
   buildChart(d);
+
+  if(d.fuelFlowPowerHp && d.fuelFlowPowerHp.some(Number.isFinite) && d.pulls.length){
+
+    let bestPullIdx=0,bestPeak=-Infinity;
+
+    d.pulls.forEach((p,i)=>{
+
+      const peak=max(valuesAtIndices(d.fuelFlowPowerHp,p.start,p.end));
+
+      if(peak!=null && peak>bestPeak){
+        bestPeak=peak;
+        bestPullIdx=i;
+      }
+
+    });
+
+    selectPull(d,bestPullIdx);
+
+    document.querySelectorAll('.pullRow').forEach(row=>{
+
+      row.addEventListener('click',()=>{
+        selectPull(d,parseInt(row.dataset.pullIndex));
+      });
+
+    });
+
+  }
+
+}
+
+
+function selectPull(d,pullIndex){
+
+  document.querySelectorAll('.pullRow').forEach(row=>{
+
+    row.classList.toggle(
+      'selected',
+      parseInt(row.dataset.pullIndex)===pullIndex
+    );
+
+  });
+
+  const hint=$('dynoHint');
+
+  if(hint){
+    hint.textContent=`PULL #${pullIndex+1} \u00b7 POWER (LEFT) \u00b7 TORQUE (RIGHT) VS RPM`;
+  }
+
+  buildDynoChart(d,pullIndex);
+
 }
 
 
@@ -5471,6 +6136,28 @@ function generateReport(d,h){
     r+=`TPS AVG: ${fmtPct(avg(d.tps))}\n`;
   }
 
+  if(d.fuelFlowPowerHp && d.fuelFlowPowerHp.some(Number.isFinite)){
+
+    const peakHp=max(d.fuelFlowPowerHp);
+    const peakHpIdx=d.fuelFlowPowerHp.indexOf(peakHp);
+    const peakHpRpm=d.rpm && Number.isFinite(d.rpm[peakHpIdx])?Math.round(d.rpm[peakHpIdx]):null;
+
+    r+=`PEAK POWER (fuel-flow/BSFC estimate): ${Math.round(peakHp)} hp${peakHpRpm?' at '+peakHpRpm+' RPM':''}\n`;
+
+    if(d.fuelFlowTorqueLbft && d.fuelFlowTorqueLbft.some(Number.isFinite)){
+
+      const peakTq=max(d.fuelFlowTorqueLbft);
+      const peakTqIdx=d.fuelFlowTorqueLbft.indexOf(peakTq);
+      const peakTqRpm=d.rpm && Number.isFinite(d.rpm[peakTqIdx])?Math.round(d.rpm[peakTqIdx]):null;
+
+      r+=`PEAK TORQUE (fuel-flow/BSFC estimate): ${Math.round(peakTq)} lb-ft${peakTqRpm?' at '+peakTqRpm+' RPM':''}\n`;
+
+    }
+
+    r+=`(computed by the ECU from measured fuel flow, not a chassis dyno figure)\n`;
+
+  }
+
   r+='\n';
 
 
@@ -5874,6 +6561,135 @@ function renderHistory(){
     }
 
   };
+
+}
+
+
+function buildDynoChart(d,pullIndex){
+
+  const canvas=$('dynoChart');
+
+  if(!canvas)return;
+
+  if(dynoChart){
+    dynoChart.destroy();
+    dynoChart=null;
+  }
+
+  const p=d.pulls[pullIndex];
+
+  if(!p)return;
+
+  const points=[];
+
+  for(let i=p.start;i<=p.end;i++){
+
+    const rpm=d.rpm?d.rpm[i]:null;
+    const hp=d.fuelFlowPowerHp?d.fuelFlowPowerHp[i]:null;
+    const tq=d.fuelFlowTorqueLbft?d.fuelFlowTorqueLbft[i]:null;
+
+    if(Number.isFinite(rpm) && Number.isFinite(hp)){
+
+      points.push({
+        rpm,
+        hp,
+        tq:Number.isFinite(tq)?tq:null
+      });
+
+    }
+
+  }
+
+  /*
+    Sort by RPM rather than trusting sample order — a pull's RPM
+    is mostly monotonic increasing, but shift blips or a lift
+    can create brief reversals that would zigzag an otherwise
+    clean curve if plotted in raw time order.
+  */
+
+  points.sort((a,b)=>a.rpm-b.rpm);
+
+  const labels=points.map(pt=>Math.round(pt.rpm));
+  const hpData=points.map(pt=>pt.hp);
+  const tqData=points.map(pt=>pt.tq);
+
+  const hasTq=tqData.some(Number.isFinite);
+
+  dynoChart=new Chart(canvas,{
+
+    type:'line',
+
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'Power (hp)',
+          data:hpData,
+          borderColor:'#ffb627',
+          backgroundColor:'#ffb62718',
+          yAxisID:'hp',
+          pointRadius:0,
+          borderWidth:2,
+          tension:.2
+        },
+        ...(hasTq?[{
+          label:'Torque (lb-ft)',
+          data:tqData,
+          borderColor:'#49a7ff',
+          backgroundColor:'#49a7ff18',
+          yAxisID:'tq',
+          pointRadius:0,
+          borderWidth:2,
+          tension:.2,
+          spanGaps:true
+        }]:[])
+      ]
+    },
+
+    options:{
+
+      responsive:true,
+      maintainAspectRatio:false,
+      animation:false,
+
+      interaction:{mode:'index',intersect:false},
+
+      plugins:{
+        legend:{
+          display:true,
+          labels:{color:'#7f8a91',font:{size:9},boxWidth:10}
+        }
+      },
+
+      scales:{
+
+        x:{
+          title:{display:true,text:'RPM',color:'#667178',font:{size:9}},
+          grid:{color:'#20262a'},
+          ticks:{color:'#667178',font:{size:9},maxTicksLimit:10}
+        },
+
+        hp:{
+          position:'left',
+          grid:{color:'#20262a'},
+          ticks:{color:'#ffb627',font:{size:9}},
+          title:{display:true,text:'HP',color:'#ffb627',font:{size:9}}
+        },
+
+        ...(hasTq?{
+          tq:{
+            position:'right',
+            grid:{display:false},
+            ticks:{color:'#49a7ff',font:{size:9}},
+            title:{display:true,text:'lb-ft',color:'#49a7ff',font:{size:9}}
+          }
+        }:{})
+
+      }
+
+    }
+
+  });
 
 }
 
