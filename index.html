@@ -1042,6 +1042,7 @@ tr:last-child td{border-bottom:0}
   <div class="tabs">
     <button class="active" data-tab="analyze">Analyze</button>
     <button data-tab="history">History</button>
+    <button data-tab="ai">AI Tuner (Beta)</button>
     <button data-tab="config">I/O Config</button>
     <button data-tab="about">About</button>
   </div>
@@ -1247,6 +1248,21 @@ tr:last-child td{border-bottom:0}
 
 </section>
 
+<section id="view-ai" class="view">
+ <div class="configHeader"><h2 style="color:var(--amber)">AI Tuner · Development Beta</h2><p>Local, deterministic tuning analysis from your existing parsed MaxxECU log. This is NOT yet a hosted language-model chat. No ECU writes.</p></div>
+ <div style="display:grid;gap:12px;margin-top:18px">
+ <div class="configHeader"><h3>Fuel & ignition review</h3><p>Load a log in Analyze first. This checks lambda vs target in RPM regions, and flags missing channels and safety conditions. It cannot know exact MTune cells without the actual fuel table and load-axis calibration.</p><button id="aiAnalyzeBtn" style="background:var(--amber);color:#080a0c;border:0;border-radius:8px;padding:11px 17px;font-weight:700">Analyze loaded log</button><div id="aiFindings"></div></div>
+ <div class="configHeader"><h3>Virtual Dyno Estimate · Experimental</h3><p>Road-load calculation from speed acceleration, vehicle mass, aero and rolling resistance. Comparison and diagnosis only. Not a certified chassis dyno or tuning instruction. Use existing safe, legal logs; do not make a pull with unresolved fuel leaks or wiring faults.</p>
+ <div style="display:flex;gap:10px;flex-wrap:wrap">
+ <label>Vehicle mass incl. driver (kg)<input id="aiMass" type="number" min="500" max="5000" value="1650"></label>
+ <label>CdA (m²)<input id="aiCda" type="number" step=".01" value=".70"></label>
+ <label>Rolling coefficient<input id="aiCrr" type="number" step=".001" value=".012"></label>
+ <label>Drive<select id="aiDrive"><option>RWD</option><option>AWD</option><option>4WD</option></select></label>
+ <label>Transmission<select id="aiGear"><option>Automatic</option><option>Manual</option></select></label>
+ <label><input type="checkbox" id="aiLocked"> Converter lock confirmed</label>
+ </div><p>Defaults are placeholders, not verified E90 measurements. Requires time, RPM, VSS, TPS; safety channels and consistent gear improve confidence. The tool intentionally does not issue a “Usable” grade yet.</p>
+ <button id="aiDynoBtn" style="background:var(--amber);color:#080a0c;border:0;border-radius:8px;padding:11px 17px;font-weight:700">Calculate estimate</button><div id="aiDynoResult"></div></div>
+ </div></section>
 <section id="view-about" class="view">
 
   <div class="configHeader" style="border-color:var(--amber)">
@@ -6830,5 +6846,6 @@ renderHistory();
 
 </script>
 
+<script src="ai-tuner.js"></script>
 </body>
 </html>
