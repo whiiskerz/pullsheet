@@ -1251,7 +1251,7 @@ tr:last-child td{border-bottom:0}
 <section id="view-ai" class="view">
  <div class="configHeader"><h2 style="color:var(--amber)">AI Tuner · Development Beta</h2><p>Local, deterministic tuning analysis from your existing parsed MaxxECU log. This is NOT yet a hosted language-model chat. No ECU writes.</p></div>
  <div style="display:grid;gap:12px;margin-top:18px">
- <div class="configHeader"><h3>Fuel & ignition review</h3><p>Load a log in Analyze first. This checks lambda vs target in RPM regions, and flags missing channels and safety conditions. It cannot know exact MTune cells without the actual fuel table and load-axis calibration.</p><button id="aiAnalyzeBtn" style="background:var(--amber);color:#080a0c;border:0;border-radius:8px;padding:11px 17px;font-weight:700">Analyze loaded log</button><div id="aiFindings"></div></div>
+ <div class="configHeader"><h3>Build a tune review plan</h3><p>Choose what you want to improve. The plan will be exported as JSON for review, not disguised as an ECU-ready calibration.</p><label>Goal <select id="aiGoal"><option value="idle">Smooth idle / anti-stall</option><option value="cruise">Cruise fueling</option><option value="wot">WOT fueling review</option><option value="transient">Throttle tip-in / transient</option><option value="spark">Ignition safety review</option><option value="flex">Flex-fuel consistency</option></select></label> <button id="aiPlanBtn" style="background:var(--amber);color:#080a0c;border:0;border-radius:8px;padding:11px 17px;font-weight:700">Generate review plan</button><div id="aiPlanResult"></div><hr><h3>Fuel & ignition review</h3><p>Load a log in Analyze first. This checks lambda vs target in RPM regions, and flags missing channels and safety conditions. It cannot know exact MTune cells without the actual fuel table and load-axis calibration.</p><button id="aiAnalyzeBtn" style="background:var(--amber);color:#080a0c;border:0;border-radius:8px;padding:11px 17px;font-weight:700">Analyze loaded log</button><div id="aiFindings"></div></div>
  <div class="configHeader"><h3>Virtual Dyno Estimate · Experimental</h3><p>Road-load calculation from speed acceleration, vehicle mass, aero and rolling resistance. Comparison and diagnosis only. Not a certified chassis dyno or tuning instruction. Use existing safe, legal logs; do not make a pull with unresolved fuel leaks or wiring faults.</p>
  <div style="display:flex;gap:10px;flex-wrap:wrap">
  <label>Vehicle mass incl. driver (kg)<input id="aiMass" type="number" min="500" max="5000" value="1650"></label>
@@ -1390,6 +1390,7 @@ const $=id=>document.getElementById(id);
 let rawLogText=null;
 let rawHeaders=[];
 let lastParsed=null;
+let aiOriginalTuneText=null;
 let lastFilename='';
 let chart=null;
 let historyChart=null;
@@ -1901,6 +1902,7 @@ let tuneWarnings=null;
 
 function applyTuneText(text){
 
+  aiOriginalTuneText=text;
   const tune=parseTuneFile(text);
 
   pendingTuneMapping=mapTuneAinsToConfig(tune.ains);
