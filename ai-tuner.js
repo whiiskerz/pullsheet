@@ -108,6 +108,16 @@ function plan(){
  const channelSummary=k=>{const a=readChannel(k);return a.length?{count:a.length,min:Math.min(...a),max:Math.max(...a),avg:mean(a)}:null;};
  const ethanolInfo=channelSummary('ethanol');
  const fuelInfo=channelSummary('fuelPress');
+ const qualifying=d&&Array.isArray(d.rpm)?d.rpm.map((_,i)=>i).filter(i=>Number.isFinite(d.rpm[i])&&Number.isFinite(d.tps?.[i])&&(goal==='wot'?d.rpm[i]>=2000&&d.tps[i]>=80:d.rpm[i]>800&&d.tps[i]>=15)):[];
+ const paired=qualifying.filter(i=>Number.isFinite(d.lambda?.[i])&&Number.isFinite(d.targetLambda?.[i])&&d.lambda[i]>.5&&d.lambda[i]<1.5&&d.targetLambda[i]>.5&&d.targetLambda[i]<1.5);
+ const lean10=paired.filter(i=>d.lambda[i]/d.targetLambda[i]>1.10);
+ const rich10=paired.filter(i=>d.lambda[i]/d.targetLambda[i]<.90);
+ const pressureAtLean=lean10.map(i=>d.fuelPress?.[i]).filter(Number.isFinite);
+ const pressureAtOther=paired.filter(i=>d.lambda[i]/d.targetLambda[i]<=1.10).map(i=>d.fuelPress?.[i]).filter(Number.isFinite);
+ const avgPress=a=>a.length?mean(a).toFixed(1):null;
+ const safetyRows=qualifying.filter(i=>(Number.isFinite(d.knock?.[i])&&d.knock[i]>0)||(Number.isFinite(d.warnings?.[i])&&d.warnings[i]>0));
+ const eRows=qualifying.map(i=>d.ethanol?.[i]).filter(Number.isFinite);
+ const eMin=eRows.length?Math.min(...eRows):null,eMax=eRows.length?Math.max(...eRows):null;
  const standout=[...sorted].sort((a,b)=>Math.abs(b.meanLambdaRatioErrorPct)-Math.abs(a.meanLambdaRatioErrorPct)).slice(0,3);
  const near=sorted.filter(x=>Math.abs(x.meanLambdaRatioErrorPct)<=3);
  const prettyBand=x=>x.rpmBand[0].toLocaleString()+' to '+x.rpmBand[1].toLocaleString()+' RPM';
@@ -122,8 +132,14 @@ function plan(){
   standout.length?'The largest differences were around '+standout.map(x=>prettyBand(x)+' ('+(x.meanLambdaRatioErrorPct>0?'+':'')+x.meanLambdaRatioErrorPct+'%)').join(', ')+'.':'',
   near.length?'The readings were closer to target around '+near.map(prettyBand).join(', ')+'.':'',
   '',
+  'Sample-level checks',
+  paired.length?'Out of '+paired.length+' usable measured-versus-target lambda pairs, '+lean10.length+' were more than 10% leaner than target and '+rich10.length+' were more than 10% richer. These are individual samples, not separate sustained events.':'There were no usable paired lambda readings in the selected operating filter.',
+  pressureAtLean.length&&pressureAtOther.length?'When lambda was over 10% leaner than target, logged fuel pressure averaged '+avgPress(pressureAtLean)+'; in other valid samples it averaged '+avgPress(pressureAtOther)+'. Units and pressure sensor mapping remain unverified, so this comparison cannot diagnose a pressure fault.':'Fuel pressure cannot be compared reliably against lean samples because paired pressure data is missing.',
+  safetyRows.length?'Attention: '+safetyRows.length+' qualifying samples contained a positive knock or ECU-warning indication. Verify what those channels mean and investigate before loaded testing.':'No positive knock or warning indications were found in the available qualifying samples. This does not establish that the engine is safe.',
+  goal==='flex'&&eRows.length?'Ethanol content in the selected operating samples ranged from '+eMin.toFixed(1)+'% to '+eMax.toFixed(1)+'%. Compare against the actual fuel and inspect any sudden changes.':'',
+  '',
   'How reliable is this?',
-  'This review checked '+qualified.toLocaleString()+' candidate samples using '+threshold+'. That screening does not prove steady throttle, correct sensor calibration, or a clean pull. Individual lean spikes can also be hidden by averages.',
+  'This review checked '+qualified.toLocaleString()+' candidate samples using '+threshold+'. That screening does not prove steady throttle, correct sensor calibration, or a clean pull. Individual lean spikes can also be hidden by averages. Fuel-pressure and ethanol summaries cover the full log unless specifically labeled as selected operating samples.',
   goal==='flex'?'This is not yet a complete flex-fuel test: ethanol content, fuel pressure and active fuel corrections have not been validated. The log alone does not establish which fuel was in the tank.':'The log has not been matched to verified fuel-table cells or confirmed steady-state operating conditions.',
   '',
   goal==='flex'?'Ethanol sensor: '+(ethanolInfo&&ethanolInfo.min>=0&&ethanolInfo.max<=100?'The log contains '+ethanolInfo.count+' ethanol readings averaging '+ethanolInfo.avg.toFixed(1)+'%, from '+ethanolInfo.min.toFixed(1)+'% to '+ethanolInfo.max.toFixed(1)+'%. Confirm these readings match the fuel in the tank.':'No trustworthy ethanol percentage was identified. Verify the channel mapping and sensor calibration.'):'',
@@ -222,8 +238,8 @@ function renderEvents(){
  const {d,rows}=eventRows();target.replaceChildren();
  if(!d){status.textContent='No log loaded. Import a log in Analyze first.';return;}
  const limit=Math.min(500,Math.max(1,Number($('aiEventLimit')?.value)||50)),selected=rows.slice(0,limit);
- status.textContent=rows.length+' matching samples out of '+d.rpm.length+' total · displaying '+selected.length+'. Values are from the parsed log; absent channels show —.';
- const cols=[['runtime','Time'],['rpm','RPM'],['tps','TPS'],['lambda','Lambda'],['targetLambda','Target λ'],['fuelPress','Fuel press'],['knock','Knock signal'],['warnings','Warnings'],['gear','Gear'],['vss','Speed']];
+ status.textContent=rows.length+' matching samples out of '+d.rpm.length+' total · displaying '+selected.length+'. Fuel pressure units are unverified. Select Lean to inspect sample-level lambda differences; values are from the parsed log.';
+ const cols=[['runtime','Time'],['rpm','RPM'],['tps','TPS'],['lambda','Lambda'],['targetLambda','Target λ'],['fuelPress','Fuel press'],['ethanol','Ethanol %'],['knock','Knock signal'],['warnings','Warnings'],['gear','Gear'],['vss','Speed']];
  const table=document.createElement('table');const head=document.createElement('tr');
  for(const title of ['Row',...cols.map(x=>x[1])]){const th=document.createElement('th');th.textContent=title;head.append(th);}table.append(head);
  for(const i of selected){const tr=document.createElement('tr');const values=[i+1,...cols.map(([k])=>Array.isArray(d[k])?d[k][i]:null)];for(const v of values){const td=document.createElement('td');td.textContent=typeof v==='number'?(Number.isFinite(v)?Number(v.toFixed(3)):'—'):(v??'—');tr.append(td);}table.append(tr);}
@@ -231,7 +247,7 @@ function renderEvents(){
 }
 function downloadEvents(){
  const {d,rows}=eventRows();if(!d||!rows.length){const status=$('aiEventStatus');if(status)status.textContent='No matching rows to export.';return;}
- const cols=['runtime','rpm','tps','lambda','targetLambda','fuelPress','knock','warnings','gear','vss'];
+ const cols=['runtime','rpm','tps','lambda','targetLambda','fuelPress','ethanol','knock','warnings','gear','vss'];
  const escapeCsv=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
  const data=[['source_row',...cols].join(','),...rows.map(i=>[i+1,...cols.map(k=>Array.isArray(d[k])?d[k][i]:'')].map(escapeCsv).join(','))].join('\n');
  const blob=new Blob([data],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='rawest-signal-'+($('aiEventFilter')?.value||'events')+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
