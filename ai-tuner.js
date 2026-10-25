@@ -49,9 +49,44 @@ function dyno(){
  const status=gears.size>1?'Not trusted':flags.length?'Directional':'Directional'; // never certify usable without full validation
  out.innerHTML=card(status+' · Road-load wheel-power estimate','Peak '+fmt(peak.hp,0)+' hp at '+fmt(peak.rpm,0)+' RPM. Window '+fmt(span*scale,1)+' s; '+power.length+' acceleration samples. '+(flags.length?'Limitations: '+flags.join('; ')+'. ':'')+'Assumes level road, calibrated speed, known mass, no wheelspin and accurate timebase. Not a certified dyno. No automatic tune edits. This calculation does not verify ignition, fueling or mechanical safety.');
 }
-window.pullsheetAI={analyze,dyno};
+function plan(){
+ const goal=$('aiGoal').value,d=typeof lastParsed!=='undefined'?lastParsed:null;
+ const tune=typeof aiOriginalTuneText!=='undefined'?aiOriginalTuneText:null;
+ const targets={
+ idle:['Idle target RPM','Idle ignition correction','Idle air / electronic throttle control','Fuel table near idle load'],
+ cruise:['Main fuel table','Closed-loop lambda control and trims','Fuel pressure compensation'],
+ wot:['Main fuel table at measured RPM and load','Lambda target table','Injector and fuel pressure compensation'],
+ transient:['Acceleration enrichment','Wall-wetting / transient fuel','Throttle rate and electronic throttle settings'],
+ spark:['Main ignition table','Knock detection and correction','IAT/CLT ignition corrections'],
+ flex:['Ethanol content sensor calibration','Flex-fuel blend tables','Fuel stoichiometry and injector compensation']
+ };
+ const label=$('aiGoal').selectedOptions[0].textContent;
+ const proposal={
+  format:'pullsheet-review-plan/v1',created:new Date().toISOString(),goal,label,
+  source:{logLoaded:!!d,logSamples:d?.rowCount||0,maxxecuTuneLoaded:!!tune},
+  status:'REVIEW_ONLY_NOT_A_MAXXECU_CALIBRATION',
+  mtuneTablesToInspect:targets[goal],
+  evidence:[],
+  checks:['Verify actual channel units and sensor calibration','Confirm tune version and RPM/load axes','Review fuel pressure, ethanol content, knock and temperature conditions','Validate closed-loop and transient effects before attributing lambda errors to fuel-table cells'],
+  changes:[],
+  note:'No native MaxxECU tune was generated. No calibration values or cell indices are proposed without verified table schema, cell axes and log alignment.'
+ };
+ if(d&&finite(d.lambda)&&finite(d.targetLambda)){
+  const x=samples(d).filter(x=>x.t>=35);
+  const bins=new Map();for(const v of x){const k=Math.floor(v.r/500)*500;const b=bins.get(k)||[];b.push(v);bins.set(k,b);}
+  proposal.evidence=[...bins].filter(([k,v])=>v.length>=15).map(([rpm,v])=>({rpmBand:[rpm,rpm+499],samples:v.length,meanLambdaRatioErrorPct:+(mean(v.map(x=>x.err))*100).toFixed(2),interpretation:'Diagnostic only; not a VE/fuel-table correction'}));
+ }
+ const html=card('Review plan ready · '+label,'Tune file: '+(tune?'loaded':'missing')+'; log: '+(d?d.rowCount+' samples':'missing')+'. MTune areas to inspect: '+targets[goal].join(', ')+'. Exact cell edits and a valid .MaxxECU-save export require a verified source calibration and table encoding. No fake ECU-ready file will be generated.');
+ $('aiPlanResult').innerHTML=html;
+ const btn=document.createElement('button');btn.textContent='Download review plan (.json)';btn.style.cssText='background:var(--amber);color:#080a0c;border:0;border-radius:8px;padding:10px 14px;font-weight:700';
+ btn.onclick=()=>{const blob=new Blob([JSON.stringify(proposal,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='pullsheet-'+goal+'-review.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+ $('aiPlanResult').appendChild(btn);
+}
+
+window.pullsheetAI={analyze,dyno,plan};
 document.addEventListener('DOMContentLoaded',()=>{
  $('aiAnalyzeBtn')?.addEventListener('click',analyze);
  $('aiDynoBtn')?.addEventListener('click',dyno);
+ $('aiPlanBtn')?.addEventListener('click',plan);
 });
 })();
