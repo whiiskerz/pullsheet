@@ -83,10 +83,68 @@ function plan(){
  $('aiPlanResult').appendChild(btn);
 }
 
-window.pullsheetAI={analyze,dyno,plan};
+
+const workspace={original:null,compare:null};
+const groups={
+ launch:/launch|2.step|limiter|cut|clutch|brake|shift|gear/i,
+ flex:/ethanol|flex.?fuel|stoich|fuel.?blend|content|fuel.?comp/i,
+ spark:/ignition|spark|knock|timing|iat.*corr|clt.*corr/i,
+ idle:/idle|throttle|iac|startup|stall/i,
+ fuel:/fuel|lambda|inject|afr|ve |pressure/i,
+ exhaust:/overrun|decel|fuel.?cut|exhaust|antilag|anti.lag|pop|bang|flame/i
+};
+function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function parseCalibration(text,name){
+ const xml=new DOMParser().parseFromString(text,'application/xml');
+ if(xml.querySelector('parsererror'))throw Error('Invalid XML; native calibration could not be parsed.');
+ const nodes=[...xml.getElementsByTagName('ECUSettingsItem')];
+ if(!nodes.length)throw Error('No ECUSettingsItem entries found. This may not be a supported MaxxECU-save export.');
+ const settings=new Map();
+ for(const n of nodes){const key=n.getAttribute('name');if(!key)continue;const value=(n.textContent||'').trim();if(!settings.has(key))settings.set(key,[]);settings.get(key).push(value);}
+ return {name,settings,entries:nodes.length};
+}
+function settingRows(){
+ const a=workspace.original,b=workspace.compare;if(!a)return [];
+ const keys=new Set([...a.settings.keys(),...(b?[...b.settings.keys()]:[])]);
+ const rows=[];
+ for(const key of keys){const before=a.settings.get(key)||[],after=b?.settings.get(key)||[];const changed=!!b&&JSON.stringify(before)!==JSON.stringify(after);rows.push({key,before,after,changed});}
+ return rows;
+}
+function renderWorkspace(){
+ const status=$('aiTuneStatus'),target=$('aiTuneBrowser');if(!status||!target)return;
+ const a=workspace.original,b=workspace.compare;
+ if(!a){status.textContent='Load an original .MaxxECU-save to browse ECU settings.';target.replaceChildren();return;}
+ const goal=$('aiGoal')?.value||'flex',term=($('aiSettingSearch')?.value||'').toLowerCase().trim();
+ const all=settingRows(),filtered=all.filter(r=>(!term||r.key.toLowerCase().includes(term))&&(!groups[goal]||groups[goal].test(r.key)||!!term));
+ const changes=all.filter(r=>r.changed);
+ status.textContent=a.name+' · '+a.entries+' XML entries · '+a.settings.size+' unique names'+(b?' · '+changes.length+' changed names vs '+b.name:' · import comparison tune to see changed settings')+'. Display is a raw XML settings view; table shapes and value units are not yet validated.';
+ const table=document.createElement('table');table.style.cssText='width:100%;font-size:12px;border-collapse:collapse;table-layout:fixed';
+ const head=document.createElement('tr');for(const h of ['MTune setting','Original value',b?'Compared value':'Status']){let th=document.createElement('th');th.textContent=h;th.style.cssText='text-align:left;padding:8px;overflow-wrap:anywhere';head.append(th);}table.append(head);
+ for(const r of filtered.slice(0,80)){let tr=document.createElement('tr');if(r.changed)tr.style.background='rgba(255,180,50,.10)';for(const v of [r.key,r.before.join(' | '),b?r.after.join(' | '):'Read-only']){let td=document.createElement('td');td.textContent=v.length>180?v.slice(0,180)+'…':v;td.title=v;td.style.cssText='border-top:1px solid #5555;padding:8px;vertical-align:top;overflow-wrap:anywhere';tr.append(td);}table.append(tr);}
+ target.replaceChildren();const summary=document.createElement('p');summary.textContent=filtered.length+' matching settings; showing first '+Math.min(80,filtered.length)+'. Search to narrow. Goal filters are keyword matches, not verified table mappings.';target.append(summary);const wrap=document.createElement('div');wrap.style.cssText='overflow-x:auto;max-height:430px;overflow-y:auto';wrap.append(table);target.append(wrap);
+}
+async function loadCalibration(file,slot){
+ if(!file)return;
+ try{if(file.size>25e6)throw Error('Tune file exceeds 25 MB inspection limit.');
+ const parsed=parseCalibration(await file.text(),file.name);workspace[slot]=parsed;renderWorkspace();}
+ catch(err){const e=$('aiTuneStatus');if(e)e.textContent='Import error: '+err.message;}
+}
+function exportComparison(){
+ if(!workspace.original){$('aiTuneStatus').textContent='Load an original tune first.';return;}
+ const rows=settingRows(),report={format:'pullsheet-maxxecu-settings-diff/v1',created:new Date().toISOString(),original:workspace.original.name,compared:workspace.compare?.name||null,validatedForEcuImport:false,notes:'Read-only XML settings comparison. Not a MaxxECU-save tune. Unknown table encodings and ECU compatibility are not validated.',changes:workspace.compare?rows.filter(r=>r.changed):[],settings:workspace.compare?undefined:rows.map(r=>({key:r.key,value:r.before}))};
+ const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='pullsheet-mtune-'+(workspace.compare?'diff':'inventory')+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+window.pullsheetAI={analyze,dyno,plan,renderWorkspace};
 document.addEventListener('DOMContentLoaded',()=>{
  $('aiAnalyzeBtn')?.addEventListener('click',analyze);
  $('aiDynoBtn')?.addEventListener('click',dyno);
  $('aiPlanBtn')?.addEventListener('click',plan);
+ $('aiTuneInput')?.addEventListener('change',e=>loadCalibration(e.target.files[0],'original'));
+ $('aiCompareInput')?.addEventListener('change',e=>loadCalibration(e.target.files[0],'compare'));
+ $('aiSettingSearch')?.addEventListener('input',renderWorkspace);
+ $('aiGoal')?.addEventListener('change',renderWorkspace);
+ $('aiExportDiff')?.addEventListener('click',exportComparison);
+ renderWorkspace();
 });
 })();
