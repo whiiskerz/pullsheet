@@ -104,39 +104,33 @@ function plan(){
  const threshold=goal==='wot'?'RPM ≥2000 and TPS ≥80%':'RPM >800 and TPS ≥15%';
  const qualified=d&&finite(d.rpm)&&finite(d.tps)?d.rpm.reduce((n,r,i)=>n+(Number.isFinite(r)&&Number.isFinite(d.tps[i])&&(goal==='wot'?r>=2000&&d.tps[i]>=80:r>800&&d.tps[i]>=15)?1:0),0):0;
  const lambdaCount=sorted.reduce((n,x)=>n+x.samples,0);
- const lines=[
-  'RAWEST SIGNAL — '+label.toUpperCase()+' REVIEW',
-  'Generated: '+new Date(proposal.created).toLocaleString(),
+ const standout=[...sorted].sort((a,b)=>Math.abs(b.meanLambdaRatioErrorPct)-Math.abs(a.meanLambdaRatioErrorPct)).slice(0,3);
+ const near=sorted.filter(x=>Math.abs(x.meanLambdaRatioErrorPct)<=3);
+ const prettyBand=x=>x.rpmBand[0].toLocaleString()+' to '+x.rpmBand[1].toLocaleString()+' RPM';
+ const plain=[
+  'RAWEST SIGNAL — '+label+' report',
   '',
-  'SESSION',
-  'Log: '+(d?d.rowCount+' samples':'Not loaded'),
-  'MaxxECU calibration: '+(tune?tune.name:'Not loaded'),
-  'Operating filter: '+threshold,
-  'Candidate samples: '+qualified,
-  'Valid lambda samples represented in RPM bands: '+lambdaCount,
+  d?'I reviewed '+(d.rowCount||d.rpm?.length||0).toLocaleString()+' samples from your engine log.':'No engine log is loaded yet.',
+  tune?'Your MaxxECU calibration file is loaded for reference.':'Your MaxxECU calibration file is not loaded, so I cannot compare these readings with the tune tables.',
   '',
-  'SUMMARY',
-  sorted.length?'Recorded lambda-versus-target differences were found in '+sorted.length+' RPM bands after the stated throttle/RPM screening. TPS threshold alone does not verify stable WOT operation or fuel-table cells.':'Not enough valid measured and target lambda samples in the selected operating region to summarize RPM bands.',
+  'What I found',
+  sorted.length?'I found differences between the air/fuel mixture your ECU requested and what the wideband measured in '+sorted.length+' RPM ranges. Positive percentages mean the measured mixture was leaner than target. These are averages, not proof of a bad fuel table.':'There were not enough valid lambda readings in the selected operating conditions to assess fueling.',
+  standout.length?'The largest differences were around '+standout.map(x=>prettyBand(x)+' ('+(x.meanLambdaRatioErrorPct>0?'+':'')+x.meanLambdaRatioErrorPct+'%)').join(', ')+'.':'',
+  near.length?'The readings were closer to target around '+near.map(prettyBand).join(', ')+'.':'',
   '',
-  'RPM-BAND OBSERVATIONS',
-  ...(sorted.length?sorted.map(x=>x.rpmBand[0]+'–'+x.rpmBand[1]+' RPM | '+x.samples+' samples | '+(x.meanLambdaRatioErrorPct>=0?'+':'')+x.meanLambdaRatioErrorPct+'% mean measured/target lambda ratio error'):['No qualifying RPM bands.']),
+  'How reliable is this?',
+  'This review checked '+qualified.toLocaleString()+' candidate samples using '+threshold+'. That screening does not prove steady throttle, correct sensor calibration, or a clean pull. Individual lean spikes can also be hidden by averages.',
+  goal==='flex'?'This is not yet a complete flex-fuel test: ethanol content, fuel pressure and active fuel corrections have not been validated. The log alone does not establish which fuel was in the tank.':'The log has not been matched to verified fuel-table cells or confirmed steady-state operating conditions.',
   '',
-  'MTUNE AREAS TO INSPECT',
-  ...selectedTargets.map(x=>'• '+x),
+  'What I would check next',
+  'Check measured and target lambda together with throttle, MAP/load, fuel pressure, knock and closed-loop corrections in the affected areas. Confirm wideband calibration and channel units first.',
   '',
-  'CHECK BEFORE MAKING CHANGES',
-  ...proposal.checks.map(x=>'• '+x),
+  'Should you change the tune?',
+  'Not from these averages alone. No calibration changes have been recommended or generated.',
   '',
-  'CALIBRATION CHANGES',
-  'None proposed. RPM-only averages cannot identify safe table-cell edits.',
-  'Error sign: positive = measured lambda higher (leaner) than target; negative = measured lambda lower (richer) than target. Verify lambda sensor calibration and units.',
-  '',
-  'NEXT STEP',
-  'Verify actual TPS, MAP/load, measured and target lambda, fuel pressure, knock and closed-loop/transient conditions in the flagged regions.',
-  '',
-  'This is a review-only report, not a MaxxECU calibration.'
- ];
- const report=lines.join('\n');
+  'This is a diagnostic report, not an ECU-ready calibration.'
+ ].filter(x=>x!==undefined).join('\\n');
+ const report=plain;
  const container=$('aiPlanResult');container.replaceChildren();
  const heading=document.createElement('h3');heading.textContent=label+' · Tuning report';container.append(heading);
  const summary=document.createElement('p');summary.textContent=sorted.length?'Found '+sorted.length+' RPM bands after screening '+qualified+' candidate samples ('+threshold+'). Calibration cells and steady-state conditions remain unverified.':'No qualifying lambda error bands were available under '+threshold+'. Confirm channels and record suitable samples.';container.append(summary);
@@ -145,8 +139,8 @@ function plan(){
  const download=(content,type,name)=>{const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
  const txt=document.createElement('button');txt.textContent='Download text report (.txt)';txt.className='ps-btn';txt.onclick=()=>download(report,'text/plain;charset=utf-8','rawest-signal-'+goal+'-report.txt');actions.append(txt);
  const copy=document.createElement('button');copy.textContent='Copy report';copy.className='ps-btn secondary';copy.onclick=async()=>{try{await navigator.clipboard.writeText(report);copy.textContent='Copied!'}catch(e){copy.textContent='Copy unavailable — use TXT download'}};actions.append(copy);
- const details=document.createElement('details');details.style.marginTop='12px';const summaryEl=document.createElement('summary');summaryEl.textContent='Advanced · JSON export';details.append(summaryEl);
- const json=document.createElement('button');json.textContent='Download structured data (.json)';json.className='ps-btn secondary';json.style.marginTop='10px';json.onclick=()=>download(JSON.stringify(proposal,null,2),'application/json','rawest-signal-'+goal+'-review.json');details.append(json);container.append(details);
+ const details=document.createElement('details');details.style.marginTop='12px';const summaryEl=document.createElement('summary');summaryEl.textContent='Advanced · detailed data';details.append(summaryEl);
+ const json=document.createElement('button');json.textContent='Download structured data (.json)';json.className='ps-btn secondary';json.style.marginTop='10px';json.onclick=()=>download(JSON.stringify(proposal,null,2),'application/json','rawest-signal-'+goal+'-review.json');details.append(json);const raw=document.createElement('button');raw.textContent='Download detailed numbers (.txt)';raw.className='ps-btn secondary';raw.style.marginTop='10px';raw.onclick=()=>download(sorted.map(x=>prettyBand(x)+' | '+x.samples+' samples | '+x.meanLambdaRatioErrorPct+'%').join('\\n'),'text/plain;charset=utf-8','rawest-signal-'+goal+'-details.txt');details.append(raw);container.append(details);
 }
 
 
