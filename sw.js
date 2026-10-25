@@ -10,7 +10,7 @@
   instead of them being stuck on a stale cached copy forever.
 */
 
-const CACHE_NAME = 'pullsheet-v1.20-safety';
+const CACHE_NAME = 'rawest-signal-v1.21';
 
 const APP_SHELL = [
   './',
