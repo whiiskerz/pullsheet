@@ -99,11 +99,47 @@ function plan(){
   const bins=new Map();for(const v of x){const k=Math.floor(v.r/500)*500;const b=bins.get(k)||[];b.push(v);bins.set(k,b);}
   proposal.evidence=[...bins].filter(([k,v])=>v.length>=15).map(([rpm,v])=>({rpmBand:[rpm,rpm+499],samples:v.length,meanLambdaRatioErrorPct:+(mean(v.map(x=>x.err))*100).toFixed(2),interpretation:'Diagnostic only; not a VE/fuel-table correction'}));
  }
- const html=card('Review plan · '+label,'Tune: '+(tune?escapeHtml(tune.name):'not loaded')+'; log: '+(d?d.rowCount+' samples':'not loaded')+'. Review: '+selectedTargets.join(', ')+'. This is a diagnostic plan, not a set of ECU-ready edits.');
- $('aiPlanResult').innerHTML=html;
- const btn=document.createElement('button');btn.textContent='Download review plan (.json)';btn.style.cssText='background:var(--amber);color:#080a0c;border:0;border-radius:8px;padding:10px 14px;font-weight:700';
- btn.onclick=()=>{const blob=new Blob([JSON.stringify(proposal,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='pullsheet-'+goal+'-review.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
- $('aiPlanResult').appendChild(btn);
+
+ const sorted=[...proposal.evidence].sort((a,b)=>a.rpmBand[0]-b.rpmBand[0]);
+ const lines=[
+  'RAWEST SIGNAL — '+label.toUpperCase()+' REVIEW',
+  'Generated: '+new Date(proposal.created).toLocaleString(),
+  '',
+  'SESSION',
+  'Log: '+(d?d.rowCount+' samples':'Not loaded'),
+  'MaxxECU calibration: '+(tune?tune.name:'Not loaded'),
+  '',
+  'SUMMARY',
+  sorted.length?'Recorded lambda-versus-target differences were found in '+sorted.length+' RPM bands. These are diagnostic observations, not confirmed WOT-only samples or fuel-table corrections.':'Not enough validated lambda and target data to summarize RPM bands.',
+  '',
+  'RPM-BAND OBSERVATIONS',
+  ...(sorted.length?sorted.map(x=>x.rpmBand[0]+'–'+x.rpmBand[1]+' RPM | '+x.samples+' samples | '+(x.meanLambdaRatioErrorPct>=0?'+':'')+x.meanLambdaRatioErrorPct+'% mean measured/target lambda ratio error'):['No qualifying RPM bands.']),
+  '',
+  'MTUNE AREAS TO INSPECT',
+  ...selectedTargets.map(x=>'• '+x),
+  '',
+  'CHECK BEFORE MAKING CHANGES',
+  ...proposal.checks.map(x=>'• '+x),
+  '',
+  'CALIBRATION CHANGES',
+  'None proposed. RPM-only averages cannot identify safe table-cell edits.',
+  '',
+  'NEXT STEP',
+  'Verify actual TPS, MAP/load, measured and target lambda, fuel pressure, knock and closed-loop/transient conditions in the flagged regions.',
+  '',
+  'This is a review-only report, not a MaxxECU calibration.'
+ ];
+ const report=lines.join('\n');
+ const container=$('aiPlanResult');container.replaceChildren();
+ const heading=document.createElement('h3');heading.textContent=label+' · Tuning report';container.append(heading);
+ const summary=document.createElement('p');summary.textContent=sorted.length?'Found '+sorted.length+' RPM bands with recorded lambda-versus-target differences. WOT conditions and calibration cells are not yet verified.':'No qualifying lambda error bands were available. Confirm channels and record suitable samples.';container.append(summary);
+ const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;color:var(--text);font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px';pre.textContent=report;container.append(pre);
+ const actions=document.createElement('div');actions.style.cssText='display:flex;gap:9px;flex-wrap:wrap;margin-top:12px';container.append(actions);
+ const download=(content,type,name)=>{const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+ const txt=document.createElement('button');txt.textContent='Download text report (.txt)';txt.className='ps-btn';txt.onclick=()=>download(report,'text/plain;charset=utf-8','rawest-signal-'+goal+'-report.txt');actions.append(txt);
+ const copy=document.createElement('button');copy.textContent='Copy report';copy.className='ps-btn secondary';copy.onclick=async()=>{try{await navigator.clipboard.writeText(report);copy.textContent='Copied!'}catch(e){copy.textContent='Copy unavailable — use TXT download'}};actions.append(copy);
+ const details=document.createElement('details');details.style.marginTop='12px';const summaryEl=document.createElement('summary');summaryEl.textContent='Advanced · JSON export';details.append(summaryEl);
+ const json=document.createElement('button');json.textContent='Download structured data (.json)';json.className='ps-btn secondary';json.style.marginTop='10px';json.onclick=()=>download(JSON.stringify(proposal,null,2),'application/json','rawest-signal-'+goal+'-review.json');details.append(json);container.append(details);
 }
 
 
