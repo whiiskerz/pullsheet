@@ -1019,6 +1019,46 @@ tr:last-child td{border-bottom:0}
   }
 
 }
+
+/* RAWEST SIGNAL / Violet Circuit design system */
+:root{--bg:#080811;--panel:#11111e;--panel2:#19192a;--panel3:#23233a;--line:#35324c;--text:#f5f2ff;--dim:#aba7c4;--muted:#77738f;--amber:#b99aff;--green:#50e4bf;--red:#ff648f;--blue:#75b9ff;--purple:#b99aff;--cyan:#5ce9e4;--orange:#ffc078;--radius:16px}
+html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),transparent 45%),radial-gradient(ellipse at 92% 10%,rgba(27,201,186,.09),transparent 36%),#080811}
+.wrap{width:min(1450px,calc(100% - 32px));padding-top:24px}
+.top{background:rgba(17,17,30,.82);border:1px solid var(--line);border-radius:20px;padding:16px 20px;box-shadow:0 14px 45px rgba(0,0,0,.16)}
+.logoMark{width:49px;height:49px;border-radius:13px;background:linear-gradient(135deg,#c8afff,#8a63ed);color:#110c21;box-shadow:0 0 35px rgba(185,154,255,.25)}
+.brand h1{font-size:23px;letter-spacing:-.03em}
+.brand h1 span{color:#b99aff}
+.creditLink{border-color:rgba(185,154,255,.3);color:#cbb5ff}
+.tabs{border-radius:13px;background:#0b0b17;gap:4px}
+.tabs button{border-radius:10px;padding:11px 14px;font-size:10px}
+.tabs button.active{background:linear-gradient(135deg,#c8afff,#9c7bfa);color:#130b22}
+.drop{border:1px dashed rgba(185,154,255,.55);background:radial-gradient(circle at 50% 0,rgba(159,104,255,.14),transparent 65%),#11111e;min-height:270px;border-radius:20px}
+.drop:hover{border-color:#cbb5ff}
+.dropIcon{color:#b99aff}
+.btn,.ps-btn{transition:transform .15s,border-color .15s,background .15s}
+.btn:hover,.ps-btn:hover{transform:translateY(-1px)}
+.ps-hero{background:radial-gradient(circle at 100% 0,rgba(77,222,202,.13),transparent 50%),linear-gradient(135deg,rgba(154,108,255,.21),rgba(20,19,36,.75))!important;border-color:rgba(185,154,255,.3)!important}
+.ps-panel{background:#131323!important;border-color:#35324c!important}
+.ps-goal-grid button:hover{border-color:#b99aff}
+.ps-goal-grid button[aria-pressed="true"]{background:rgba(185,154,255,.16)!important;border-color:#b99aff!important}
+.ps-chip{background:rgba(185,154,255,.09)}
+.ps-btn{background:linear-gradient(135deg,#c6a8ff,#9d78fa)!important;color:#140e25!important}
+.ps-btn.secondary{background:#24213a!important;color:#e8dfff!important;border-color:#51476d!important}
+.ps-table table{min-width:650px}
+.ps-table tr:hover td{background:rgba(185,154,255,.08)}
+.signal-home{margin-top:18px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(270px,1fr);gap:14px}
+.signal-home .signal-card{border:1px solid var(--line);border-radius:19px;background:#131323;padding:24px;position:relative;overflow:hidden}
+.signal-home .signal-card:first-child{background:linear-gradient(120deg,rgba(157,103,255,.2),rgba(14,14,27,.8) 65%),#131323}
+.signal-home h2{font:700 clamp(23px,3vw,35px) "Space Grotesk";margin:8px 0;letter-spacing:-.04em}
+.signal-home p{font-size:12px;line-height:1.7;color:var(--dim);max-width:560px}
+.signal-eyebrow{font:700 10px "JetBrains Mono";letter-spacing:.16em;color:#c9afff}
+.signal-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:19px}
+.signal-action{border:1px solid #62538a;background:#26203d;color:#eee3ff;border-radius:11px;padding:11px 15px;font:700 11px "JetBrains Mono"}
+.signal-action.primary{background:#b99aff;color:#130c25;border-color:#b99aff}
+.signal-step{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:12px}
+.signal-step:last-child{border:0}.signal-step b{color:#b99aff;font:700 12px "JetBrains Mono"}
+.signal-step span{color:var(--dim)}
+@media(max-width:760px){.signal-home{grid-template-columns:1fr}.top{padding:12px}.wrap{width:min(100% - 18px,1450px)}.signal-home .signal-card{padding:18px}}
 </style>
 </head>
 
@@ -1049,14 +1089,14 @@ tr:last-child td{border-bottom:0}
 
 </header>
 
-<section id="view-analyze" class="view active">
+<section id="view-analyze" class="view active"><div class="signal-home"><div class="signal-card"><div class="signal-eyebrow">RAWEST PERFORMANCE // SIGNAL 01</div><h2>Your tuning command center.</h2><p>Drop a datalog, investigate engine behavior, review safety flags and inspect calibration revisions—all in one workspace. MaxxECU is the primary workflow; Holley CSV support is evolving.</p><div class="signal-actions"><button class="signal-action primary" id="signalChooseLog" type="button">+ Import datalog</button><button class="signal-action" id="signalOpenStudio" type="button">Open calibration studio</button></div></div><div class="signal-card"><div class="signal-eyebrow">WORKFLOW / FOUR STEPS</div><div class="signal-step"><b>01</b><span>Import a MaxxECU log</span></div><div class="signal-step"><b>02</b><span>Inspect charts and event data</span></div><div class="signal-step"><b>03</b><span>Run evidence-based safety review</span></div><div class="signal-step"><b>04</b><span>Compare tunes and export findings</span></div></div></div>
 
   <div id="drop" class="drop">
 
     <div>
       <div class="dropIcon">⌁ ⌁ ⌁</div>
 
-      <h2>Drop or tap to pick your log</h2>
+      <h2>Import your session</h2>
 
       <p>.MaxxECU-Zip-log · .MaxxECU-Log · .log · .zip · Holley CSV export</p>
       <p style="margin-top:4px">
@@ -1065,7 +1105,7 @@ tr:last-child td{border-bottom:0}
       </p>
 
       <div class="dropHint">
-        LOCAL ANALYSIS · NOTHING UPLOADED
+        LOCAL-FIRST · NO CLOUD UPLOAD
       </div>
 
       <div id="tunePill" class="tune-pill" style="display:none"></div>
@@ -6848,5 +6888,11 @@ renderHistory();
 </script>
 
 <script src="ai-tuner.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+ document.getElementById('signalChooseLog')?.addEventListener('click',()=>document.getElementById('fileInput')?.click());
+ document.getElementById('signalOpenStudio')?.addEventListener('click',()=>document.querySelector('.tabs [data-tab="ai"]')?.click());
+});
+</script>
 </body>
 </html>
