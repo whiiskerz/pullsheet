@@ -95,12 +95,15 @@ function plan(){
   note:'No native MaxxECU tune was generated. No calibration values or cell indices are proposed without verified table schema, cell axes and log alignment.'
  };
  if(d&&finite(d.lambda)&&finite(d.targetLambda)){
-  const x=samples(d).filter(x=>x.t>=35);
+  const x=samples(d).filter(x=>goal==='wot'?x.r>=2000&&x.t>=80:x.t>=15);
   const bins=new Map();for(const v of x){const k=Math.floor(v.r/500)*500;const b=bins.get(k)||[];b.push(v);bins.set(k,b);}
   proposal.evidence=[...bins].filter(([k,v])=>v.length>=15).map(([rpm,v])=>({rpmBand:[rpm,rpm+499],samples:v.length,meanLambdaRatioErrorPct:+(mean(v.map(x=>x.err))*100).toFixed(2),interpretation:'Diagnostic only; not a VE/fuel-table correction'}));
  }
 
  const sorted=[...proposal.evidence].sort((a,b)=>a.rpmBand[0]-b.rpmBand[0]);
+ const threshold=goal==='wot'?'RPM ≥2000 and TPS ≥80%':'RPM >800 and TPS ≥15%';
+ const qualified=d&&finite(d.rpm)&&finite(d.tps)?d.rpm.reduce((n,r,i)=>n+(Number.isFinite(r)&&Number.isFinite(d.tps[i])&&(goal==='wot'?r>=2000&&d.tps[i]>=80:r>800&&d.tps[i]>=15)?1:0),0):0;
+ const lambdaCount=sorted.reduce((n,x)=>n+x.samples,0);
  const lines=[
   'RAWEST SIGNAL — '+label.toUpperCase()+' REVIEW',
   'Generated: '+new Date(proposal.created).toLocaleString(),
@@ -108,9 +111,12 @@ function plan(){
   'SESSION',
   'Log: '+(d?d.rowCount+' samples':'Not loaded'),
   'MaxxECU calibration: '+(tune?tune.name:'Not loaded'),
+  'Operating filter: '+threshold,
+  'Candidate samples: '+qualified,
+  'Valid lambda samples represented in RPM bands: '+lambdaCount,
   '',
   'SUMMARY',
-  sorted.length?'Recorded lambda-versus-target differences were found in '+sorted.length+' RPM bands. These are diagnostic observations, not confirmed WOT-only samples or fuel-table corrections.':'Not enough validated lambda and target data to summarize RPM bands.',
+  sorted.length?'Recorded lambda-versus-target differences were found in '+sorted.length+' RPM bands after the stated throttle/RPM screening. TPS threshold alone does not verify stable WOT operation or fuel-table cells.':'Not enough valid measured and target lambda samples in the selected operating region to summarize RPM bands.',
   '',
   'RPM-BAND OBSERVATIONS',
   ...(sorted.length?sorted.map(x=>x.rpmBand[0]+'–'+x.rpmBand[1]+' RPM | '+x.samples+' samples | '+(x.meanLambdaRatioErrorPct>=0?'+':'')+x.meanLambdaRatioErrorPct+'% mean measured/target lambda ratio error'):['No qualifying RPM bands.']),
@@ -123,6 +129,7 @@ function plan(){
   '',
   'CALIBRATION CHANGES',
   'None proposed. RPM-only averages cannot identify safe table-cell edits.',
+  'Error sign: positive = measured lambda higher (leaner) than target; negative = measured lambda lower (richer) than target. Verify lambda sensor calibration and units.',
   '',
   'NEXT STEP',
   'Verify actual TPS, MAP/load, measured and target lambda, fuel pressure, knock and closed-loop/transient conditions in the flagged regions.',
@@ -132,7 +139,7 @@ function plan(){
  const report=lines.join('\n');
  const container=$('aiPlanResult');container.replaceChildren();
  const heading=document.createElement('h3');heading.textContent=label+' · Tuning report';container.append(heading);
- const summary=document.createElement('p');summary.textContent=sorted.length?'Found '+sorted.length+' RPM bands with recorded lambda-versus-target differences. WOT conditions and calibration cells are not yet verified.':'No qualifying lambda error bands were available. Confirm channels and record suitable samples.';container.append(summary);
+ const summary=document.createElement('p');summary.textContent=sorted.length?'Found '+sorted.length+' RPM bands after screening '+qualified+' candidate samples ('+threshold+'). Calibration cells and steady-state conditions remain unverified.':'No qualifying lambda error bands were available under '+threshold+'. Confirm channels and record suitable samples.';container.append(summary);
  const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;color:var(--text);font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px';pre.textContent=report;container.append(pre);
  const actions=document.createElement('div');actions.style.cssText='display:flex;gap:9px;flex-wrap:wrap;margin-top:12px';container.append(actions);
  const download=(content,type,name)=>{const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
