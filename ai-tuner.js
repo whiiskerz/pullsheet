@@ -8,21 +8,41 @@ const fmt=(n,d=2)=>Number.isFinite(n)?n.toFixed(d):'—';
 function card(title,body){return '<div style="background:var(--panel2);border:1px solid var(--line);padding:15px;border-radius:12px;margin:12px 0"><b>'+title+'</b><p style="line-height:1.6;color:var(--dim);font-size:12px">'+body+'</p></div>'}
 function samples(d){let a=[];for(let i=0;i<d.rpm.length;i++){const r=d.rpm[i],t=d.tps[i],l=d.lambda[i],target=d.targetLambda[i];if([r,t,l,target].every(Number.isFinite)&&r>800&&t>=15&&l>.5&&l<1.5&&target>.5&&target<1.5)a.push({i,r,t,l,target,err:l/target-1});}return a}
 function analyze(){
- const d=typeof lastParsed!=='undefined'?lastParsed:null;
- if(!d){$('aiFindings').innerHTML=card('No log loaded','Load a native MaxxECU log in Analyze first, then return here.');return;}
- let html=card('Log linked',d.rowCount+' samples available. Recommendations are screening observations, not validated calibration edits.');
- if(!finite(d.lambda)||!finite(d.targetLambda))html+=card('Lambda channels missing','Map actual and target lambda in I/O Config. No fueling correction will be inferred from AFR without verified stoichiometric settings.');
- else {
- const a=samples(d),bins=new Map();
- for(const x of a){if(x.t<35)continue;let key=Math.floor(x.r/500)*500;let b=bins.get(key)||[];b.push(x);bins.set(key,b);}
- let good=[...bins].filter(([k,v])=>v.length>=15).map(([k,v])=>({rpm:k,n:v.length,error:mean(v.map(x=>x.err)),range:v.map(x=>x.i)})).sort((a,b)=>Math.abs(b.error)-Math.abs(a.error)).slice(0,6);
- if(good.length)html+=card('Fuel-table regions to inspect',good.map(b=>'<b>'+b.rpm+'–'+(b.rpm+499)+' RPM:</b> actual lambda '+(b.error>=0?'leaner':'richer')+' than target by '+fmt(Math.abs(b.error)*100,1)+'% ('+b.n+' samples). Inspect RPM/load cells only after checking closed-loop trims, steady state, pressure and ethanol calibration.').join('<br><br>'));
- else html+=card('Insufficient steady-state coverage','No RPM bands with at least 15 suitable samples at TPS ≥35%. No cell corrections calculated.');
+ const out=$('aiFindings'),d=typeof lastParsed!=='undefined'?lastParsed:null;
+ if(!out)return;
+ if(!d){out.innerHTML=card('Log required','Import a MaxxECU log in Analyze first. No results have been fabricated.');return;}
+ const count=d.rowCount||d.rpm?.length||0;
+ const at=(key,i)=>Array.isArray(d[key])?d[key][i]:NaN;
+ const valid=(key)=>finite(d[key]);
+ const rows=Array.from({length:count},(_,i)=>i).filter(i=>Number.isFinite(at('rpm',i)));
+ const loaded=rows.filter(i=>at('rpm',i)>=1500&&at('tps',i)>=40);
+ const wot=rows.filter(i=>at('rpm',i)>=2000&&at('tps',i)>=80);
+ const warning=valid('warnings')?loaded.filter(i=>at('warnings',i)>0):[];
+ // MaxxECU 'Knock Detected' is often a boolean, not degrees of knock retard.
+ const knock=valid('knock')?loaded.filter(i=>at('knock',i)>0):[];
+ const hardStops=[];
+ if(warning.length)hardStops.push({name:'ECU warnings under load',detail:warning.length+' loaded samples report active warnings. Decode the warning flags and verify sensor health before calibration changes.'});
+ if(knock.length)hardStops.push({name:'Knock indication under load',detail:knock.length+' loaded samples report a positive knock signal. Verify the configured channel (boolean detection versus retard degrees), mechanical noise and fuel quality. Do not infer a degree value.'});
+ const missing=[];
+ if(!valid('rpm'))missing.push('RPM');
+ if(!valid('tps'))missing.push('throttle position');
+ if(!valid('lambda'))missing.push('measured lambda');
+ if(!valid('targetLambda'))missing.push('commanded lambda');
+ if(!valid('fuelPress'))missing.push('fuel pressure (with verified units)');
+ if(!valid('knock'))missing.push('knock channel (with verified definition)');
+ if(!valid('coolant'))missing.push('coolant temperature');
+ const supportedFuel=valid('lambda')&&valid('targetLambda')&&wot.length>=25&&!hardStops.length;
+ let html=card('Safety check · '+count+' samples',hardStops.length?'<strong>'+hardStops.length+' flagged stop(s).</strong> Resolve and validate these before performance-oriented changes.':'No active warning or knock condition detected in available channels. This does NOT prove the engine is safe.');
+ for(const x of hardStops)html+=card('STOP · '+escapeHtml(x.name),escapeHtml(x.detail));
+ html+=card('Operating areas','RPM rows: '+rows.length+' · Loaded samples (RPM ≥1500, TPS ≥40%): '+loaded.length+' · WOT candidate samples (RPM ≥2000, TPS ≥80%): '+wot.length+'. Throttle thresholds are screening rules, not proof of a clean pull.');
+ html+=card('WOT fueling · '+(supportedFuel?'Review available':'Not evaluated'),!wot.length?'No WOT samples were captured. Do not change WOT fuel or spark based on this log.':!valid('lambda')||!valid('targetLambda')?'Measured and commanded lambda are missing. WOT fueling cannot be assessed.':hardStops.length?'Active safety flags block WOT fueling suggestions.':wot.length<25?'Only '+wot.length+' candidate samples. Not enough for a reliable WOT review.':'Both lambda channels exist, but sensor scaling, load axis, fuel pressure and transient conditions must be verified before any numeric edits.');
+ html+=card('What to leave alone','No automated ignition advance, boost targets, injector scaling, flex-fuel blending, overrun/flame settings, or fuel-table cell edits are supported by this screening pass.');
+ html+=card('What to log next',missing.length?'Missing or unverified: '+escapeHtml(missing.join(', '))+'. Record appropriate steady-state data after resolving active warnings and mechanical issues.':'Verify actual channel units, closed-loop state, MAP/load, ethanol content, injector pulse width and pressure differential. Record repeatable steady-state data; avoid unsafe road pulls.');
+ if(valid('lambda')&&valid('targetLambda')){
+  const good=rows.filter(i=>{const l=at('lambda',i),t=at('targetLambda',i),th=at('tps',i);return Number.isFinite(l)&&Number.isFinite(t)&&l>.5&&l<1.5&&t>.5&&t<1.5&&th>=15;});
+  html+=card('Lambda coverage',good.length+' samples contain plausible measured and target lambda at throttle ≥15%. No VE correction inferred: steady-state, fuel cut, closed-loop compensation and MAP/load are not validated.');
  }
- if(finite(d.fuelPress))html+=card('Fuel pressure caution','Fuel-pressure channel exists. Confirm its physical units and whether it is gauge or differential pressure before interpreting drops or recommending fuel-table changes.');
- if(finite(d.knock)&&d.knock.some(v=>Number.isFinite(v)&&v>0))html+=card('Knock signal present','Positive knock readings were recorded. Verify the signal definition and investigate the matching timestamps before any ignition advance.');
- if(finite(d.warnings)&&d.warnings.some(v=>v>0))html+=card('ECU warnings recorded','Review warning flags and sensor validity before tuning.');
- $('aiFindings').innerHTML=html;
+ out.innerHTML=html;
 }
 function dyno(){
  const d=typeof lastParsed!=='undefined'?lastParsed:null,out=$('aiDynoResult');
