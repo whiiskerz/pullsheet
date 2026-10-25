@@ -1,17 +1,32 @@
 {
-  "name": "PULLSHEET — MaxxECU Log Intelligence",
-  "short_name": "PullSheet",
-  "description": "Local-only MaxxECU log analysis: health checks, WOT pull breakdowns, and channel traces. Nothing ever leaves your device.",
+  "name": "RAWEST SIGNAL v2.1.0 — ECU Intelligence",
+  "short_name": "RAWEST SIGNAL",
+  "description": "RAWEST Performance local-first MaxxECU log analysis, event explorer, safety screening and calibration review.",
   "start_url": "./index.html",
   "scope": "./",
   "id": "./index.html",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#080a0c",
-  "theme_color": "#080a0c",
+  "background_color": "#080811",
+  "theme_color": "#100b21",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
