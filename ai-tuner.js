@@ -118,7 +118,15 @@ function plan(){
  const safetyRows=qualifying.filter(i=>(Number.isFinite(d.knock?.[i])&&d.knock[i]>0)||(Number.isFinite(d.warnings?.[i])&&d.warnings[i]>0));
  const eRows=qualifying.map(i=>d.ethanol?.[i]).filter(Number.isFinite);
  const eMin=eRows.length?Math.min(...eRows):null,eMax=eRows.length?Math.max(...eRows):null;
- const mappedHeader=id=>{const el=$(id);if(!d||!el)return 'unknown';const value=el.value;if(value==='auto')return 'auto-detected (confirm in I/O Config)';const n=Number(value);return Number.isInteger(n)&&d.headers?.[n]?d.headers[n]:value;};
+ const mappedHeader=id=>{const el=$(id);if(!d||!el)return 'unknown';const value=el.value;if(value==='auto')return 'auto-detected (confirm in I/O Config)';const n=value.startsWith('__INDEX__')?Number(value.slice(9)):Number(value);return Number.isInteger(n)&&d.headers?.[n]?d.headers[n]:value;};
+ const pressureHeader=mappedHeader('cfgFuel');
+ const explicitUnit=(pressureHeader.match(/\\[(kpa|bar|psi)\\]/i)||pressureHeader.match(/\\((kpa|bar|psi)\\)/i)||[])[1]?.toLowerCase()||null;
+ const pressureUnit=$('aiPressureUnit')?.value||'auto';
+ const chosenUnit=pressureUnit==='auto'?explicitUnit:pressureUnit;
+ const pressureFactor=chosenUnit==='kpa'?0.1450377377:chosenUnit==='bar'?14.5037738:chosenUnit==='psi'?1:null;
+ const pressureText=v=>pressureFactor===null?v.toFixed(1)+' (raw, unit unknown)':(v*pressureFactor).toFixed(1)+' psi';
+ const pressureNote=pressureUnit!=='auto'?'Pressure unit manually selected as '+pressureUnit.toUpperCase()+'. Confirm this matches the original log channel.':explicitUnit?'Pressure unit read from the mapped channel header ('+explicitUnit+').':'Fuel pressure units are unknown. Choose the original unit above the report to see PSI; the app will not guess from pressure magnitude.';
+ const ratioAfr=ratio=>(14.7*ratio).toFixed(2);
  const standout=[...sorted].sort((a,b)=>Math.abs(b.meanLambdaRatioErrorPct)-Math.abs(a.meanLambdaRatioErrorPct)).slice(0,3);
  const near=sorted.filter(x=>Math.abs(x.meanLambdaRatioErrorPct)<=3);
  const prettyBand=x=>x.rpmBand[0].toLocaleString()+' to '+x.rpmBand[1].toLocaleString()+' RPM';
@@ -130,7 +138,7 @@ function plan(){
   '',
   'What I found',
   sorted.length?'I found differences between the air/fuel mixture your ECU requested and what the wideband measured in '+sorted.length+' RPM ranges. Positive percentages mean the measured mixture was leaner than target. These are averages, not proof of a bad fuel table.':'There were not enough valid lambda readings in the selected operating conditions to assess fueling.',
-  standout.length?'The largest differences were around '+standout.map(x=>prettyBand(x)+' ('+(x.meanLambdaRatioErrorPct>0?'+':'')+x.meanLambdaRatioErrorPct+'%)').join(', ')+'.':'',
+  standout.length?'The biggest average fueling differences were at '+standout.map(x=>prettyBand(x)+': '+Math.abs(x.meanLambdaRatioErrorPct).toFixed(1)+'% '+(x.meanLambdaRatioErrorPct>0?'lean':'rich')).join('; ')+'.':'',
   near.length?'The readings were closer to target around '+near.map(prettyBand).join(', ')+'.':'',
   '',
   'Channel mapping',
@@ -138,8 +146,8 @@ function plan(){
   'Fuel pressure: '+mappedHeader('cfgFuel')+'; ethanol: '+mappedHeader('cfgEthanol')+'. Check original header units in I/O Config. Do not interpret raw pressure values as kPa or psi without verification.',
   '',
   'Sample-level checks',
-  paired.length?'Out of '+paired.length+' usable measured-versus-target lambda pairs, '+lean10.length+' were more than 10% leaner than target and '+rich10.length+' were more than 10% richer. These are individual samples, not separate sustained events.':'There were no usable paired lambda readings in the selected operating filter.',
-  pressureAtLean.length&&pressureAtOther.length?'When lambda was over 10% leaner than target, logged fuel pressure averaged '+avgPress(pressureAtLean)+'; in other valid samples it averaged '+avgPress(pressureAtOther)+'. Units and pressure sensor mapping remain unverified, so this comparison cannot diagnose a pressure fault.':'Fuel pressure cannot be compared reliably against lean samples because paired pressure data is missing.',
+  paired.length?'Of '+paired.length+' valid fueling readings: '+lean10.length+' were over 10% lean, and '+rich10.length+' were over 10% rich. For reference, lambda 1.00 = 14.7 gasoline-scale AFR, lambda 0.85 = 12.50, and lambda 0.80 = 11.76. These AFR numbers are gasoline-equivalent even on ethanol blends. Individual readings are not sustained events.':'There were no usable paired lambda readings in the selected operating filter.',
+  pressureAtLean.length&&pressureAtOther.length?'Average fuel pressure: '+pressureText(mean(pressureAtLean))+' during lean readings versus '+pressureText(mean(pressureAtOther))+' during other readings. '+pressureNote+' Averages cannot rule out momentary pressure drops.':'Fuel pressure cannot be compared reliably against lean samples because paired pressure data is missing.',
   safetyRows.length?'Attention: '+safetyRows.length+' qualifying samples contained a positive knock or ECU-warning indication. Verify what those channels mean and investigate before loaded testing.':'No positive knock or warning indications were found in the available qualifying samples. This does not establish that the engine is safe.',
   goal==='flex'&&eRows.length?'Ethanol content in the selected operating samples ranged from '+eMin.toFixed(1)+'% to '+eMax.toFixed(1)+'%. Compare against the actual fuel and inspect any sudden changes.':'',
   '',
@@ -148,7 +156,7 @@ function plan(){
   goal==='flex'?'This is not yet a complete flex-fuel test: ethanol content, fuel pressure and active fuel corrections have not been validated. The log alone does not establish which fuel was in the tank.':'The log has not been matched to verified fuel-table cells or confirmed steady-state operating conditions.',
   '',
   goal==='flex'?'Ethanol sensor: '+(ethanolInfo&&ethanolInfo.min>=0&&ethanolInfo.max<=100?'The log contains '+ethanolInfo.count+' ethanol readings averaging '+ethanolInfo.avg.toFixed(1)+'%, from '+ethanolInfo.min.toFixed(1)+'% to '+ethanolInfo.max.toFixed(1)+'%. Confirm these readings match the fuel in the tank.':'No trustworthy ethanol percentage was identified. Verify the channel mapping and sensor calibration.'):'',
-  goal==='flex'?'Fuel pressure: '+(fuelInfo?'The log contains '+fuelInfo.count+' fuel-pressure readings, ranging from '+fuelInfo.min.toFixed(1)+' to '+fuelInfo.max.toFixed(1)+' in unverified units. This does not prove pressure was adequate under load.':'No usable fuel-pressure readings were identified.'):'',
+  goal==='flex'?'Fuel pressure: '+(fuelInfo?'The log contains '+fuelInfo.count+' readings, ranging from '+pressureText(fuelInfo.min)+' to '+pressureText(fuelInfo.max)+'. '+pressureNote+' This includes key-off and low-load samples.':'No usable fuel-pressure readings were identified.'):'',
   '',
   'What I would check next',
   'Check measured and target lambda together with throttle, MAP/load, fuel pressure, knock and closed-loop corrections in the affected areas. Confirm wideband calibration and channel units first.',
@@ -160,6 +168,7 @@ function plan(){
  ].filter(x=>x!==undefined).join('\n');
  const report=plain;
  const container=$('aiPlanResult');container.replaceChildren();
+ const controls=document.createElement('div');controls.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px';const unitLabel=document.createElement('label');unitLabel.textContent='Original fuel-pressure unit: ';const unitSelect=document.createElement('select');unitSelect.id='aiPressureUnit';for(const [v,t] of [['auto','Auto (header only)'],['kpa','kPa → PSI'],['bar','bar → PSI'],['psi','Already PSI']]){const o=document.createElement('option');o.value=v;o.textContent=t;unitSelect.append(o);}unitSelect.value=pressureUnit;unitSelect.onchange=plan;unitLabel.append(unitSelect);controls.append(unitLabel);container.append(controls);
  const heading=document.createElement('h3');heading.textContent=label+' · Tuning report';container.append(heading);
  const summary=document.createElement('p');summary.textContent='Plain-English findings, limitations and next steps. Detailed RPM data is available under Advanced.';container.append(summary);
  const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;color:var(--text);font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px';pre.textContent=report;container.append(pre);
