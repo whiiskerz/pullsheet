@@ -51,8 +51,10 @@ function dyno(){
 }
 function plan(){
  const goal=$('aiGoal').value,d=typeof lastParsed!=='undefined'?lastParsed:null;
- const tune=typeof aiOriginalTuneText!=='undefined'?aiOriginalTuneText:null;
+ const tune=workspace.original;
  const targets={
+ launch:['Launch input activation','Launch target / limiter conditions','Gear and speed conditions','Shift-cut and engine protection'],
+ exhaust:['Overrun fuel-cut status','Exhaust temperature logging','Overrun ignition and load conditions','Thermal and emissions considerations'],
  idle:['Idle target RPM','Idle ignition correction','Idle air / electronic throttle control','Fuel table near idle load'],
  cruise:['Main fuel table','Closed-loop lambda control and trims','Fuel pressure compensation'],
  wot:['Main fuel table at measured RPM and load','Lambda target table','Injector and fuel pressure compensation'],
@@ -61,11 +63,12 @@ function plan(){
  flex:['Ethanol content sensor calibration','Flex-fuel blend tables','Fuel stoichiometry and injector compensation']
  };
  const label=$('aiGoal').selectedOptions[0].textContent;
+ const selectedTargets=targets[goal]||['Verify ECU configuration'];
  const proposal={
   format:'pullsheet-review-plan/v1',created:new Date().toISOString(),goal,label,
   source:{logLoaded:!!d,logSamples:d?.rowCount||0,maxxecuTuneLoaded:!!tune},
   status:'REVIEW_ONLY_NOT_A_MAXXECU_CALIBRATION',
-  mtuneTablesToInspect:targets[goal],
+  mtuneTablesToInspect:selectedTargets,
   evidence:[],
   checks:['Verify actual channel units and sensor calibration','Confirm tune version and RPM/load axes','Review fuel pressure, ethanol content, knock and temperature conditions','Validate closed-loop and transient effects before attributing lambda errors to fuel-table cells'],
   changes:[],
@@ -76,7 +79,7 @@ function plan(){
   const bins=new Map();for(const v of x){const k=Math.floor(v.r/500)*500;const b=bins.get(k)||[];b.push(v);bins.set(k,b);}
   proposal.evidence=[...bins].filter(([k,v])=>v.length>=15).map(([rpm,v])=>({rpmBand:[rpm,rpm+499],samples:v.length,meanLambdaRatioErrorPct:+(mean(v.map(x=>x.err))*100).toFixed(2),interpretation:'Diagnostic only; not a VE/fuel-table correction'}));
  }
- const html=card('Review plan ready · '+label,'Tune file: '+(tune?'loaded':'missing')+'; log: '+(d?d.rowCount+' samples':'missing')+'. MTune areas to inspect: '+targets[goal].join(', ')+'. Exact cell edits and a valid .MaxxECU-save export require a verified source calibration and table encoding. No fake ECU-ready file will be generated.');
+ const html=card('Review plan · '+label,'Tune: '+(tune?escapeHtml(tune.name):'not loaded')+'; log: '+(d?d.rowCount+' samples':'not loaded')+'. Review: '+selectedTargets.join(', ')+'. This is a diagnostic plan, not a set of ECU-ready edits.');
  $('aiPlanResult').innerHTML=html;
  const btn=document.createElement('button');btn.textContent='Download review plan (.json)';btn.style.cssText='background:var(--amber);color:#080a0c;border:0;border-radius:8px;padding:10px 14px;font-weight:700';
  btn.onclick=()=>{const blob=new Blob([JSON.stringify(proposal,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='pullsheet-'+goal+'-review.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
@@ -113,15 +116,15 @@ function settingRows(){
 function renderWorkspace(){
  const status=$('aiTuneStatus'),target=$('aiTuneBrowser');if(!status||!target)return;
  const a=workspace.original,b=workspace.compare;
- if(!a){status.textContent='Load an original .MaxxECU-save to browse ECU settings.';target.replaceChildren();return;}
- const goal=$('aiGoal')?.value||'flex',term=($('aiSettingSearch')?.value||'').toLowerCase().trim();
- const all=settingRows(),filtered=all.filter(r=>(!term||r.key.toLowerCase().includes(term))&&(!groups[goal]||groups[goal].test(r.key)||!!term));
+ if(!a){status.textContent='Load an original .MaxxECU-save to browse ECU settings.';target.replaceChildren();refreshStudio();return;}
+ const goal=$('aiGoal')?.value||'flex',term=($('aiSettingSearch')?.value||'').toLowerCase().trim(),diffOnly=$('aiDiffFilter')?.value==='changed';
+ const all=settingRows(),filtered=all.filter(r=>(!diffOnly||r.changed)&&(!term||r.key.toLowerCase().includes(term))&&(!groups[goal]||groups[goal].test(r.key)||!!term));
  const changes=all.filter(r=>r.changed);
  status.textContent=a.name+' · '+a.entries+' XML entries · '+a.settings.size+' unique names'+(b?' · '+changes.length+' changed names vs '+b.name:' · import comparison tune to see changed settings')+'. Display is a raw XML settings view; table shapes and value units are not yet validated.';
  const table=document.createElement('table');table.style.cssText='width:100%;font-size:12px;border-collapse:collapse;table-layout:fixed';
  const head=document.createElement('tr');for(const h of ['MTune setting','Original value',b?'Compared value':'Status']){let th=document.createElement('th');th.textContent=h;th.style.cssText='text-align:left;padding:8px;overflow-wrap:anywhere';head.append(th);}table.append(head);
  for(const r of filtered.slice(0,80)){let tr=document.createElement('tr');if(r.changed)tr.style.background='rgba(255,180,50,.10)';for(const v of [r.key,r.before.join(' | '),b?r.after.join(' | '):'Read-only']){let td=document.createElement('td');td.textContent=v.length>180?v.slice(0,180)+'…':v;td.title=v;td.style.cssText='border-top:1px solid #5555;padding:8px;vertical-align:top;overflow-wrap:anywhere';tr.append(td);}table.append(tr);}
- target.replaceChildren();const summary=document.createElement('p');summary.textContent=filtered.length+' matching settings; showing first '+Math.min(80,filtered.length)+'. Search to narrow. Goal filters are keyword matches, not verified table mappings.';target.append(summary);const wrap=document.createElement('div');wrap.style.cssText='overflow-x:auto;max-height:430px;overflow-y:auto';wrap.append(table);target.append(wrap);
+ target.replaceChildren();refreshStudio();const summary=document.createElement('p');summary.textContent=filtered.length+' matching settings; showing first '+Math.min(80,filtered.length)+'. Search to narrow. Goal filters are keyword matches, not verified table mappings.';target.append(summary);const wrap=document.createElement('div');wrap.style.cssText='overflow-x:auto;max-height:430px;overflow-y:auto';wrap.append(table);target.append(wrap);
 }
 async function loadCalibration(file,slot){
  if(!file)return;
@@ -135,7 +138,32 @@ function exportComparison(){
  const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='pullsheet-mtune-'+(workspace.compare?'diff':'inventory')+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
-window.pullsheetAI={analyze,dyno,plan,renderWorkspace};
+
+function refreshStudio(){
+ const d=typeof lastParsed!=='undefined'?lastParsed:null;
+ const a=workspace.original,b=workspace.compare;
+ if($('aiSourceStatus'))$('aiSourceStatus').textContent=a?a.name+' · '+a.entries+' entries':'No calibration loaded';
+ if($('aiCompareStatus'))$('aiCompareStatus').textContent=b?b.name+' · '+b.entries+' entries':'No comparison loaded';
+ if($('aiLogStatus'))$('aiLogStatus').textContent=d?(d.rowCount||d.rpm?.length||0)+' samples linked · RPM '+(finite(d.rpm)?'available':'missing')+' · lambda '+(finite(d.lambda)?'available':'missing'):'No log linked. Import a log in Analyze first.';
+ const output=$('aiSafetyChecklist');if(!output)return;
+ const checks=[
+  [!!a,'Source calibration XML loaded','Required for inspecting genuine settings'],
+  [!!d,'MaxxECU log loaded','Required for evidence-based fueling analysis'],
+  [!!d&&finite(d.lambda)&&finite(d.targetLambda),'Measured and target lambda present','Missing channels prevent lambda comparison'],
+  [!!d&&finite(d.fuelPress),'Fuel pressure channel present','Pressure units and sensor location still need verification'],
+  [!!d&&finite(d.knock),'Knock signal present','A valid knock sensor/configuration must be verified'],
+  [!!d&&finite(d.coolant),'Coolant channel present','Verify sensor validity before using data']
+ ];
+ output.replaceChildren();const ul=document.createElement('ul');ul.style.cssText='margin:0;padding-left:20px;line-height:2;font-size:12px';
+ checks.forEach(([ok,title,note])=>{const li=document.createElement('li');li.textContent=(ok?'✓ ':'○ ')+title+' — '+note;ul.append(li)});output.append(ul);
+}
+function selectStudioGoal(goal){
+ const select=$('aiGoal');if(!select||!Array.from(select.options).some(x=>x.value===goal))return;
+ select.value=goal;document.querySelectorAll('#aiGoals button[data-goal]').forEach(btn=>btn.setAttribute('aria-pressed',String(btn.dataset.goal===goal)));
+ renderWorkspace();const plan=$('aiPlanResult');if(plan)plan.replaceChildren();
+}
+
+window.pullsheetAI={analyze,dyno,plan,renderWorkspace,refreshStudio};
 document.addEventListener('DOMContentLoaded',()=>{
  $('aiAnalyzeBtn')?.addEventListener('click',analyze);
  $('aiDynoBtn')?.addEventListener('click',dyno);
@@ -145,6 +173,10 @@ document.addEventListener('DOMContentLoaded',()=>{
  $('aiSettingSearch')?.addEventListener('input',renderWorkspace);
  $('aiGoal')?.addEventListener('change',renderWorkspace);
  $('aiExportDiff')?.addEventListener('click',exportComparison);
+ $('aiRefreshStatus')?.addEventListener('click',refreshStudio);
+ $('aiDiffFilter')?.addEventListener('change',renderWorkspace);
+ document.querySelectorAll('#aiGoals button[data-goal]').forEach(btn=>btn.addEventListener('click',()=>selectStudioGoal(btn.dataset.goal)));
+ selectStudioGoal($('aiGoal')?.value||'flex');
  renderWorkspace();
 });
 })();
