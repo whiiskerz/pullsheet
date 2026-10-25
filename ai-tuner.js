@@ -118,6 +118,7 @@ function plan(){
  const safetyRows=qualifying.filter(i=>(Number.isFinite(d.knock?.[i])&&d.knock[i]>0)||(Number.isFinite(d.warnings?.[i])&&d.warnings[i]>0));
  const eRows=qualifying.map(i=>d.ethanol?.[i]).filter(Number.isFinite);
  const eMin=eRows.length?Math.min(...eRows):null,eMax=eRows.length?Math.max(...eRows):null;
+ const mappedHeader=id=>{const el=$(id);if(!d||!el)return 'unknown';const value=el.value;if(value==='auto')return 'auto-detected (confirm in I/O Config)';const n=Number(value);return Number.isInteger(n)&&d.headers?.[n]?d.headers[n]:value;};
  const standout=[...sorted].sort((a,b)=>Math.abs(b.meanLambdaRatioErrorPct)-Math.abs(a.meanLambdaRatioErrorPct)).slice(0,3);
  const near=sorted.filter(x=>Math.abs(x.meanLambdaRatioErrorPct)<=3);
  const prettyBand=x=>x.rpmBand[0].toLocaleString()+' to '+x.rpmBand[1].toLocaleString()+' RPM';
@@ -131,6 +132,10 @@ function plan(){
   sorted.length?'I found differences between the air/fuel mixture your ECU requested and what the wideband measured in '+sorted.length+' RPM ranges. Positive percentages mean the measured mixture was leaner than target. These are averages, not proof of a bad fuel table.':'There were not enough valid lambda readings in the selected operating conditions to assess fueling.',
   standout.length?'The largest differences were around '+standout.map(x=>prettyBand(x)+' ('+(x.meanLambdaRatioErrorPct>0?'+':'')+x.meanLambdaRatioErrorPct+'%)').join(', ')+'.':'',
   near.length?'The readings were closer to target around '+near.map(prettyBand).join(', ')+'.':'',
+  '',
+  'Channel mapping',
+  'Measured lambda: '+mappedHeader('cfgLambda')+'; target lambda: '+mappedHeader('cfgTargetLambda')+'.',
+  'Fuel pressure: '+mappedHeader('cfgFuel')+'; ethanol: '+mappedHeader('cfgEthanol')+'. Check original header units in I/O Config. Do not interpret raw pressure values as kPa or psi without verification.',
   '',
   'Sample-level checks',
   paired.length?'Out of '+paired.length+' usable measured-versus-target lambda pairs, '+lean10.length+' were more than 10% leaner than target and '+rich10.length+' were more than 10% richer. These are individual samples, not separate sustained events.':'There were no usable paired lambda readings in the selected operating filter.',
@@ -237,8 +242,10 @@ function renderEvents(){
  const target=$('aiEventTable'),status=$('aiEventStatus');if(!target||!status)return;
  const {d,rows}=eventRows();target.replaceChildren();
  if(!d){status.textContent='No log loaded. Import a log in Analyze first.';return;}
- const limit=Math.min(500,Math.max(1,Number($('aiEventLimit')?.value)||50)),selected=rows.slice(0,limit);
- status.textContent=rows.length+' matching samples out of '+d.rpm.length+' total · displaying '+selected.length+'. Fuel pressure units are unverified. Select Lean to inspect sample-level lambda differences; values are from the parsed log.';
+ const limit=Math.min(500,Math.max(1,Number($('aiEventLimit')?.value)||50));
+ const ranked=($('aiEventFilter')?.value==='lean')?[...rows].sort((a,b)=>((d.lambda?.[b]/d.targetLambda?.[b])||0)-((d.lambda?.[a]/d.targetLambda?.[a])||0)):rows;
+ const selected=ranked.slice(0,limit);
+ status.textContent=rows.length+' matching samples out of '+d.rpm.length+' total · displaying '+selected.length+'. Fuel pressure units are unverified. Select Lean to show the largest measured/target lambda ratios first; values are from the parsed log.';
  const cols=[['runtime','Time'],['rpm','RPM'],['tps','TPS'],['lambda','Lambda'],['targetLambda','Target λ'],['fuelPress','Fuel press'],['ethanol','Ethanol %'],['knock','Knock signal'],['warnings','Warnings'],['gear','Gear'],['vss','Speed']];
  const table=document.createElement('table');const head=document.createElement('tr');
  for(const title of ['Row',...cols.map(x=>x[1])]){const th=document.createElement('th');th.textContent=title;head.append(th);}table.append(head);
