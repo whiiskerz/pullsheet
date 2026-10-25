@@ -129,7 +129,7 @@ function plan(){
   'Not from these averages alone. No calibration changes have been recommended or generated.',
   '',
   'This is a diagnostic report, not an ECU-ready calibration.'
- ].filter(x=>x!==undefined).join('\\n');
+ ].filter(x=>x!==undefined).join('\n');
  const report=plain;
  const container=$('aiPlanResult');container.replaceChildren();
  const heading=document.createElement('h3');heading.textContent=label+' · Tuning report';container.append(heading);
@@ -140,7 +140,7 @@ function plan(){
  const txt=document.createElement('button');txt.textContent='Download text report (.txt)';txt.className='ps-btn';txt.onclick=()=>download(report,'text/plain;charset=utf-8','rawest-signal-'+goal+'-report.txt');actions.append(txt);
  const copy=document.createElement('button');copy.textContent='Copy report';copy.className='ps-btn secondary';copy.onclick=async()=>{try{await navigator.clipboard.writeText(report);copy.textContent='Copied!'}catch(e){copy.textContent='Copy unavailable — use TXT download'}};actions.append(copy);
  const details=document.createElement('details');details.style.marginTop='12px';const summaryEl=document.createElement('summary');summaryEl.textContent='Advanced · detailed data';details.append(summaryEl);
- const json=document.createElement('button');json.textContent='Download structured data (.json)';json.className='ps-btn secondary';json.style.marginTop='10px';json.onclick=()=>download(JSON.stringify(proposal,null,2),'application/json','rawest-signal-'+goal+'-review.json');details.append(json);const raw=document.createElement('button');raw.textContent='Download detailed numbers (.txt)';raw.className='ps-btn secondary';raw.style.marginTop='10px';raw.onclick=()=>download(sorted.map(x=>prettyBand(x)+' | '+x.samples+' samples | '+x.meanLambdaRatioErrorPct+'%').join('\\n'),'text/plain;charset=utf-8','rawest-signal-'+goal+'-details.txt');details.append(raw);container.append(details);
+ const json=document.createElement('button');json.textContent='Download structured data (.json)';json.className='ps-btn secondary';json.style.marginTop='10px';json.onclick=()=>download(JSON.stringify(proposal,null,2),'application/json','rawest-signal-'+goal+'-review.json');details.append(json);const raw=document.createElement('button');raw.textContent='Download detailed numbers (.txt)';raw.className='ps-btn secondary';raw.style.marginTop='10px';raw.onclick=()=>download(sorted.map(x=>prettyBand(x)+' | '+x.samples+' samples | '+x.meanLambdaRatioErrorPct+'%').join('\n'),'text/plain;charset=utf-8','rawest-signal-'+goal+'-details.txt');details.append(raw);container.append(details);
 }
 
 
