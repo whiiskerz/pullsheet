@@ -104,6 +104,10 @@ function plan(){
  const threshold=goal==='wot'?'RPM ≥2000 and TPS ≥80%':'RPM >800 and TPS ≥15%';
  const qualified=d&&finite(d.rpm)&&finite(d.tps)?d.rpm.reduce((n,r,i)=>n+(Number.isFinite(r)&&Number.isFinite(d.tps[i])&&(goal==='wot'?r>=2000&&d.tps[i]>=80:r>800&&d.tps[i]>=15)?1:0),0):0;
  const lambdaCount=sorted.reduce((n,x)=>n+x.samples,0);
+ const readChannel=k=>d&&Array.isArray(d[k])?d[k].filter(Number.isFinite):[];
+ const channelSummary=k=>{const a=readChannel(k);return a.length?{count:a.length,min:Math.min(...a),max:Math.max(...a),avg:mean(a)}:null;};
+ const ethanolInfo=channelSummary('ethanol');
+ const fuelInfo=channelSummary('fuelPress');
  const standout=[...sorted].sort((a,b)=>Math.abs(b.meanLambdaRatioErrorPct)-Math.abs(a.meanLambdaRatioErrorPct)).slice(0,3);
  const near=sorted.filter(x=>Math.abs(x.meanLambdaRatioErrorPct)<=3);
  const prettyBand=x=>x.rpmBand[0].toLocaleString()+' to '+x.rpmBand[1].toLocaleString()+' RPM';
@@ -121,6 +125,9 @@ function plan(){
   'How reliable is this?',
   'This review checked '+qualified.toLocaleString()+' candidate samples using '+threshold+'. That screening does not prove steady throttle, correct sensor calibration, or a clean pull. Individual lean spikes can also be hidden by averages.',
   goal==='flex'?'This is not yet a complete flex-fuel test: ethanol content, fuel pressure and active fuel corrections have not been validated. The log alone does not establish which fuel was in the tank.':'The log has not been matched to verified fuel-table cells or confirmed steady-state operating conditions.',
+  '',
+  goal==='flex'?'Ethanol sensor: '+(ethanolInfo&&ethanolInfo.min>=0&&ethanolInfo.max<=100?'The log contains '+ethanolInfo.count+' ethanol readings averaging '+ethanolInfo.avg.toFixed(1)+'%, from '+ethanolInfo.min.toFixed(1)+'% to '+ethanolInfo.max.toFixed(1)+'%. Confirm these readings match the fuel in the tank.':'No trustworthy ethanol percentage was identified. Verify the channel mapping and sensor calibration.'):'',
+  goal==='flex'?'Fuel pressure: '+(fuelInfo?'The log contains '+fuelInfo.count+' fuel-pressure readings, ranging from '+fuelInfo.min.toFixed(1)+' to '+fuelInfo.max.toFixed(1)+' in unverified units. This does not prove pressure was adequate under load.':'No usable fuel-pressure readings were identified.'):'',
   '',
   'What I would check next',
   'Check measured and target lambda together with throttle, MAP/load, fuel pressure, knock and closed-loop corrections in the affected areas. Confirm wideband calibration and channel units first.',
