@@ -10,7 +10,7 @@
   instead of them being stuck on a stale cached copy forever.
 */
 
-const CACHE_NAME = 'pullsheet-v1.16-ai';
+const CACHE_NAME = 'pullsheet-v1.17-fresh';
 
 const APP_SHELL = [
   './',
@@ -121,6 +121,18 @@ self.addEventListener('fetch', (event) => {
   // don't try to cache or intercept them. They just fail naturally
   // when offline and CSS falls back to system fonts.
   if (url.origin !== self.location.origin) return;
+
+  // Prefer fresh HTML and app JavaScript while online; retain cached offline fallback.
+  if (event.request.mode === 'navigate' || /\/(?:index\.html|ai-tuner\.js)$/.test(url.pathname)) {
+    event.respondWith(fetch(event.request).then(response => {
+      if (response && response.ok) {
+        const copy=response.clone();
+        caches.open(CACHE_NAME).then(cache=>cache.put(event.request,copy));
+      }
+      return response;
+    }).catch(()=>caches.match(event.request)));
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
