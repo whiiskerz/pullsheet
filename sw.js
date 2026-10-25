@@ -10,7 +10,7 @@
   instead of them being stuck on a stale cached copy forever.
 */
 
-const CACHE_NAME = 'pullsheet-v1.17-fresh';
+const CACHE_NAME = 'pullsheet-v1.18-workspace';
 
 const APP_SHELL = [
   './',
