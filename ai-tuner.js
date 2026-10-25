@@ -133,7 +133,7 @@ function plan(){
  const report=plain;
  const container=$('aiPlanResult');container.replaceChildren();
  const heading=document.createElement('h3');heading.textContent=label+' · Tuning report';container.append(heading);
- const summary=document.createElement('p');summary.textContent=sorted.length?'Found '+sorted.length+' RPM bands after screening '+qualified+' candidate samples ('+threshold+'). Calibration cells and steady-state conditions remain unverified.':'No qualifying lambda error bands were available under '+threshold+'. Confirm channels and record suitable samples.';container.append(summary);
+ const summary=document.createElement('p');summary.textContent='Plain-English findings, limitations and next steps. Detailed RPM data is available under Advanced.';container.append(summary);
  const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;color:var(--text);font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px';pre.textContent=report;container.append(pre);
  const actions=document.createElement('div');actions.style.cssText='display:flex;gap:9px;flex-wrap:wrap;margin-top:12px';container.append(actions);
  const download=(content,type,name)=>{const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
