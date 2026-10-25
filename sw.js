@@ -10,7 +10,7 @@
   instead of them being stuck on a stale cached copy forever.
 */
 
-const CACHE_NAME = 'rawest-signal-v2.1.2';
+const CACHE_NAME = 'rawest-signal-v2.1.3';
 
 const APP_SHELL = [
   './',
