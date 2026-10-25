@@ -10,12 +10,12 @@
   instead of them being stuck on a stale cached copy forever.
 */
 
-const CACHE_NAME = 'rawest-signal-v2.2.0';
+const CACHE_NAME = 'rawest-signal-v2.2.1';
 
 const APP_SHELL = [
   './',
   './index.html',
-  './ai-tuner.js',
+  './ai-tuner.js?v=2.2.1',
   './manifest.json',
   './vendor/jszip.min.js',
   './vendor/chart.umd.js',
