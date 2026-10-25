@@ -10,11 +10,12 @@
   instead of them being stuck on a stale cached copy forever.
 */
 
-const CACHE_NAME = 'pullsheet-v1.15';
+const CACHE_NAME = 'pullsheet-v1.16-ai';
 
 const APP_SHELL = [
   './',
   './index.html',
+  './ai-tuner.js',
   './manifest.json',
   './vendor/jszip.min.js',
   './vendor/chart.umd.js',
