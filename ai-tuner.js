@@ -159,6 +159,40 @@ function exportComparison(){
 }
 
 
+
+function eventRows(){
+ const d=typeof lastParsed!=='undefined'?lastParsed:null;if(!d||!Array.isArray(d.rpm))return {d,rows:[]};
+ const mode=$('aiEventFilter')?.value||'all';
+ const n=d.rpm.length,rows=[];
+ const get=(k,i)=>Array.isArray(d[k])?d[k][i]:NaN;
+ for(let i=0;i<n;i++){
+  const rpm=get('rpm',i),tps=get('tps',i),knock=get('knock',i),warn=get('warnings',i),l=get('lambda',i),target=get('targetLambda',i);
+  if(!Number.isFinite(rpm))continue;
+  const ok=mode==='all'||mode==='idle'&&(rpm>=500&&rpm<=1200&&tps<=10)||mode==='cruise'&&(rpm>=1200&&tps>=10&&tps<40)||mode==='load'&&(rpm>=1500&&tps>=40)||mode==='wot'&&(rpm>=2000&&tps>=80)||mode==='knock'&&knock>0||mode==='warning'&&warn>0||mode==='lean'&&(Number.isFinite(l)&&Number.isFinite(target)&&l>.5&&l<1.5&&target>.5&&target<1.5&&l>target*1.05);
+  if(ok)rows.push(i);
+ }
+ return {d,rows};
+}
+function renderEvents(){
+ const target=$('aiEventTable'),status=$('aiEventStatus');if(!target||!status)return;
+ const {d,rows}=eventRows();target.replaceChildren();
+ if(!d){status.textContent='No log loaded. Import a log in Analyze first.';return;}
+ const limit=Math.min(500,Math.max(1,Number($('aiEventLimit')?.value)||50)),selected=rows.slice(0,limit);
+ status.textContent=rows.length+' matching samples out of '+d.rpm.length+' total · displaying '+selected.length+'. Values are from the parsed log; absent channels show —.';
+ const cols=[['runtime','Time'],['rpm','RPM'],['tps','TPS'],['lambda','Lambda'],['targetLambda','Target λ'],['fuelPress','Fuel press'],['knock','Knock signal'],['warnings','Warnings'],['gear','Gear'],['vss','Speed']];
+ const table=document.createElement('table');const head=document.createElement('tr');
+ for(const title of ['Row',...cols.map(x=>x[1])]){const th=document.createElement('th');th.textContent=title;head.append(th);}table.append(head);
+ for(const i of selected){const tr=document.createElement('tr');const values=[i+1,...cols.map(([k])=>Array.isArray(d[k])?d[k][i]:null)];for(const v of values){const td=document.createElement('td');td.textContent=typeof v==='number'?(Number.isFinite(v)?Number(v.toFixed(3)):'—'):(v??'—');tr.append(td);}table.append(tr);}
+ target.append(table);
+}
+function downloadEvents(){
+ const {d,rows}=eventRows();if(!d||!rows.length){const status=$('aiEventStatus');if(status)status.textContent='No matching rows to export.';return;}
+ const cols=['runtime','rpm','tps','lambda','targetLambda','fuelPress','knock','warnings','gear','vss'];
+ const escapeCsv=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+ const data=[['source_row',...cols].join(','),...rows.map(i=>[i+1,...cols.map(k=>Array.isArray(d[k])?d[k][i]:'')].map(escapeCsv).join(','))].join('\n');
+ const blob=new Blob([data],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='rawest-signal-'+($('aiEventFilter')?.value||'events')+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
 function refreshStudio(){
  const d=typeof lastParsed!=='undefined'?lastParsed:null;
  const a=workspace.original,b=workspace.compare;
@@ -193,10 +227,15 @@ document.addEventListener('DOMContentLoaded',()=>{
  $('aiSettingSearch')?.addEventListener('input',renderWorkspace);
  $('aiGoal')?.addEventListener('change',renderWorkspace);
  $('aiExportDiff')?.addEventListener('click',exportComparison);
- $('aiRefreshStatus')?.addEventListener('click',refreshStudio);
+ $('aiRefreshStatus')?.addEventListener('click',()=>{refreshStudio();renderEvents();});
+ $('aiInspectEvents')?.addEventListener('click',renderEvents);
+ $('aiDownloadEvents')?.addEventListener('click',downloadEvents);
+ $('aiEventFilter')?.addEventListener('change',renderEvents);
+ $('aiEventLimit')?.addEventListener('change',renderEvents);
  $('aiDiffFilter')?.addEventListener('change',renderWorkspace);
  document.querySelectorAll('#aiGoals button[data-goal]').forEach(btn=>btn.addEventListener('click',()=>selectStudioGoal(btn.dataset.goal)));
  selectStudioGoal($('aiGoal')?.value||'flex');
  renderWorkspace();
+ renderEvents();
 });
 })();
