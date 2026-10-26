@@ -87,8 +87,10 @@ test('HTML loads v3 script before AI tuner integration and retains original tune
  const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
  assert.ok(html.includes('id="aiTuneInput"'));
  assert.ok(html.includes('id="aiCompareInput"'));
- const c=html.indexOf('calibration-intelligence.js?v=3.0.0');
- const a=html.indexOf('ai-tuner.js?v=3.0.0');
+ const tuneVersion=html.match(/calibration-intelligence\.js\?v=(\d+\.\d+\.\d+)/)?.[1];
+ assert.ok(tuneVersion,'Calibrations must load a versioned runtime');
+ const c=html.indexOf('calibration-intelligence.js?v='+tuneVersion);
+ const a=html.indexOf('ai-tuner.js?v='+tuneVersion);
  assert.ok(c>=0&&a>c,'calibration intelligence must load before tuner script');
  assert.ok(html.includes('id="aiCalibrationIntelligence"'));
 });
