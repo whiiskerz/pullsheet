@@ -205,8 +205,16 @@ function plan(){
  const knockTracked=d&&Number.isInteger(d.sourceColumns?.knock)&&d.sourceColumns.knock>=0;
  const warningsTracked=d&&Number.isInteger(d.sourceColumns?.warnings)&&d.sourceColumns.warnings>=0;
 
+ const selectedBuild=garageController?.getActive?.()||null;
+ const garageAssessment=selectedBuild&&window.RawestGarageBeta?window.RawestGarageBeta.analyzeBuild(selectedBuild,d,window.RawestSignalIntelligence):null;
  const plain=[
   'RAWEST SIGNAL — '+label+' report',
+  ...(garageAssessment?[
+   'Linked My Garage build: '+(selectedBuild.fields.name||'Untitled')+' (user-entered parts, not independently verified).',
+   'Garage compatibility: '+garageAssessment.totals.stop+' stop/investigate findings, '+garageAssessment.totals.verify+' verification checks. '+garageAssessment.plan.headline+'.',
+   ...garageAssessment.issues.filter(x=>x.severity==='stop').slice(0,3).map(x=>'BUILD WARNING: '+x.title+' — '+x.action),
+   ''
+  ]:[]),
   '',
   d?'I reviewed '+(d.rowCount||d.rpm?.length||0).toLocaleString()+' samples from your engine log.':'No engine log is loaded yet.',
   d?.sourceFormat==='holley'?'This report uses a Holley CSV; MaxxECU tune comparison is not available for this log.':tune?'A genuine MaxxECU XML calibration is loaded for raw-setting inspection. The log is NOT verified against an active fuel or ignition table unless the table axes are independently confirmed in the v3 Calibration Intelligence inspector.':'Your MaxxECU calibration file is not loaded, so I cannot compare these readings with tune tables.',
@@ -481,6 +489,7 @@ function selectStudioGoal(goal){
 }
 
 let studioLogIdentity=null;
+let garageController=null;
 function onLogChanged(d){
  if(studioLogIdentity!==d){
   studioLogIdentity=d;
@@ -490,9 +499,20 @@ function onLogChanged(d){
  refreshStudio();
  renderEvents();
  renderCalibrationIntelligence();
+ garageController?.refresh?.();
 }
 window.pullsheetAI={analyze,dyno,plan,renderWorkspace,refreshStudio,renderEvents,onLogChanged};
 document.addEventListener('DOMContentLoaded',()=>{
+ const garageHost=$('aiGarageBeta');
+ if(garageHost&&window.RawestGarageBeta){
+  try{
+   garageController=window.RawestGarageBeta.mount(garageHost,()=>typeof lastParsed!=='undefined'?lastParsed:null);
+  }catch(error){
+   const warning=document.createElement('p');
+   warning.textContent='My Garage beta could not initialize: '+error.message;
+   garageHost.append(warning);
+  }
+ }
  $('aiAnalyzeBtn')?.addEventListener('click',analyze);
  $('aiDynoBtn')?.addEventListener('click',dyno);
  $('aiPlanBtn')?.addEventListener('click',plan);
@@ -501,7 +521,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  $('aiSettingSearch')?.addEventListener('input',renderWorkspace);
  $('aiGoal')?.addEventListener('change',renderWorkspace);
  $('aiExportDiff')?.addEventListener('click',exportComparison);
- $('aiRefreshStatus')?.addEventListener('click',()=>{refreshStudio();renderEvents();});
+ $('aiRefreshStatus')?.addEventListener('click',()=>{refreshStudio();renderEvents();garageController?.refresh?.();});
  $('aiInspectEvents')?.addEventListener('click',renderEvents);
  $('aiDownloadEvents')?.addEventListener('click',downloadEvents);
  $('aiEventFilter')?.addEventListener('change',renderEvents);
