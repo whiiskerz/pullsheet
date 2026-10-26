@@ -225,7 +225,7 @@ function analyze(d,options){
  if(events.some(e=>e.negativeWhileLean))next.push('Inspect MTune lambda-control transient deactivation (off/hold), reactivation delay, max negative/positive correction, and raw Lambda corr state during lean events.');
  if(!next.length)next.push('Repeat a comparable warmed-up steady-state log; compare correction behavior at matched RPM and MAP.');
  return {version:'2.8.1',n,source:d.sourceFormat==='holley'?'Holley CSV':'MaxxECU log',time,quality,entries,signals,
-  pressureUnit,pressureFactor,pressureInfo,pressureBaseline,mapInPsia,events,next,gates,validPairCount,wotCount,high:events.filter(e=>e.priority==='HIGH').length,
+  pressureUnit,pressureFactor,pressureInfo,pressureBaseline,mapInPsia,events,wotSessions:detectWotSessions(d,{time,signals,pressureInfo}),next,gates,validPairCount,wotCount,high:events.filter(e=>e.priority==='HIGH').length,
   limitation:'Screening tool, not a calibration decision. Sample runs, ECU state flags, and pressure anomalies require sensor, unit and load verification.'};
 }
 // Before/after comparison uses matched RPM+MAP cells and records sample coverage.
@@ -419,6 +419,152 @@ function percentile(a,p){
  const values=[...a].sort((x,y)=>x-y),pos=(values.length-1)*p,left=Math.floor(pos),right=Math.ceil(pos);
  return values[left]+(values[right]-values[left])*(pos-left);
 }
+// PULL SESSION DETECTOR: groups contiguous high-throttle samples into distinct
+// runs; never assumes that high TPS alone proves a clean single-gear WOT pull.
+// Engine runtime must be verified to label duration and early/late deviations.
+function detectWotSessions(d,context){
+ if(!d||!Array.isArray(d.rpm)||!Array.isArray(d.tps))return [];
+ const n=d.rpm.length,rt=context?.time||timebase(d),signals=context?.signals||{};
+ const get=(k,i)=>Array.isArray(d[k])?d[k][i]:NaN;
+ const take=(k,i)=>Array.isArray(signals[k])?signals[k][i]:NaN;
+ const hasSpeed=Array.isArray(d.vss)&&d.vss.some(ok);
+ const pressure=context?.pressureInfo;
+ const entryGear=Number.isInteger(d.sourceColumns?.gear)&&d.sourceColumns.gear>=0;
+ const validTime=i=>rt.verified&&ok(get('runtime',i));
+ const high=i=>i>=0&&i<n&&ok(get('rpm',i))&&get('rpm',i)>=2000&&ok(get('tps',i))&&get('tps',i)>=80;
+ const observedTimeSpan=(a,b)=>validTime(a)&&validTime(b)?get('runtime',b)-get('runtime',a)+rt.quantum:NaN;
+ const sessions=[];
+ function emit(a,b){
+  const count=b-a+1,duration=observedTimeSpan(a,b);
+  if(count<8||(ok(duration)&&duration<.45))return;
+  const rpms=[],speeds=[],pressures=[],ethanols=[],coolants=[];
+  const afr=[],gears=[],lean=[],rich=[],errors=[],lambdaIssues=[];
+  const times=[],fuelCutSamples=[];
+  let maxThrottle=-Infinity;
+  for(let i=a;i<=b;i++){
+   const rpm=get('rpm',i),tps=get('tps',i),speed=get('vss',i),
+    p=get('fuelPress',i),eth=get('ethanol',i),f=get('coolantF',i);
+   if(ok(rpm))rpms.push(rpm);
+   if(hasSpeed&&ok(speed))speeds.push(speed/1.609344);
+   if(ok(tps))maxThrottle=Math.max(maxThrottle,tps);
+   if(pressure?.factor!==null&&pressure?.factor!==undefined&&ok(p))pressures.push(p*pressure.factor);
+   if(ok(eth))ethanols.push(eth);
+   if(ok(f))coolants.push(f);
+   const gear=get('gear',i);
+   if(entryGear&&ok(gear)&&gear>0)gears.push(gear);
+   if(validTime(i))times.push(get('runtime',i));
+   const fc=take('fuelCut',i);if(ok(fc)&&fc>0)fuelCutSamples.push(i);
+   const actual=get('lambda',i),target=get('targetLambda',i);
+   if(ok(actual)&&actual>.5&&actual<1.5&&ok(target)&&target>.5&&target<1.5){
+    const error=(actual/target-1)*100;
+    const item={row:i,error,rpm,actual,target,tps,pressurePsi:pressure?.factor!=null&&ok(p)?p*pressure.factor:NaN};
+    afr.push(item);errors.push(error);
+    if(error>10)lean.push(item);
+    if(error< -10)rich.push(item);
+   }else lambdaIssues.push(i);
+  }
+  const startRpm=get('rpm',a),endRpm=get('rpm',b),
+    startMph=hasSpeed&&ok(get('vss',a))?get('vss',a)/1.609344:NaN,
+    endMph=hasSpeed&&ok(get('vss',b))?get('vss',b)/1.609344:NaN;
+  const firstTarget=afr[0]?.target,lastTarget=afr[afr.length-1]?.target;
+  const early=.5;let earlyLean=0,lateLean=0;
+  for(const sample of lean){
+   const seconds=validTime(sample.row)&&validTime(a)?get('runtime',sample.row)-get('runtime',a):NaN;
+   if(ok(seconds)){if(seconds<=early)earlyLean++;else lateLean++;}
+  }
+  const elapsedVerified=rt.verified&&ok(duration);
+  const pressureMedian=median(pressures),pressureMin=pressures.length?Math.min(...pressures):NaN;
+  const relativeDrop=ok(pressureMedian)&&pressureMedian>0?(pressureMedian-pressureMin)/pressureMedian:NaN;
+  const gearChanges=entryGear?gears.filter((g,i)=>i&&g!==gears[i-1]).length:NaN;
+  const entryObserved=a>0&&ok(get('tps',a-1))&&get('tps',a-1)<80;
+  const wotState=elapsedVerified
+   ? Math.abs(endRpm-startRpm)>=500?'Rising-RPM high-throttle segment':'High-throttle segment; RPM rise under 500'
+   :'High-throttle samples; duration unverified';
+  const cautions=[];
+  if(!elapsedVerified)cautions.push('No verified elapsed-time channel; sample count cannot establish how long this lasted.');
+  if(!hasSpeed)cautions.push('Speed missing; mph gain and road-load context are unavailable.');
+  if(!entryGear)cautions.push('Gear not confidently mapped; do not assume a single-gear pull.');
+  if(ok(gearChanges)&&gearChanges>0)cautions.push(gearChanges+' logged gear transition(s); compare segments within the same gear.');
+  if(afr.length<Math.max(8,count*.6))cautions.push('Too few independently valid lambda/target pairs to evaluate fueling reliably.');
+  if(fuelCutSamples.length)cautions.push('Fuel-cut flag appeared during the segment; verify control state and sensor timing.');
+  if(lean.length)cautions.push(lean.length+' logged sample(s) over 10% lean against commanded lambda. Review the exact time, load and corrections.');
+  if(lateLean)cautions.push(lateLean+' lean sample(s) occurred more than 0.5 seconds after the high-throttle segment began (not necessarily steady state).');
+  if(ok(relativeDrop)&&relativeDrop>.15)cautions.push('Fuel pressure dropped over 15% below this segment’s median. Verify differential-pressure reference and sensor behavior.');
+  if(!pressure?.canShowPsi)cautions.push('Fuel PSI unavailable until original pressure-input units are verified.');
+  if(!afr.length)cautions.push('Measured and target lambda channels unavailable; no AFR conclusion.');
+  const completeness={
+   duration:elapsedVerified,lambda:afr.length>=Math.max(8,count*.6),
+   speed:hasSpeed&&ok(startMph)&&ok(endMph),pressure:pressure?.canShowPsi===true,
+   gear:entryGear
+  };
+  const status=lean.length||ok(relativeDrop)&&relativeDrop>.15||fuelCutSamples.length?'REVIEW':
+    completeness.duration&&completeness.lambda&&completeness.speed&&completeness.gear?'COMPARABLE DATA':'LIMITED DATA';
+  sessions.push({
+   a,b,count,duration,elapsedVerified,startRpm,endRpm,maxRpm:Math.max(...rpms),minRpm:Math.min(...rpms),
+   startMph,endMph,peakThrottle:maxThrottle,gearChanges,entryObserved,
+   ethanolMin:ethanols.length?Math.min(...ethanols):NaN,ethanolMax:ethanols.length?Math.max(...ethanols):NaN,
+   coolantF:median(coolants),validLambda:afr.length,leanCount:lean.length,richCount:rich.length,
+   earlyLean,lateLean,peakLean:lean.length?Math.max(...lean.map(x=>x.error)):NaN,
+   peakRich:rich.length?Math.min(...rich.map(x=>x.error)):NaN,
+   peakLeanSample:lean.length?lean.reduce((x,y)=>y.error>x.error?y:x):null,
+   pressureMinPsi:pressureMin,pressureMedianPsi:pressureMedian,pressureDropRatio:relativeDrop,
+   fuelCutCount:fuelCutSamples.length,wotState,status,cautions,completeness,
+   context:'High throttle is a proxy, not verified full load. Examine AFR, load, trims, fuel pressure and engine-protection channels together. No calibration edits.'
+  });
+ }
+ let a=-1;
+ for(let i=0;i<=n;i++){
+  let yes=i<n&&high(i);
+  if(yes&&a>=0&&rt.verified){
+   const t=get('runtime',i),prev=get('runtime',i-1);
+   if(!ok(t)||!ok(prev)||t<prev||t-prev>Math.max(.35,rt.quantum*6)){
+    emit(a,i-1);a=-1;
+   }
+  }
+  if(yes&&a<0)a=i;
+  if(!yes&&a>=0){emit(a,i-1);a=-1;}
+ }
+ return sessions.sort((x,y)=>x.a-y.a);
+}
+function renderWotSessions(area,d,result,selectEvent){
+ const sessions=result.wotSessions||[],panel=element('section');
+ panel.className='signal-pull-sessions';
+ panel.style.cssText='margin:16px 0;padding:15px;border:1px solid var(--line);border-radius:13px;background:var(--panel)';
+ panel.append(element('h3','PULL SESSIONS · '+sessions.length+' segmented high-throttle runs'));
+ const desc=element('p','Groups RPM ≥2,000 / TPS ≥80% into separate continuous runs of at least 8 samples. These are candidate pulls—not certified WOT, single-gear, road-speed or engine-safety tests.');
+ desc.style.cssText='font-size:12px;line-height:1.5';panel.append(desc);
+ if(!sessions.length){
+  panel.append(element('p','No high-throttle segment had enough contiguous samples. Try a different logged session; do not create unsafe road pulls to satisfy the analyzer.'));
+  area.append(panel);return;
+ }
+ const grid=element('div');grid.className='signal-pulls-grid';
+ for(const [index,p] of sessions.slice(0,12).entries()){
+  const box=element('div');box.className='signal-pull-card';
+  const heading=element('strong','PULL '+(index+1)+' · '+p.status);box.append(heading);
+  const mph=ok(p.startMph)&&ok(p.endMph)?format(p.startMph,1)+' → '+format(p.endMph,1)+' mph':'speed not logged';
+  box.append(element('p',format(p.startRpm,0)+' → '+format(p.endRpm,0)+' RPM · '+mph));
+  box.append(element('p',(ok(p.duration)?'~'+format(p.duration,2)+' s':'time unverified')+
+   ' · '+p.count+' rows · '+p.leanCount+' lean / '+p.richCount+' rich samples (over 10% vs target)'));
+  box.append(element('p',p.wotState));
+  const pressure=ok(p.pressureMinPsi)?'Min '+format(p.pressureMinPsi,1)+' PSI, median '+format(p.pressureMedianPsi,1)+' PSI':'Fuel PSI unavailable';
+  box.append(element('p',pressure+' · '+(ok(p.coolantF)?format(p.coolantF,0)+'°F':'Coolant °F unavailable')));
+  const detail=element('details');detail.append(element('summary','Why this needs review · '+p.cautions.length+' data notes'));
+  const ul=element('ul');for(const caution of p.cautions)ul.append(element('li',caution));detail.append(ul);box.append(detail);
+  const inspect=element('button','Inspect this pull on the AFR graph','ps-btn secondary');inspect.type='button';
+  inspect.onclick=()=>{
+   const e={a:p.a,b:p.b,count:p.count,duration:p.duration,pull:true,kind:'WOT SEGMENT',
+    context:p.context,confidence:'limited',rpm:p.endRpm,tps:p.peakThrottle,
+    pressure:p.pressureMedianPsi,priority:p.status,score:0};
+   selectEvent(e);
+   const target=area.querySelector?.('.signal-event-detail');
+   if(target?.scrollIntoView)target.scrollIntoView({behavior:'smooth',block:'start'});
+  };
+  box.append(inspect);grid.append(box);
+ }
+ panel.append(grid);
+ if(sessions.length>12)panel.append(element('p','Showing 12 of '+sessions.length+' segments. Export findings or load a shorter log to isolate additional runs.'));
+ area.append(panel);
+}
 // Workflows are scopes, not separate copies of the same generic fueling report.
 // Global safety gates always remain visible even when a workflow has no matching events.
 function forGoal(events,d,goal){
@@ -525,6 +671,7 @@ function render(host,d,opts){
  const exportButton=element('button','Export findings CSV','ps-btn secondary');
  exportButton.type='button';controls.append(exportButton);
  area.append(controls);
+ if(goal==='wot')renderWotSessions(area,d,result,selectEvent);
  const workspace=element('div');workspace.className='signal-event-workspace';area.append(workspace);
  const list=element('div');list.className='signal-event-list';workspace.append(list);
  const detail=element('div');detail.className='signal-event-detail';workspace.append(detail);
@@ -532,7 +679,7 @@ function render(host,d,opts){
  function selectEvent(e){
   if(activeChart){activeChart.destroy();activeChart=null;}
   detail.replaceChildren();
-  const h=element('h4',(e.idle?'IDLE INSPECTOR':'EVENT INSPECTOR')+' — rows '+(e.a+1)+'–'+(e.b+1));detail.append(h);
+  const h=element('h4',(e.pull?'PULL INSPECTOR':e.idle?'IDLE INSPECTOR':'EVENT INSPECTOR')+' — rows '+(e.a+1)+'–'+(e.b+1));detail.append(h);
   if(e.idle){
    const overview=element('p','Idle window: '+format(e.rpm,0)+' RPM median · '+format(e.rpmSpread,0)+' RPM central spread · '+(ok(e.targetRpm)?format(e.targetRpm,0)+' RPM logged target':'target RPM not logged')+' · '+(ok(e.duration)?format(e.duration,2)+' s':'duration unverified')+'. Low TPS does not prove closed-loop idle-control engagement.');
    overview.className='signal-event-idle-overview';detail.append(overview);
@@ -652,5 +799,5 @@ function render(host,d,opts){
  const ul=element('ul');for(const item of result.next)ul.append(element('li',item));coach.append(ul);
  coach.append(element('p',result.limitation));area.append(coach);
 }
-root.RawestSignalIntelligence={analyze,render,forGoal,workflowInfo,idleDiagnostics,version:'2.8.1'};
+root.RawestSignalIntelligence={analyze,render,forGoal,workflowInfo,idleDiagnostics,detectWotSessions,version:'2.8.1'};
 })(typeof window!=='undefined'?window:globalThis);
