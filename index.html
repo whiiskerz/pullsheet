@@ -2431,6 +2431,24 @@ function findColumn(headers,configured,fallbacks){
     if(includes>=0)return includes;
   }
 
+  // Conservative alias matching: exact normalized names only, never generic
+  // substring matches like "pressure" that could select oil or A/C.
+  const normalize=x=>String(x).toLowerCase().replace(/\\[[^\\]]*\\]/g,'').replace(/[^a-z0-9]/g,'');
+  const aliasGroups=[
+    ['fuelpressure','fuelpress','fuelp','railpressure','fuelrailpressure','fuelpsi','railpsi','fp'],
+    ['oilpressure','oilpress','oilp','oilpsi'],
+    ['ethanolcontent','ethanolpercentage','ethanolpct','ethanol','flexfuel','econtent'],
+    ['lambdatarget','targetlambda','commandedlambda','desiredlambda'],
+    ['lambda','measuredlambda','wblambda','widebandlambda'],
+    ['tps','throttleposition','throttlepositionpercent'],
+    ['rpm','enginerpm','enginespeed']
+  ];
+  const wanted=fallbacks.map(normalize);
+  for(const group of aliasGroups){
+    if(!group.some(a=>wanted.some(w=>w.includes(a)||a.includes(w))))continue;
+    const hits=headers.map((h,i)=>({i,key:normalize(h)})).filter(x=>group.includes(x.key));
+    if(hits.length===1)return hits[0].i;
+  }
   for(const needle of fallbacks){
 
     const i=headers.findIndex(h=>
