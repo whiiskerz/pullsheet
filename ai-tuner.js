@@ -130,6 +130,43 @@ function plan(){
  const pressureFactor=chosenUnit==='kpa'?0.1450377377:chosenUnit==='bar'?14.5037738:chosenUnit==='psi'?1:null;
  const pressureText=v=>pressureFactor===null?v.toFixed(1)+' (raw, unit unknown)':(v*pressureFactor).toFixed(1)+' psi';
  const pressureNote=pressureUnit!=='auto'?'Pressure unit manually selected as '+pressureUnit.toUpperCase()+'. Confirm this matches the original log channel.':explicitUnit?'Pressure unit read from the mapped channel header ('+explicitUnit+').':'Fuel pressure units are unknown. Choose the original unit above the report to see PSI; the app will not guess from pressure magnitude.';
+ // Event Detective: contiguous sample runs, not isolated spikes or RPM averages.
+ // Time duration is intentionally not inferred from row count.
+ const detective=[];
+ if(d&&Array.isArray(d.rpm)){
+  const n=d.rpm.length;
+  const val=(key,i)=>Array.isArray(d[key])?Number(d[key][i]):NaN;
+  const events=[
+   {kind:'LEAN',test:i=>val('rpm',i)>800&&val('tps',i)>=15&&val('lambda',i)>.5&&val('lambda',i)<1.5&&val('targetLambda',i)>.5&&val('targetLambda',i)<1.5&&val('lambda',i)/val('targetLambda',i)>1.10},
+   {kind:'RICH',test:i=>val('rpm',i)>800&&val('tps',i)>=15&&val('lambda',i)>.5&&val('lambda',i)<1.5&&val('targetLambda',i)>.5&&val('targetLambda',i)<1.5&&val('lambda',i)/val('targetLambda',i)<.90},
+   {kind:'KNOCK SIGNAL',test:i=>val('rpm',i)>800&&val('knock',i)>0},
+   {kind:'ECU WARNING',test:i=>val('rpm',i)>800&&val('warnings',i)>0}
+  ];
+  for(const type of events){
+   let start=-1;
+   const close=end=>{
+    if(start<0)return;
+    const count=end-start+1;
+    if(count>=3){
+     const middle=Math.floor((start+end)/2);
+     const actual=val('lambda',middle),target=val('targetLambda',middle);
+     detective.push({kind:type.kind,start,end,count,rpm:val('rpm',middle),tps:val('tps',middle),actual,target,pressure:val('fuelPress',middle),time:val('runtime',middle)});
+    }
+    start=-1;
+   };
+   for(let i=0;i<n;i++){if(type.test(i)){if(start<0)start=i;}else close(i-1);}
+   close(n-1);
+  }
+  detective.sort((a,b)=>b.count-a.count);
+ }
+ const eventLine=e=>{
+  const bits=[e.kind+' — '+e.count+' consecutive samples (rows '+(e.start+1)+'–'+(e.end+1)+')'];
+  if(Number.isFinite(e.rpm))bits.push(Math.round(e.rpm)+' RPM');
+  if(Number.isFinite(e.tps))bits.push(e.tps.toFixed(1)+'% TPS');
+  if(Number.isFinite(e.actual)&&Number.isFinite(e.target))bits.push('measured '+(e.actual*14.7).toFixed(2)+' vs target '+(e.target*14.7).toFixed(2)+' gasoline-equivalent AFR');
+  if(Number.isFinite(e.pressure))bits.push('fuel pressure '+pressureText(e.pressure));
+  return bits.join(' | ');
+ };
  const ratioAfr=ratio=>(14.7*ratio).toFixed(2);
  const standout=[...sorted].sort((a,b)=>Math.abs(b.meanLambdaRatioErrorPct)-Math.abs(a.meanLambdaRatioErrorPct)).slice(0,3);
  const near=sorted.filter(x=>Math.abs(x.meanLambdaRatioErrorPct)<=3);
@@ -148,6 +185,11 @@ function plan(){
   'Channel mapping',
   'Measured lambda: '+mappedHeader('cfgLambda')+'; target lambda: '+mappedHeader('cfgTargetLambda')+'.',
   'Fuel pressure: '+mappedHeader('cfgFuel')+'; ethanol: '+mappedHeader('cfgEthanol')+'. Check original header units in I/O Config. Do not interpret raw pressure values as kPa or psi without verification.',
+  '',
+  'Event Detective — consecutive readings',
+  detective.length?'Found '+detective.length+' runs of at least 3 consecutive samples. These are sample sequences, not verified time durations; review throttle transitions and sensor accuracy.':'No runs of at least 3 consecutive qualifying lean/rich/knock/warning samples were identified. This does not prove the log is safe.',
+  ...detective.slice(0,8).map(eventLine),
+  detective.length>8?'Plus '+(detective.length-8)+' additional runs.':'',
   '',
   'Sample-level checks',
   paired.length?'Of '+paired.length+' valid fueling readings: '+lean10.length+' were over 10% lean, and '+rich10.length+' were over 10% rich. For reference, lambda 1.00 = 14.7 gasoline-scale AFR, lambda 0.85 = 12.50, and lambda 0.80 = 11.76. These AFR numbers are gasoline-equivalent even on ethanol blends. Individual readings are not sustained events.':'There were no usable paired lambda readings in the selected operating filter.',
