@@ -71,7 +71,7 @@ function dyno(){
 }
 function plan(){
  const goal=$('aiGoal').value,loaded=typeof lastParsed!=='undefined'?lastParsed:null;
- const fuelingWorkflow=['flex','cruise','wot','transient','idle'].includes(goal);
+ const fuelingWorkflow=['flex','cruise','wot','transient'].includes(goal);
  const sameLambdaColumn=loaded&&Number.isInteger(loaded.sourceColumns?.lambda)&&loaded.sourceColumns.lambda>=0&&loaded.sourceColumns.lambda===loaded.sourceColumns?.targetLambda;
  const d=sameLambdaColumn?{...loaded,lambda:[],channelWarnings:[...(loaded.channelWarnings||[]),'Actual lambda and target lambda use the same log column. Fueling evaluation is disabled until I/O Config is fixed.']}:loaded;
  const tune=workspace.original;
@@ -214,7 +214,7 @@ function plan(){
   'What I found',
   ...(d?.channelWarnings||[]).map(w=>'CHANNEL ERROR: '+w),
   ...((workflow?.notes||[]).map(n=>'WORKFLOW: '+n)),
-  fuelingWorkflow?(sorted.length?'I found differences between measured and requested fueling in '+sorted.length+' RPM ranges; those averages do not prove a bad fuel table.':'There were not enough qualified, independent lambda readings to assess fueling in this workflow.'):'This workflow does NOT infer two-step, ignition or overrun calibration from generic lambda data. Global engine-safety findings are shown separately.',
+  fuelingWorkflow?(sorted.length?'I found differences between measured and requested fueling in '+sorted.length+' RPM ranges; those averages do not prove a bad fuel table.':'There were not enough qualified, independent lambda readings to assess fueling in this workflow.'):goal==='idle'?'Idle/cam uses stationary, low-throttle RPM windows—not the general ≥15% throttle fueling screen. Global engine safety is reported separately.':'This workflow does NOT infer launch, ignition or overrun calibration from generic lambda data. Global engine safety is reported separately.',
   fuelingWorkflow?(standout.length?'Largest RPM-band fueling differences: '+standout.map(x=>prettyBand(x)+': '+Math.abs(x.meanLambdaRatioErrorPct).toFixed(1)+'% '+(x.meanLambdaRatioErrorPct>0?'lean':'rich')).join('; ')+'.':''):'',
   fuelingWorkflow&&near.length?'Readings were closer to target around '+near.map(prettyBand).join(', ')+'.':'',
   '',
