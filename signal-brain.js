@@ -1,4 +1,4 @@
-/* RAWEST SIGNAL v3.1.0 — Diagnostic Brain + Evidence Heatmaps
+/* RAWEST SIGNAL v3.2.0 — Diagnostic Brain + Evidence Heatmaps
  * Deterministic on-device evidence review. Never writes tunes, recommends raw
  * VE/spark deltas, decodes undocumented control states or extrapolates tables.
  * Heatmaps are measured log occupancy, NOT verified active ECU table cells.
@@ -463,5 +463,5 @@ function render(host,log,options={}){
  }
  drawBrain();
 }
-root.RawestSignalBrain={buildHeatmap,summarizeEvent,diagnose,render,version:'3.1.0'};
+root.RawestSignalBrain={buildHeatmap,summarizeEvent,diagnose,render,version:'3.2.0'};
 })(typeof window!=='undefined'?window:globalThis);
