@@ -134,14 +134,14 @@ function plan(){
   }
   return 'not mapped — verify in I/O Config';
  };
+ const units=typeof window!=='undefined'?window.RawestSignalUnits:null;
  const pressureHeader=mappedHeader('cfgFuel');
- const declaredUnit=d?.sourceFormat==='holley'?String(d.sourceUnits?.fuelPress||'').toLowerCase():null;
- const explicitUnit=(pressureHeader.match(/\[(kpa|bar|psi)\]/i)||pressureHeader.match(/\((kpa|bar|psi)\)/i)||[])[1]?.toLowerCase()||(/^(kpa|bar|psi)$/.test(declaredUnit||'')?declaredUnit:null);
- const pressureUnit=$('aiPressureUnit')?.value||'auto';
- const chosenUnit=pressureUnit==='auto'?explicitUnit:pressureUnit;
- const pressureFactor=chosenUnit==='kpa'?0.1450377377:chosenUnit==='bar'?14.5037738:chosenUnit==='psi'?1:null;
- const pressureText=v=>pressureFactor===null?v.toFixed(1)+' (raw, unit unknown)':(v*pressureFactor).toFixed(1)+' psi';
- const pressureNote=pressureUnit!=='auto'?'Pressure unit manually selected as '+pressureUnit.toUpperCase()+'. Confirm this matches the original log channel.':explicitUnit?'Pressure unit read from the mapped channel header ('+explicitUnit+').':'Fuel pressure units are unknown. Choose the original unit above the report to see PSI; the app will not guess from pressure magnitude.';
+ const previousUnit=$('aiPressureUnit')?.value||'auto';
+ const pressureInfo=units?units.describe(d,'fuelPress',previousUnit):null;
+ const pressureUnit=previousUnit;
+ const pressureFactor=pressureInfo?.factor??null;
+ const pressureText=v=>pressureInfo?pressureInfo.display(v):'PSI unavailable (source unit unverified)';
+ const pressureNote=pressureInfo?.note||'Pressure source unit must be confirmed to calculate PSI.';
  // Event Detective: contiguous sample runs, not isolated spikes or RPM averages.
  // Time duration is intentionally not inferred from row count.
  const detective=[];
@@ -220,7 +220,7 @@ function plan(){
   '',
   'Channel mapping',
   'Measured lambda: '+mappedHeader('cfgLambda')+'; target lambda: '+mappedHeader('cfgTargetLambda')+'.',
-  'Fuel pressure: '+mappedHeader('cfgFuel')+'; ethanol: '+mappedHeader('cfgEthanol')+'. Check original header units in I/O Config. Do not interpret raw pressure values as kPa or psi without verification.',
+  'Fuel pressure sensor: '+mappedHeader('cfgFuel')+'; ethanol: '+mappedHeader('cfgEthanol')+'. Fuel pressure will only display in PSI after its original unit is confirmed.',
   '',
   'Significant events — ECU-aware screening',
   smartEvents?'In the selected '+label+' workflow: '+relevantEvents.length+' matching events. The full log has '+smartEvents.length+' events and '+intelligence.high+' higher-priority findings (regardless of selected workflow). Safety flags remain visible.':'Advanced event engine unavailable; falling back to sample runs.',
@@ -252,7 +252,20 @@ function plan(){
  ].filter(x=>x!==undefined).join('\n');
  const report=plain;
  const container=$('aiPlanResult');container.replaceChildren();
- const controls=document.createElement('div');controls.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px';const unitLabel=document.createElement('label');unitLabel.textContent='Original fuel-pressure unit: ';const unitSelect=document.createElement('select');unitSelect.id='aiPressureUnit';for(const [v,t] of [['auto','Auto (header only)'],['kpa','kPa → PSI'],['bar','bar → PSI'],['psi','Already PSI']]){const o=document.createElement('option');o.value=v;o.textContent=t;unitSelect.append(o);}unitSelect.value=pressureUnit;unitSelect.onchange=plan;unitLabel.append(unitSelect);controls.append(unitLabel);container.append(controls);
+ const controls=document.createElement('div');controls.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px';
+ const unitLabel=document.createElement('label');unitLabel.textContent='Fuel pressure display: PSI · original input scale: ';
+ const unitSelect=document.createElement('select');unitSelect.id='aiPressureUnit';
+ for(const [v,t] of [['auto','Use verified input/header (or unavailable)'],['kpa','Input is kPa → display PSI'],['bar','Input is bar → display PSI'],['psi','Input is already PSI']]){
+  const option=document.createElement('option');option.value=v;option.textContent=t;unitSelect.append(option);
+ }
+ unitSelect.value=pressureUnit;
+ unitSelect.onchange=()=>{
+  window.RawestSignalUnits?.save?.(window.RawestSignalUnits.mappedHeader(d,'fuelPress'),unitSelect.value);
+  plan();
+ };
+ unitLabel.append(unitSelect);controls.append(unitLabel);
+ const hint=document.createElement('span');hint.style.cssText='font-size:11px;color:var(--dim)';hint.textContent=pressureInfo?.canShowPsi?'Pressure is displayed in PSI; source '+pressureInfo.source+'.':'Select the original logged unit once to calculate PSI; never guessed.';controls.append(hint);
+ container.append(controls);
  const heading=document.createElement('h3');heading.textContent=label+' · Tuning report';container.append(heading);
  const summary=document.createElement('p');summary.textContent='Inspect prioritized events, AFR graphs, ECU corrections and next-log checks. Expand the full text report below or copy/download it.';container.append(summary);
  if(typeof window!=='undefined'&&window.RawestSignalIntelligence){
