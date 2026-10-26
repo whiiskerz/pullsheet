@@ -1,0 +1,31 @@
+name: Verify RAWEST SIGNAL
+on:
+  push:
+    paths:
+      - 'index.html'
+      - 'ai-tuner.js'
+      - 'signal-intelligence.js'
+      - 'tests/**'
+      - '.github/workflows/verify.yml'
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'ai-tuner.js'
+      - 'signal-intelligence.js'
+      - 'tests/**'
+      - '.github/workflows/verify.yml'
+
+jobs:
+  channel-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check ai-tuner.js
+          node --check signal-intelligence.js
+      - name: Validate mapping safety
+        run: node --test tests/channel-mapping.test.js
