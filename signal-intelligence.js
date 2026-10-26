@@ -382,13 +382,14 @@ function render(host,d,opts){
    canvas.style.setProperty('height','100%','important');
    canvas.style.setProperty('max-height','100%','important');
    wrap.append(canvas);detail.append(wrap);
-   const labels=[],actual=[],target=[],throttle=[];
+   const labels=[],actual=[],target=[],throttle=[],flagged=[];
    const start=Math.max(0,e.a-10),end=Math.min(result.n-1,e.b+12);
    const stride=Math.max(1,Math.ceil((end-start+1)/100));
    for(let i=start;i<=end;i+=stride){
     const at=(key)=>Array.isArray(d[key])?d[key][i]:NaN;
     labels.push(result.time.verified&&ok(at('runtime'))?format(at('runtime')-d.runtime[e.a],2)+'s':'#'+(i+1));
     actual.push(ok(at('lambda'))&&at('lambda')>.5&&at('lambda')<1.5?at('lambda')*14.7:null);
+    flagged.push(i>=e.a&&i<=e.b);
     target.push(ok(at('targetLambda'))&&at('targetLambda')>.5&&at('targetLambda')<1.5?at('targetLambda')*14.7:null);
     throttle.push(ok(at('tps'))?at('tps'):null);
    }
@@ -396,7 +397,7 @@ function render(host,d,opts){
     activeChart=new window.Chart(canvas,{
      type:'line',
      data:{labels,datasets:[
-      {label:'Measured AFR',data:actual,borderColor:'#f17f83',backgroundColor:'#f17f83',pointRadius:0,tension:.12,spanGaps:false,yAxisID:'afr'},
+      {label:'Measured AFR',data:actual,borderColor:'#f17f83',backgroundColor:'#f17f83',pointBackgroundColor:'#ffd166',pointBorderColor:'#f17f83',pointRadius:flagged.map(v=>v?3:0),pointHoverRadius:5,tension:.12,spanGaps:false,yAxisID:'afr'},
       {label:'Target AFR',data:target,borderColor:'#63cdb4',backgroundColor:'#63cdb4',pointRadius:0,borderDash:[5,4],tension:0,yAxisID:'afr'},
       {label:'Throttle %',data:throttle,borderColor:'#e7b45e',backgroundColor:'#e7b45e',pointRadius:0,tension:.12,yAxisID:'tps'}
      ]},
@@ -409,7 +410,7 @@ function render(host,d,opts){
       }}
     });
    }catch(err){wrap.replaceChildren(element('p','Chart unavailable. Use the original sample table below.'));}
-   const subtitle=element('p','Event graph: actual vs target gasoline-equivalent AFR and throttle. A sample can reflect exhaust transport/wideband delay; the graph alone does not isolate a fuel-table error.');
+   const subtitle=element('p','Orange dots mark flagged samples. Graph shows actual vs target gasoline-equivalent AFR plus throttle. Exhaust transport and wideband delay can shift apparent timing; do not diagnose fuel tables from this trace alone.');
    subtitle.style.fontSize='11px';detail.append(subtitle);
   }
   const samples=element('details');samples.className='signal-event-samples';
