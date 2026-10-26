@@ -53,6 +53,10 @@ function analyze(d,options){
  options=options||{};
  if(!d||!Array.isArray(d.rpm))return {error:'Load an ECU log before opening Signal Intelligence.'};
  const n=d.rpm.length,entries={};
+ const lambdaCollision=Number.isInteger(d.sourceColumns?.lambda)&&d.sourceColumns.lambda>=0&&d.sourceColumns.lambda===d.sourceColumns?.targetLambda;
+ const integrityWarnings=[...(d.channelWarnings||[])];
+ if(lambdaCollision)integrityWarnings.push('Actual and target lambda resolve to one source column. All fueling conclusions are blocked until I/O mapping is corrected.');
+
  for(const name of Object.keys(spec))entries[name]=resolve(d,name);
  const signals={};
  for(const name of Object.keys(entries))signals[name]=read(d,entries[name]);
@@ -74,7 +78,7 @@ function analyze(d,options){
  const pressureAt=i=>dv('fuelPress',i);
  const timeSpan=(a,b)=>time.verified&&ok(dv('runtime',a))&&ok(dv('runtime',b))
   ?Math.max(0,dv('runtime',b)-dv('runtime',a))+time.quantum:NaN;
- const validLambda=i=>ok(dv('lambda',i))&&ok(dv('targetLambda',i))&&dv('lambda',i)>.5&&dv('lambda',i)<1.5&&dv('targetLambda',i)>.5&&dv('targetLambda',i)<1.5;
+ const validLambda=i=>!lambdaCollision&&ok(dv('lambda',i))&&ok(dv('targetLambda',i))&&dv('lambda',i)>.5&&dv('lambda',i)<1.5&&dv('targetLambda',i)>.5&&dv('targetLambda',i)<1.5;
  const deviation=i=>validLambda(i)?dv('lambda',i)/dv('targetLambda',i)-1:NaN;
  const eligible=i=>dv('rpm',i)>800&&dv('tps',i)>=15;
  const events=[];
@@ -175,6 +179,7 @@ function analyze(d,options){
  const validPairCount=d.rpm.reduce((num,_,i)=>num+(validLambda(i)&&eligible(i)?1:0),0);
  const wotCount=d.rpm.reduce((num,_,i)=>num+(dv('rpm',i)>=2000&&dv('tps',i)>=80?1:0),0);
  const gates=[];
+ for(const warning of integrityWarnings)gates.push('CHANNEL MAPPING ERROR: '+warning);
  if(validPairCount<20)gates.push('Fueling review limited: fewer than 20 plausible actual/target lambda pairs in operating samples.');
  if(events.some(e=>e.kind==='KNOCK'&&e.highLoad))gates.push('Under-load knock indicator seen. Verify the signal and engine protection before additional high-load testing.');
  if(events.some(e=>e.kind==='LEAN'&&e.highLoad&&e.priority==='HIGH'))gates.push('Significant lean deviation with high throttle/elevated MAP. Investigate ECU corrections and fuel pressure before additional loaded testing.');
