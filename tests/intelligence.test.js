@@ -12,15 +12,15 @@ const engine=context.RawestSignalIntelligence;
 assert.ok(engine&&typeof engine.analyze==='function','Signal Intelligence engine should expose analyze');
 
 function fakeLog(){
- const headers=['Engine runtime [69]','MAP [20]','Lambda corr A [102]','Lambda corr state [670]','Acc enrichment [106]','Fuel cut [100]'];
- const d={headers,rows:[],sourceColumns:{fuelPress:-1,lambda:2,targetLambda:3,knock:-1,warnings:-1},
+ const headers=['Engine runtime [69]','MAP [20]','Lambda corr A [102]','Lambda corr state [670]','Acc enrichment [106]','Fuel cut [100]','Lambda [5]','Lambda target [81]'];
+ const d={headers,rows:[],sourceColumns:{fuelPress:-1,lambda:6,targetLambda:7,knock:-1,warnings:-1},
   rpm:[],tps:[],runtime:[],lambda:[],targetLambda:[],fuelPress:[],knock:[],warnings:[],ethanol:[]};
  for(let i=0;i<100;i++){
   const lean=i>=40&&i<=48;
   d.rpm.push(2000+i);d.tps.push(90);d.runtime.push(i*.067);
   d.lambda.push(lean?1.09:.88);d.targetLambda.push(.88);
   d.fuelPress.push(405);d.knock.push(0);d.warnings.push(0);d.ethanol.push(5.8);
-  d.rows.push([i*.067,97,lean?(i<=45?-10:-6):0,lean?1:0,0,0].map(String));
+  d.rows.push([i*.067,97,lean?(i<=45?-10:-6):0,lean?1:0,0,0,lean?1.09:.88,.88].map(String));
  }
  return d;
 }
