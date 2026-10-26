@@ -5830,6 +5830,7 @@ function render(d,filename){
     rawHeaders=[];
     lastParsed=null;
     lastFilename='';
+    window.pullsheetAI?.onLogChanged?.(null);
 
     fileInput.value='';
 
@@ -5911,6 +5912,11 @@ function render(d,filename){
 
 
   buildChart(d);
+
+  // Keep Calibration Studio and Event Explorer synced to the active file.
+  // The older implementation only populated Event Explorer on first page load,
+  // leaving a false "No log loaded" message after importing a valid log.
+  window.pullsheetAI?.onLogChanged?.(d);
 
   if(d.fuelFlowPowerHp && d.fuelFlowPowerHp.some(Number.isFinite) && d.pulls.length){
 
