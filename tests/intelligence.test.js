@@ -6,7 +6,9 @@ const vm=require('node:vm');
 const path=require('node:path');
 
 const source=fs.readFileSync(path.join(__dirname,'../signal-intelligence.js'),'utf8');
-const context={};
+const unitsCode=fs.readFileSync(path.join(__dirname,'../signal-units.js'),'utf8');
+const context={localStorage:{getItem:()=>null,setItem(){},removeItem(){}}};
+vm.runInNewContext(unitsCode,context,{filename:'signal-units.js'});
 vm.runInNewContext(source,context,{filename:'signal-intelligence.js'});
 const engine=context.RawestSignalIntelligence;
 assert.ok(engine&&typeof engine.analyze==='function','Signal Intelligence engine should expose analyze');
@@ -38,10 +40,10 @@ test('high-throttle lean with held negative trim is not automatically called nor
 test('pressure remains unverified without explicit units',()=>{
  const report=engine.analyze(fakeLog(),{pressureUnit:'auto'});
  assert.equal(report.pressureFactor,null);
- assert.equal(report.quality.find(q=>q.key==='Fuel pressure units').status,'unverified');
+ assert.equal(report.quality.find(q=>q.key==='Fuel pressure (PSI)').status,'unverified');
 });
 test('user-selected kPa produces PSI conversion without implying verified calibration',()=>{
  const report=engine.analyze(fakeLog(),{pressureUnit:'kpa'});
  assert.ok(Math.abs(report.pressureFactor-.1450377377)<1e-8);
- assert.equal(report.quality.find(q=>q.key==='Fuel pressure units').status,'user-selected');
+ assert.equal(report.quality.find(q=>q.key==='Fuel pressure (PSI)').status,'displayable');
 });
