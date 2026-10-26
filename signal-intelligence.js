@@ -498,7 +498,7 @@ function detectWotSessions(d,context){
    gear:entryGear
   };
   const status=lean.length||ok(relativeDrop)&&relativeDrop>.15||fuelCutSamples.length?'REVIEW':
-    completeness.duration&&completeness.lambda&&completeness.speed&&completeness.gear?'COMPARABLE DATA':'LIMITED DATA';
+    completeness.duration&&completeness.lambda&&completeness.speed&&completeness.gear?'CHANNELS PRESENT':'LIMITED DATA';
   sessions.push({
    a,b,count,duration,elapsedVerified,startRpm,endRpm,maxRpm:Math.max(...rpms),minRpm:Math.min(...rpms),
    startMph,endMph,peakThrottle:maxThrottle,gearChanges,entryObserved,
@@ -617,10 +617,18 @@ function workflowInfo(d,result,goal){
  case 'cruise':
   notes.push('Cruise findings focus on 1,200+ RPM at 10–40% throttle. Closed-loop corrections, transient changes and steady MAP must be verified before changing fuel tables.');
   break;
- case 'wot':
-  notes.push(result.wotCount+' RPM ≥2000 / TPS ≥80% candidate samples. These thresholds do not prove a clean, repeatable WOT pull.');
-  notes.push('Review fueling and fuel pressure with knock and MAP at the same timestamps; do not increase load until significant lean findings are explained.');
+ case 'wot':{
+  const sessions=result.wotSessions||[];
+  const leanRuns=sessions.filter(x=>x.leanCount>0);
+  const later=sessions.filter(x=>x.lateLean>0);
+  const shifts=sessions.filter(x=>Number.isFinite(x.gearChanges)&&x.gearChanges>0);
+  notes.push(result.wotCount+' RPM ≥2,000 / TPS ≥80% candidate samples, grouped into '+sessions.length+' continuous high-throttle run(s) with enough samples.');
+  notes.push(leanRuns.length+' segment(s) include readings >10% lean vs target; '+later.length+' contain lean readings >0.5 seconds after segment entry, where elapsed time was verifiable.');
+  if(shifts.length)notes.push(shifts.length+' segment(s) include logged gear transitions. Avoid treating them as clean single-gear pulls.');
+  notes.push('Each run includes its own RPM, mph, gasoline-equivalent AFR, coolant °F and fuel PSI only if pressure-source units are verified. High TPS does not certify a clean or safe WOT pull.');
+  notes.push('Inspect significant lean behavior and fuel-system response before additional high-load testing.');
   break;
+ }
  case 'transient':
   notes.push('Throttle tip-in prioritizes throttle/load transitions, acceleration enrichment and possible held lambda corrections. Short deviations are not automatically fuel-table faults.');
   break;
