@@ -60,10 +60,23 @@ test('Switching logs triggers refreshed Explorer and clears stale report',()=>{
  const stale={count:0,replaceChildren(){this.count++}};
  const findings={count:0,replaceChildren(){this.count++}};
  let refreshed=0,rendered=0;
- const onChanged=new Function('$','refreshStudio','renderEvents',
+ let calibrationRefreshes=0;
+ const onChanged=new Function('
+ const one={rpm:[1000]};
+ onChanged(one);onChanged(one);onChanged({rpm:[1100]});onChanged(null);
+ assert.equal(stale.count,3);
+ assert.equal(findings.count,3);
+ assert.equal(refreshed,4);
+ assert.equal(rendered,4);
+ assert.equal(calibrationRefreshes,4);
+ const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+ assert.match(html,/window\.pullsheetAI\?\.onLogChanged\?\.\(d\)/);
+ assert.match(html,/window\.pullsheetAI\?\.onLogChanged\?\.\(null\)/);
+});
+,'refreshStudio','renderEvents','renderCalibrationIntelligence',
   source.slice(a,b)+'\nreturn onLogChanged;')(
    id=>id==='aiPlanResult'?stale:id==='aiFindings'?findings:null,
-   ()=>refreshed++,()=>rendered++);
+   ()=>refreshed++,()=>rendered++,()=>calibrationRefreshes++);
  const one={rpm:[1000]};
  onChanged(one);onChanged(one);onChanged({rpm:[1100]});onChanged(null);
  assert.equal(stale.count,3);
