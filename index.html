@@ -1294,6 +1294,27 @@ html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),tr
 
 /* SIGNAL INTELLIGENCE / EVENT INSPECTOR: fixes site-wide canvas height overrides */
 .signal-intelligence{min-width:0;max-width:100%;box-sizing:border-box}
+
+/* WOT Pull Sessions · ECU evidence, not a green-light indicator */
+.signal-pull-sessions{min-width:0;max-width:100%;box-sizing:border-box}
+.signal-pull-sessions h3{font-size:15px;letter-spacing:.02em;margin:0 0 8px}
+.signal-pull-sessions>.ps-btn{margin:8px 0 14px}
+.signal-pulls-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:12px;align-items:stretch}
+.signal-pull-card{
+ display:flex;flex-direction:column;align-items:flex-start;gap:8px;
+ padding:15px;border:1px solid var(--ps-border,var(--line));
+ border-radius:13px;background:var(--panel2,#161b1f);min-width:0
+}
+.signal-pull-card strong{color:var(--amber,#ffb627);letter-spacing:.03em;font-size:12px;overflow-wrap:anywhere}
+.signal-pull-card p{font-size:12px;line-height:1.5;margin:0;overflow-wrap:anywhere}
+.signal-pull-card details{width:100%;font-size:12px;margin:5px 0}
+.signal-pull-card details summary{padding:8px 10px;border-radius:8px;background:rgba(170,170,180,.09);cursor:pointer;line-height:1.5}
+.signal-pull-card details li{margin:5px 0;overflow-wrap:anywhere}
+.signal-pull-card>.ps-btn{margin-top:auto;max-width:100%;white-space:normal}
+@media(max-width:600px){
+ .signal-pulls-grid{grid-template-columns:minmax(0,1fr)}
+ .signal-pull-card{padding:12px}
+}
 .signal-event-workspace{
   display:grid;
   grid-template-columns:minmax(245px,.85fr) minmax(0,1.9fr);
