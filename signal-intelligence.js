@@ -65,14 +65,15 @@ function analyze(d,options){
  const get=(k,i)=>{const a=signals[k];return Array.isArray(a)&&i>=0&&i<a.length?a[i]:NaN;};
  const dv=(k,i)=>{const a=d[k];return Array.isArray(a)&&i>=0&&i<a.length?a[i]:NaN;};
  const time=timebase(d);
- const unitHeader=d.sourceColumns&&d.sourceColumns.fuelPress>=0?d.headers[d.sourceColumns.fuelPress]:'';
- let pressureUnit=(options.pressureUnit||'auto').toLowerCase();
- if(pressureUnit==='auto'){
-  const fromName=String(unitHeader||'').match(/[\[(](kpa|bar|psi)[\])]/i);
-  const holleyDeclared=d.sourceFormat==='holley'?String(d.sourceUnits?.fuelPress||'').toLowerCase():'';
-  pressureUnit=/^(kpa|bar|psi)$/.test(holleyDeclared)?holleyDeclared:(fromName?fromName[1].toLowerCase():'unknown');
- }
- const pressureFactor=pressureUnit==='kpa'?.1450377377:pressureUnit==='bar'?14.5037738:pressureUnit==='psi'?1:null;
+ const displayUnits=root.RawestSignalUnits||null;
+ const pressureInfo=displayUnits?displayUnits.describe(d,'fuelPress',options.pressureUnit||'auto'):null;
+ const pressureUnit=pressureInfo?.unit||'unknown';
+ const pressureFactor=pressureInfo?.factor??null;
+ const mapInPsia=entries.map?.method==='MaxxECU ID'&&d.sourceFormat!=='holley';
+ const presentMap=i=>{
+  const reading=get('map',i);
+  return mapInPsia&&ok(reading)?reading*.1450377377:NaN;
+ };
  const pressures=(d.fuelPress||[]).filter((v,i)=>ok(v)&&dv('rpm',i)>800&&dv('tps',i)>=15&&v>0);
  const pressureBaseline=pressures.length>=25?median(pressures):NaN;
  const pressureAt=i=>dv('fuelPress',i);
@@ -208,7 +209,7 @@ function analyze(d,options){
   {key:'Correction state',status:entries.correctionState.index>=0?'present':'missing',note:entries.correctionState.name},
   {key:'Acceleration enrichment',status:entries.acceleration.index>=0?'present':'missing',note:entries.acceleration.name},
   {key:'Fuel cut',status:entries.fuelCut.index>=0?'present':'missing',note:entries.fuelCut.name},
-  {key:'Fuel pressure units',status:pressureFactor!==null?(options.pressureUnit&&options.pressureUnit!=='auto'?'user-selected':'header-labeled'):'unverified',note:pressureFactor!==null?pressureUnit:'Select original unit above; sensor calibration still needs checking'},
+  {key:'Fuel pressure (PSI)',status:pressureFactor!==null?'displayable':'unverified',note:pressureInfo?.note||'Original input scale must be verified before PSI conversion'},
   {key:'Knock indicator',status:d.knock?.some(ok)?'present':'missing',note:'Raw indicator; verify meaning'}
  ];
  const next=[];
@@ -217,14 +218,14 @@ function analyze(d,options){
  if(entries.acceleration.index<0)next.push('Log Acc enrichment to distinguish acceleration fueling.');
  if(entries.fuelCut.index<0)next.push('Log Fuel cut to distinguish overrun and cut events.');
  if(entries.map.index<0)next.push('Log MAP / manifold load alongside TPS and RPM.');
- if(pressureFactor===null)next.push('Verify the fuel-pressure channel unit in MTune before interpreting PSI.');
+ if(pressureFactor===null)next.push('Choose the original MaxxECU pressure-input scale once; then RAWEST SIGNAL can display confirmed PSI conversions.');
  if(!d.knock?.some(ok))next.push('Log a verified knock-detection or correction channel.');
  if(events.some(e=>e.kind==='LEAN'&&e.highLoad))next.push('Review high-load lean episodes, correction limits and pressure response before more loaded testing.');
  if(events.some(e=>e.possibleCorrectionLimit))next.push('Check configured MaxxECU lambda-correction limits and when closed-loop correction is enabled. Observed trim endpoints are not proof of a configured clamp.');
  if(events.some(e=>e.negativeWhileLean))next.push('Inspect MTune lambda-control transient deactivation (off/hold), reactivation delay, max negative/positive correction, and raw Lambda corr state during lean events.');
  if(!next.length)next.push('Repeat a comparable warmed-up steady-state log; compare correction behavior at matched RPM and MAP.');
  return {version:'2.7.0',n,source:d.sourceFormat==='holley'?'Holley CSV':'MaxxECU log',time,quality,entries,signals,
-  pressureUnit,pressureFactor,pressureBaseline,events,next,gates,validPairCount,wotCount,high:events.filter(e=>e.priority==='HIGH').length,
+  pressureUnit,pressureFactor,pressureInfo,pressureBaseline,mapInPsia,events,next,gates,validPairCount,wotCount,high:events.filter(e=>e.priority==='HIGH').length,
   limitation:'Screening tool, not a calibration decision. Sample runs, ECU state flags, and pressure anomalies require sensor, unit and load verification.'};
 }
 // Before/after comparison uses matched RPM+MAP cells and records sample coverage.
@@ -489,19 +490,19 @@ function render(host,d,opts){
   const sampleToggle=element('summary','VIEW LOGGED SAMPLES · rows '+(Math.max(0,e.a-5)+1)+'–'+(Math.min(result.n-1,e.b+5)+1));samples.append(sampleToggle);
   const tableWrap=element('div');tableWrap.className='signal-event-table-wrap';samples.append(tableWrap);
   const table=element('table');table.className='signal-event-table';
-  const columns=['Row','RPM','TPS %','MAP','AFR actual','AFR target','Fuel pressure','Lambda corr A','Corr state raw','Acc enrich','Fuel cut'];
+  const columns=['Row','RPM','TPS %',result.mapInPsia?'MAP PSIA':'MAP (unit unverified)','AFR actual','AFR target','Fuel PSI','Lambda corr A','Corr state raw','Acc enrich','Fuel cut'];
   const th=element('tr');for(const k of columns){const cell=element('th',k);cell.style.cssText='padding:6px;text-align:left;border-bottom:1px solid var(--line)';th.append(cell);}table.append(th);
   const lo=Math.max(0,e.a-5),hi=Math.min(result.n-1,e.b+5),stride=Math.max(1,Math.ceil((hi-lo+1)/35));
   for(let i=lo;i<=hi;i+=stride){
    const g=k=>Array.isArray(d[k])?d[k][i]:NaN,s=k=>result.signals[k]?.[i];
-   const vals=[i+1,format(g('rpm'),0),format(g('tps')),format(s('map')),format(g('lambda')*14.7,2),format(g('targetLambda')*14.7,2),
-    ok(g('fuelPress'))?format(g('fuelPress')*(result.pressureFactor||1))+(result.pressureFactor!==null?' psi':' raw'):'—',
+   const vals=[i+1,format(g('rpm'),0),format(g('tps')),result.mapInPsia?format(s('map')*.1450377377,2):'—',format(g('lambda')*14.7,2),format(g('targetLambda')*14.7,2),
+    result.pressureInfo?.display(g('fuelPress'))||'PSI unavailable',
     format(s('correction')),format(s('correctionState'),0),format(s('acceleration')),format(s('fuelCut'),0)];
    const tr=element('tr');if(i>=e.a&&i<=e.b)tr.style.background='rgba(255,180,70,.09)';
    for(const v of vals){const td=element('td',v);td.style.cssText='padding:5px;border-bottom:1px solid var(--line)';tr.append(td);}table.append(tr);
   }
   tableWrap.append(table);detail.append(samples);
-  const tableNote=element('p','Rows around the event (subsampled when needed). AFR is gasoline-equivalent; confirm MAP, pressure and ECU-control signal units.');
+  const tableNote=element('p','Rows around the event. AFR is gasoline-equivalent; MAP is shown as absolute PSI only when recognized as MaxxECU standard MAP. Fuel pressure stays unavailable until its source scale is confirmed.');
   tableNote.className='signal-event-footnote';samples.append(tableNote);
  }
  function draw(){
@@ -532,9 +533,9 @@ function render(host,d,opts){
  }
  filter.onchange=draw;
  exportButton.onclick=()=>{
-  const columns=['kind','priority','score','first_row','last_row','samples','seconds_approx','rpm','tps','map','peak_error_pct','context'];
+  const columns=['kind','priority','score','first_row','last_row','samples','seconds_approx','rpm','tps','map_psia_if_verified','fuel_psi_if_verified','peak_error_pct','context'];
   const escape=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-  const body=[columns.join(',')].concat(result.events.map(e=>[e.kind,e.priority,e.score,e.a+1,e.b+1,e.count,ok(e.duration)?format(e.duration,2):'',format(e.rpm),format(e.tps),format(e.map),format(e.peakError),e.context].map(escape).join(','))).join('\n');
+  const body=[columns.join(',')].concat(result.events.map(e=>[e.kind,e.priority,e.score,e.a+1,e.b+1,e.count,ok(e.duration)?format(e.duration,2):'',format(e.rpm),format(e.tps),result.mapInPsia?format(e.map*.1450377377,2):'',result.pressureFactor!==null?format(e.pressure*result.pressureFactor,2):'',format(e.peakError),e.context].map(escape).join(','))).join('\n');
   const url=URL.createObjectURL(new Blob([body],{type:'text/csv;charset=utf-8'})),a=element('a');a.href=url;a.download='rawest-signal-findings.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  };
  // Chart.js must measure an attached element. Previously its canvas was
