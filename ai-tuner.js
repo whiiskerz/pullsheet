@@ -209,7 +209,7 @@ function plan(){
   'RAWEST SIGNAL — '+label+' report',
   '',
   d?'I reviewed '+(d.rowCount||d.rpm?.length||0).toLocaleString()+' samples from your engine log.':'No engine log is loaded yet.',
-  d?.sourceFormat==='holley'?'This report uses a Holley CSV; MaxxECU tune comparison is not available for this log.':tune?'Your MaxxECU calibration file is loaded for reference.':'Your MaxxECU calibration file is not loaded, so I cannot compare these readings with the tune tables.',
+  d?.sourceFormat==='holley'?'This report uses a Holley CSV; MaxxECU tune comparison is not available for this log.':tune?'A genuine MaxxECU XML calibration is loaded for raw-setting inspection. The log is NOT verified against an active fuel or ignition table unless the table axes are independently confirmed in the v3 Calibration Intelligence inspector.':'Your MaxxECU calibration file is not loaded, so I cannot compare these readings with tune tables.',
   '',
   'What I found',
   ...(d?.channelWarnings||[]).map(w=>'CHANNEL ERROR: '+w),
@@ -329,10 +329,16 @@ function settingRows(){
  for(const key of keys){const before=a.settings.get(key)||[],after=b?.settings.get(key)||[];const changed=!!b&&JSON.stringify(before)!==JSON.stringify(after);rows.push({key,before,after,changed});}
  return rows;
 }
+function renderCalibrationIntelligence(){
+ const host=$('aiCalibrationIntelligence');
+ if(!host||typeof window==='undefined'||!window.RawestCalibrationIntelligence)return;
+ const d=typeof lastParsed!=='undefined'?lastParsed:null;
+ window.RawestCalibrationIntelligence.render(host,workspace.original,workspace.compare,d,$('aiGoal')?.value||'flex');
+}
 function renderWorkspace(){
  const status=$('aiTuneStatus'),target=$('aiTuneBrowser');if(!status||!target)return;
  const a=workspace.original,b=workspace.compare;
- if(!a){status.textContent='Load an original .MaxxECU-save to browse ECU settings.';target.replaceChildren();refreshStudio();return;}
+ if(!a){status.textContent='Load an original .MaxxECU-save to browse ECU settings.';target.replaceChildren();refreshStudio();renderCalibrationIntelligence();return;}
  const goal=$('aiGoal')?.value||'flex',term=($('aiSettingSearch')?.value||'').toLowerCase().trim(),diffOnly=$('aiDiffFilter')?.value==='changed';
  const all=settingRows(),filtered=all.filter(r=>(!diffOnly||r.changed)&&(!term||r.key.toLowerCase().includes(term))&&(!groups[goal]||groups[goal].test(r.key)||!!term));
  const changes=all.filter(r=>r.changed);
@@ -340,7 +346,7 @@ function renderWorkspace(){
  const table=document.createElement('table');table.style.cssText='width:100%;font-size:12px;border-collapse:collapse;table-layout:fixed';
  const head=document.createElement('tr');for(const h of ['MTune setting','Original value',b?'Compared value':'Status']){let th=document.createElement('th');th.textContent=h;th.style.cssText='text-align:left;padding:8px;overflow-wrap:anywhere';head.append(th);}table.append(head);
  for(const r of filtered.slice(0,80)){let tr=document.createElement('tr');if(r.changed)tr.style.background='rgba(255,180,50,.10)';for(const v of [r.key,r.before.join(' | '),b?r.after.join(' | '):'Read-only']){let td=document.createElement('td');td.textContent=v.length>180?v.slice(0,180)+'…':v;td.title=v;td.style.cssText='border-top:1px solid #5555;padding:8px;vertical-align:top;overflow-wrap:anywhere';tr.append(td);}table.append(tr);}
- target.replaceChildren();refreshStudio();const summary=document.createElement('p');summary.textContent=filtered.length+' matching settings; showing first '+Math.min(80,filtered.length)+'. Search to narrow. Goal filters are keyword matches, not verified table mappings.';target.append(summary);const wrap=document.createElement('div');wrap.style.cssText='overflow-x:auto;max-height:430px;overflow-y:auto';wrap.append(table);target.append(wrap);
+ target.replaceChildren();refreshStudio();const summary=document.createElement('p');summary.textContent=filtered.length+' matching settings; showing first '+Math.min(80,filtered.length)+'. Search to narrow. Goal filters are keyword matches, not verified table mappings.';target.append(summary);const wrap=document.createElement('div');wrap.style.cssText='overflow-x:auto;max-height:430px;overflow-y:auto';wrap.append(table);target.append(wrap);renderCalibrationIntelligence();
 }
 async function loadCalibration(file,slot){
  if(!file)return;
@@ -350,7 +356,12 @@ async function loadCalibration(file,slot){
 }
 function exportComparison(){
  if(!workspace.original){$('aiTuneStatus').textContent='Load an original tune first.';return;}
- const rows=settingRows(),report={format:'pullsheet-maxxecu-settings-diff/v1',created:new Date().toISOString(),original:workspace.original.name,compared:workspace.compare?.name||null,validatedForEcuImport:false,notes:'Read-only XML settings comparison. Not a MaxxECU-save tune. Unknown table encodings and ECU compatibility are not validated.',changes:workspace.compare?rows.filter(r=>r.changed):[],settings:workspace.compare?undefined:rows.map(r=>({key:r.key,value:r.before}))};
+ const rows=settingRows(),intelligence=window.RawestCalibrationIntelligence;
+ const exactAudit=workspace.compare&&intelligence?.diffSettings?intelligence.diffSettings(workspace.original,workspace.compare):[];
+ const report={format:'rawest-signal-maxxecu-calibration-audit/v3',created:new Date().toISOString(),original:workspace.original.name,compared:workspace.compare?.name||null,validatedForEcuImport:false,
+  notes:'Read-only original XML settings and exact revisions. Keyword categories are search hints. Scalar deltas have unverified physical units. Numeric table values are NOT automatically decoded or mapped to an active table.',
+  changes:workspace.compare?exactAudit:[],
+  settings:workspace.compare?undefined:rows.map(r=>({key:r.key,value:r.before}))};
  const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='pullsheet-mtune-'+(workspace.compare?'diff':'inventory')+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
@@ -448,6 +459,7 @@ function onLogChanged(d){
  }
  refreshStudio();
  renderEvents();
+ renderCalibrationIntelligence();
 }
 window.pullsheetAI={analyze,dyno,plan,renderWorkspace,refreshStudio,renderEvents,onLogChanged};
 document.addEventListener('DOMContentLoaded',()=>{
