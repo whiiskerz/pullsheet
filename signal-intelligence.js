@@ -464,12 +464,14 @@ function render(host,d,opts){
   const body=[columns.join(',')].concat(result.events.map(e=>[e.kind,e.priority,e.score,e.a+1,e.b+1,e.count,ok(e.duration)?format(e.duration,2):'',format(e.rpm),format(e.tps),format(e.map),format(e.peakError),e.context].map(escape).join(','))).join('\n');
   const url=URL.createObjectURL(new Blob([body],{type:'text/csv;charset=utf-8'})),a=element('a');a.href=url;a.download='rawest-signal-findings.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  };
+ // Chart.js must measure an attached element. Previously its canvas was
+ // created while the entire report was detached, producing unreliable sizing.
+ host.append(area);
  draw();
  renderComparison(area,d,result);
  const coach=element('details');coach.style.marginTop='18px';const sum=element('summary','NEXT LOG COACH · '+result.next.length+' checks');coach.append(sum);
  const ul=element('ul');for(const item of result.next)ul.append(element('li',item));coach.append(ul);
  coach.append(element('p',result.limitation));area.append(coach);
- host.append(area);
 }
 root.RawestSignalIntelligence={analyze,render,version:'2.6.4'};
 })(typeof window!=='undefined'?window:globalThis);
