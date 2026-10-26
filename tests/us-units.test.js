@@ -51,8 +51,10 @@ test('Temperature, speed and mass conversions use US units with correct physics 
 test('HTML and service worker load the same versioned converter',()=>{
  const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
  const sw=fs.readFileSync(path.join(__dirname,'../sw.js'),'utf8');
- assert.match(html,/signal-units\.js\?v=2\.8\.0/);
- assert.match(sw,/signal-units\.js\?v=2\.8\.0/);
+ const htmlVersion=html.match(/signal-units\.js\?v=(\d+\.\d+\.\d+)/)?.[1];
+ const swVersion=sw.match(/signal-units\.js\?v=(\d+\.\d+\.\d+)/)?.[1];
+ assert.ok(htmlVersion,'US unit script must have a cache-busting version');
+ assert.equal(swVersion,htmlVersion,'Service worker and HTML must cache the same units file');
  assert.match(html,/Vehicle weight incl\. driver \(lb\)/);
  assert.match(html,/Drag area, CdA \(ft²\)/);
 });
