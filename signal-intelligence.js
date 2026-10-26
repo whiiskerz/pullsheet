@@ -328,15 +328,87 @@ function element(tag,text,cls){
  if(cls)n.className=cls;
  return n;
 }
+// Workflows are scopes, not separate copies of the same generic fueling report.
+// Global safety gates always remain visible even when a workflow has no matching events.
+function forGoal(events,d,goal){
+ if(!Array.isArray(events))return [];
+ const g=String(goal||'flex').toLowerCase();
+ if(g==='launch'){
+  return events.filter(e=>{
+   const nearby=Array.isArray(d.vss)?d.vss[Math.floor((e.a+e.b)/2)]:NaN;
+   return Number.isFinite(nearby)&&nearby/1.609344<=5&&
+     (e.kind==='KNOCK'||e.kind==='ECU WARNING'||e.kind==='PRESSURE DIP');
+  });
+ }
+ if(g==='spark')return events.filter(e=>e.kind==='KNOCK'||e.kind==='ECU WARNING');
+ if(g==='exhaust')return events.filter(e=>e.fuelCut||e.kind==='ECU WARNING'&&Number(e.tps)<20);
+ if(g==='idle')return events.filter(e=>Number(e.rpm)>=500&&Number(e.rpm)<=1400&&Number(e.tps)<20);
+ if(g==='cruise')return events.filter(e=>Number(e.rpm)>=1200&&Number(e.tps)>=10&&Number(e.tps)<40);
+ if(g==='wot')return events.filter(e=>Number(e.rpm)>=2000&&Number(e.tps)>=80);
+ if(g==='transient')return events.filter(e=>e.transient||e.enrich||e.trimAppearsHeld);
+ return events;
+}
+function workflowInfo(d,result,goal){
+ const g=String(goal||'flex').toLowerCase(),events=forGoal(result.events,d,g);
+ const countSamples=(test)=>Array.isArray(d.rpm)?d.rpm.reduce((n,r,i)=>n+(Number.isFinite(r)&&test(r,i)?1:0),0):0;
+ const listed=d.sourceColumns||{},known=key=>Number.isInteger(listed[key])&&listed[key]>=0;
+ const notes=[];
+ switch(g){
+ case 'launch':{
+  const starts=Array.isArray(d.launches)?d.launches:[];
+  const nearStart=countSamples((r,i)=>r>=1200&&d.tps?.[i]>=30&&Number.isFinite(d.vss?.[i])&&d.vss[i]<3.2187);
+  notes.push('Launch / 2-step needs a verified launch-arm/active, limiter, brake and speed channel. Throttle and RPM alone do NOT prove that 2-step is engaged.');
+  notes.push(starts.length+' speed-derived standing-start candidate(s); '+nearStart+' high-throttle samples below ~2 mph. Neither is proof of launch-control activation.');
+  notes.push('Logged launch context: '+(known('brakeSwitch')?'brake input available':'brake input not mapped')+'; '+(known('vss')?'vehicle speed available':'speed missing')+'; '+(known('revLimit')?'rev-limit channel available':'rev-limit channel missing')+'. This report cannot verify 2-step target, ignition cuts or launch-input timing.');
+  break;
+ }
+ case 'spark':
+  notes.push('Ignition / knock review uses only logged knock and ECU-warning indications, not AFR deviations as proxies for spark calibration.');
+  notes.push(known('knock')?'Knock indicator is mapped, but calibration and detection validity are unverified.':'Knock indicator is not mapped; ignition safety cannot be established.');
+  notes.push('Without a mapped ignition-angle channel and verified MTune timing table, no ignition advance/retard recommendations can be made.');
+  break;
+ case 'exhaust':
+  notes.push('Overrun review requires a verified fuel-cut state, throttle/load and exhaust-temperature context. Fuel-cut and lambda spikes are NOT an overrun ignition recommendation.');
+  notes.push('No anti-lag, flame or overrun calibration changes are generated.');
+  break;
+ case 'idle':
+  notes.push('Idle/cam assessment focuses on low RPM and throttle. The event detector initially screens lambda at ≥15% throttle and may not cover normal closed-throttle idle.');
+  notes.push(countSamples((r,i)=>r>=500&&r<=1400&&d.tps?.[i]<=10)+' low-throttle idle candidate samples. Verify MAP, target idle speed, coolant and idle-control mode before tuning.');
+  break;
+ case 'cruise':
+  notes.push('Cruise findings focus on 1,200+ RPM at 10–40% throttle. Closed-loop corrections, transient changes and steady MAP must be verified before changing fuel tables.');
+  break;
+ case 'wot':
+  notes.push(result.wotCount+' RPM ≥2000 / TPS ≥80% candidate samples. These thresholds do not prove a clean, repeatable WOT pull.');
+  notes.push('Review fueling and fuel pressure with knock and MAP at the same timestamps; do not increase load until significant lean findings are explained.');
+  break;
+ case 'transient':
+  notes.push('Throttle tip-in prioritizes throttle/load transitions, acceleration enrichment and possible held lambda corrections. Short deviations are not automatically fuel-table faults.');
+  break;
+ default:{
+  const ethanol=(d.ethanol||[]).filter(Number.isFinite);
+  if(ethanol.length){
+   const min=Math.min(...ethanol),max=Math.max(...ethanol);
+   notes.push('Ethanol range '+min.toFixed(1)+'–'+max.toFixed(1)+'%. '+(max-min<10?'There is no large logged ethanol transition to validate flex-fuel interpolation.':'Compare correction behavior between verified ethanol blend conditions.'));
+  }else notes.push('Ethanol-content channel unavailable: flex-fuel behavior cannot be checked.');
+  notes.push('Fuel blending remains unverified without a confirmed fuel type, ethanol calibration and matching MTune blend tables.');
+ }
+ }
+ return {goal:g,events,notes};
+}
 function render(host,d,opts){
  if(!host)return;
- const result=analyze(d,opts),area=element('section');
+ const result=analyze(d,opts),goal=opts?.goal||'flex',area=element('section');
  area.className='signal-intelligence';
  area.style.cssText='margin:24px 0;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--panel2);color:var(--text)';
  const title=element('h3','SIGNAL INTELLIGENCE · v2.6.5');
  title.style.margin='0 0 6px';area.append(title);
  if(result.error){area.append(element('p',result.error));host.append(area);return;}
- area.append(element('p',result.source+' · '+result.n.toLocaleString()+' rows · '+result.events.length+' multi-sample events · '+result.high+' higher-priority findings. Nothing here changes ECU settings.'));
+ const workflow=workflowInfo(d,result,goal);
+ area.append(element('p',result.source+' · '+result.n.toLocaleString()+' rows · '+workflow.events.length+' workflow-matched events · '+result.events.length+' across the full log · '+result.high+' high-priority findings in the full log. Nothing here changes ECU settings.'));
+ const focus=element('div');focus.className='signal-workflow-focus';focus.style.cssText='padding:13px 15px;margin:12px 0;border:1px solid var(--line);border-radius:11px';
+ focus.append(element('strong','WORKFLOW FOCUS · '+goal.toUpperCase()));
+ const focusList=element('ul');for(const note of workflow.notes)focusList.append(element('li',note));focus.append(focusList);area.append(focus);
  if(result.gates.length){
   const safety=element('div');safety.style.cssText='padding:12px;margin:12px 0;border:1px solid var(--line);border-left:3px solid #df9e4a;border-radius:9px';
   safety.append(element('strong','SAFETY & EVIDENCE GATES'));
@@ -353,7 +425,7 @@ function render(host,d,opts){
  paragraph.style.cssText='font-size:12px;opacity:.85';area.append(paragraph);
  const controls=element('div');controls.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:12px 0';
  const filter=element('select');filter.setAttribute('aria-label','Filter diagnostic findings');
- for(const [value,label] of [['all','All events'],['HIGH','Higher priority'],['LEAN','Lean'],['RICH','Rich'],['PRESSURE DIP','Fuel pressure'],['KNOCK','Knock'],['ECU WARNING','ECU warnings'],['transient','Throttle/load transitions'],['steady','Steady-load']]){
+ for(const [value,label] of [['all','Relevant to workflow'],['global','Full log · all findings'],['HIGH','Higher priority in workflow'],['LEAN','Lean in workflow'],['RICH','Rich in workflow'],['PRESSURE DIP','Fuel pressure in workflow'],['KNOCK','Knock in workflow'],['ECU WARNING','ECU warnings in workflow'],['transient','Throttle/load transitions'],['steady','Steady-load']]){
   const o=element('option',label);o.value=value;filter.append(o);
  }
  controls.append(filter);
@@ -436,10 +508,11 @@ function render(host,d,opts){
   if(activeChart){activeChart.destroy();activeChart=null;}
   list.replaceChildren();detail.replaceChildren();
   const v=filter.value;
-  const events=result.events.filter(e=>v==='all'||v===e.priority||v===e.kind||(v==='transient'&&e.transient)||(v==='steady'&&e.context?.startsWith('STEADY-LOAD')));
+  const source=v==='global'?result.events:workflow.events;
+  const events=source.filter(e=>v==='all'||v==='global'||v===e.priority||v===e.kind||(v==='transient'&&e.transient)||(v==='steady'&&e.context?.startsWith('STEADY-LOAD')));
   const shown=events.slice(0,25);
   list.append(element('p',events.length+' matching events · showing '+shown.length));
-  if(!shown.length)list.append(element('p','No events match this filter. That is not proof the engine is safe.'));
+  if(!shown.length)list.append(element('p','No events match this workflow/filter. This is not proof of a safe engine or successful ECU function. Select Full log to inspect global findings.'));
   for(const e of shown){
    const b=element('button');b.type='button';b.className='signal-event-choice';
    b.setAttribute('aria-pressed',e===shown[0]?'true':'false');
@@ -473,5 +546,5 @@ function render(host,d,opts){
  const ul=element('ul');for(const item of result.next)ul.append(element('li',item));coach.append(ul);
  coach.append(element('p',result.limitation));area.append(coach);
 }
-root.RawestSignalIntelligence={analyze,render,version:'2.6.5'};
+root.RawestSignalIntelligence={analyze,render,forGoal,workflowInfo,version:'2.6.5'};
 })(typeof window!=='undefined'?window:globalThis);
