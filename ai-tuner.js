@@ -268,6 +268,12 @@ function plan(){
  ].filter(x=>x!==undefined).join('\n');
  const report=plain;
  const container=$('aiPlanResult');container.replaceChildren();
+ if(workspace.original&&$('aiCalibrationIntelligence')){
+  const link=document.createElement('button');link.type='button';link.className='ps-btn secondary';
+  link.textContent='Inspect exact MTune XML + verified table cells';
+  link.onclick=()=>$('aiCalibrationIntelligence')?.scrollIntoView({behavior:'smooth',block:'start'});
+  container.append(link);
+ }
  const controls=document.createElement('div');controls.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px';
  const unitLabel=document.createElement('label');unitLabel.textContent='Fuel pressure display: PSI · original input scale: ';
  const unitSelect=document.createElement('select');unitSelect.id='aiPressureUnit';
@@ -435,7 +441,7 @@ function refreshStudio(){
  const output=$('aiSafetyChecklist');if(!output)return;
  const checks=[
   [!!a,'Source calibration XML loaded','Required for inspecting genuine settings'],
-  [!!d,'MaxxECU log loaded','Required for evidence-based fueling analysis'],
+  [!!d,d?.sourceFormat==='holley'?'Holley CSV log loaded':'MaxxECU log loaded','Raw logged sensor evidence; original ECU and channel conventions must be verified'],
   [!!d&&finite(d.lambda)&&finite(d.targetLambda),'Measured and target lambda present','Missing channels prevent lambda comparison'],
   [!!d&&finite(d.fuelPress),'Fuel pressure channel present','Pressure units and sensor location still need verification'],
   [!!d&&finite(d.knock),'Knock signal present','A valid knock sensor/configuration must be verified'],
