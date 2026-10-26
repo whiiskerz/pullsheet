@@ -118,7 +118,11 @@ function plan(){
  const safetyRows=qualifying.filter(i=>(Number.isFinite(d.knock?.[i])&&d.knock[i]>0)||(Number.isFinite(d.warnings?.[i])&&d.warnings[i]>0));
  const eRows=qualifying.map(i=>d.ethanol?.[i]).filter(Number.isFinite);
  const eMin=eRows.length?Math.min(...eRows):null,eMax=eRows.length?Math.max(...eRows):null;
- const mappedHeader=id=>{const el=$(id);if(!d||!el)return 'unknown';const value=el.value;if(value==='auto')return 'auto-detected (confirm in I/O Config)';const n=value.startsWith('__INDEX__')?Number(value.slice(9)):Number(value);return Number.isInteger(n)&&d.headers?.[n]?d.headers[n]:value;};
+ const mappedHeader=id=>{const el=$(id);if(!d||!el)return 'unknown';const value=el.value;if(value==='auto'){
+  const patterns={cfgFuel:['FuelPressure','Fuel pressure','Primary fuel pressure [','Secondary fuel pressure ['],cfgEthanol:['Ethanol concentration used','Ethanol concentration','Ethanol [%'],cfgLambda:['Lambda [','Lambda measured','Lambda actual'],cfgTargetLambda:['Lambda target','Target lambda']};
+  const found=typeof findColumn==='function'?findColumn(d.headers||[],'auto',patterns[id]||[]): -1;
+  return found>=0?(d.headers[found]+' (auto-matched; verify)'):'not identified — select in I/O Config';
+ }const n=value.startsWith('__INDEX__')?Number(value.slice(9)):Number(value);return Number.isInteger(n)&&d.headers?.[n]?d.headers[n]:value;};
  const pressureHeader=mappedHeader('cfgFuel');
  const explicitUnit=(pressureHeader.match(/\\[(kpa|bar|psi)\\]/i)||pressureHeader.match(/\\((kpa|bar|psi)\\)/i)||[])[1]?.toLowerCase()||null;
  const pressureUnit=$('aiPressureUnit')?.value||'auto';
