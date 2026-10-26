@@ -39,8 +39,8 @@ function analyze(){
  html+=card('What to leave alone','No automated ignition advance, boost targets, injector scaling, flex-fuel blending, overrun/flame settings, or fuel-table cell edits are supported by this screening pass.');
  html+=card('What to log next',missing.length?'Missing or unverified: '+escapeHtml(missing.join(', '))+'. Record appropriate steady-state data after resolving active warnings and mechanical issues.':'Verify actual channel units, closed-loop state, MAP/load, ethanol content, injector pulse width and pressure differential. Record repeatable steady-state data; avoid unsafe road pulls.');
  if(valid('lambda')&&valid('targetLambda')){
-  const good=rows.filter(i=>{const l=at('lambda',i),t=at('targetLambda',i),th=at('tps',i);return Number.isFinite(l)&&Number.isFinite(t)&&l>.5&&l<1.5&&t>.5&&t<1.5&&th>=15;});
-  html+=card('Lambda coverage',good.length+' samples contain plausible measured and target lambda at throttle ≥15%. No VE correction inferred: steady-state, fuel cut, closed-loop compensation and MAP/load are not validated.');
+  const good=rows.filter(i=>{const l=at('lambda',i),t=at('targetLambda',i),th=at('tps',i);return Number.isFinite(l)&&Number.isFinite(t)&&l>.5&&l<1.5&&t>.5&&t<1.5&&th>=15&&at('rpm',i)>800;});
+  html+=card('Lambda coverage',good.length+' samples contain plausible measured and target lambda at RPM >800 and throttle ≥15% (same operating filter as general fueling reports). No VE correction inferred: steady-state, fuel cut, closed-loop compensation and MAP/load are not validated.');
  }
  out.innerHTML=html;
 }
