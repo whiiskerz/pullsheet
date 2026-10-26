@@ -231,6 +231,13 @@ function plan(){
  const controls=document.createElement('div');controls.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px';const unitLabel=document.createElement('label');unitLabel.textContent='Original fuel-pressure unit: ';const unitSelect=document.createElement('select');unitSelect.id='aiPressureUnit';for(const [v,t] of [['auto','Auto (header only)'],['kpa','kPa → PSI'],['bar','bar → PSI'],['psi','Already PSI']]){const o=document.createElement('option');o.value=v;o.textContent=t;unitSelect.append(o);}unitSelect.value=pressureUnit;unitSelect.onchange=plan;unitLabel.append(unitSelect);controls.append(unitLabel);container.append(controls);
  const heading=document.createElement('h3');heading.textContent=label+' · Tuning report';container.append(heading);
  const summary=document.createElement('p');summary.textContent='Plain-English findings, limitations and next steps. Detailed RPM data is available under Advanced.';container.append(summary);
+ if(typeof window!=='undefined'&&window.RawestSignalIntelligence){
+  try{
+   window.RawestSignalIntelligence.render(container,d,{pressureUnit:pressureUnit});
+  }catch(err){
+   const warning=document.createElement('p');warning.textContent='Signal Intelligence was unable to review this log: '+err.message;container.append(warning);
+  }
+ }
  const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;color:var(--text);font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px';pre.textContent=report;container.append(pre);
  const actions=document.createElement('div');actions.style.cssText='display:flex;gap:9px;flex-wrap:wrap;margin-top:12px';container.append(actions);
  const download=(content,type,name)=>{const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
