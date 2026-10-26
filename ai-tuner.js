@@ -118,11 +118,19 @@ function plan(){
  const safetyRows=qualifying.filter(i=>(Number.isFinite(d.knock?.[i])&&d.knock[i]>0)||(Number.isFinite(d.warnings?.[i])&&d.warnings[i]>0));
  const eRows=qualifying.map(i=>d.ethanol?.[i]).filter(Number.isFinite);
  const eMin=eRows.length?Math.min(...eRows):null,eMax=eRows.length?Math.max(...eRows):null;
- const mappedHeader=id=>{const el=$(id);if(!d||!el)return 'unknown';const value=el.value;if(value==='auto'){
-  const patterns={cfgFuel:['FuelPressure','Fuel pressure','Primary fuel pressure [','Secondary fuel pressure ['],cfgEthanol:['Ethanol concentration used','Ethanol concentration','Ethanol [%'],cfgLambda:['Lambda [','Lambda measured','Lambda actual'],cfgTargetLambda:['Lambda target','Target lambda']};
-  const found=typeof findColumn==='function'?findColumn(d.headers||[],'auto',patterns[id]||[]): -1;
-  return found>=0?(d.headers[found]+' (auto-matched; verify)'):'not identified — select in I/O Config';
- }const n=value.startsWith('__INDEX__')?Number(value.slice(9)):Number(value);return Number.isInteger(n)&&d.headers?.[n]?d.headers[n]:value;};
+ const mappedHeader=id=>{
+  if(!d)return 'no log loaded';
+  const keys={cfgLambda:'lambda',cfgTargetLambda:'targetLambda',cfgFuel:'fuelPress',cfgEthanol:'ethanol'};
+  const key=keys[id];
+  const index=key&&d.sourceColumns?d.sourceColumns[key]:-1;
+  // Reflect the column ACTUALLY used by the parser. Do not independently
+  // guess again and accidentally claim the wrong wideband sensor.
+  if(Number.isInteger(index)&&index>=0&&d.headers?.[index]){
+   const suffix=$(id)?.value==='auto'?' (auto-matched; verify)':' (selected)';
+   return String(d.headers[index])+suffix;
+  }
+  return 'not mapped — verify in I/O Config';
+ };
  const pressureHeader=mappedHeader('cfgFuel');
  const declaredUnit=d?.sourceFormat==='holley'?String(d.sourceUnits?.fuelPress||'').toLowerCase():null;
  const explicitUnit=(pressureHeader.match(/\[(kpa|bar|psi)\]/i)||pressureHeader.match(/\((kpa|bar|psi)\)/i)||[])[1]?.toLowerCase()||(/^(kpa|bar|psi)$/.test(declaredUnit||'')?declaredUnit:null);
@@ -183,18 +191,19 @@ function plan(){
   return bits.join(' | ');
  };
  const ratioAfr=ratio=>(14.7*ratio).toFixed(2);
- const standout=[...sorted].sort((a,b)=>Math.abs(b.meanLambdaRatioErrorPct)-Math.abs(a.meanLambdaRatioErrorPct)).slice(0,3);
+ const standout=[...sorted].filter(x=>Math.abs(x.meanLambdaRatioErrorPct)>=1).sort((a,b)=>Math.abs(b.meanLambdaRatioErrorPct)-Math.abs(a.meanLambdaRatioErrorPct)).slice(0,3);
  const near=sorted.filter(x=>Math.abs(x.meanLambdaRatioErrorPct)<=3);
  const prettyBand=x=>x.rpmBand[0].toLocaleString()+' to '+x.rpmBand[1].toLocaleString()+' RPM';
  const plain=[
   'RAWEST SIGNAL — '+label+' report',
   '',
   d?'I reviewed '+(d.rowCount||d.rpm?.length||0).toLocaleString()+' samples from your engine log.':'No engine log is loaded yet.',
-  tune?'Your MaxxECU calibration file is loaded for reference.':'Your MaxxECU calibration file is not loaded, so I cannot compare these readings with the tune tables.',
+  d?.sourceFormat==='holley'?'This report uses a Holley CSV; MaxxECU tune comparison is not available for this log.':tune?'Your MaxxECU calibration file is loaded for reference.':'Your MaxxECU calibration file is not loaded, so I cannot compare these readings with the tune tables.',
   '',
   'What I found',
-  sorted.length?'I found differences between the air/fuel mixture your ECU requested and what the wideband measured in '+sorted.length+' RPM ranges. Positive percentages mean the measured mixture was leaner than target. These are averages, not proof of a bad fuel table.':'There were not enough valid lambda readings in the selected operating conditions to assess fueling.',
-  standout.length?'The biggest average fueling differences were at '+standout.map(x=>prettyBand(x)+': '+Math.abs(x.meanLambdaRatioErrorPct).toFixed(1)+'% '+(x.meanLambdaRatioErrorPct>0?'lean':'rich')).join('; ')+'.':'',
+  ...(d?.channelWarnings||[]).map(w=>'CHANNEL ERROR: '+w),
+  sorted.length?'I found differences between the air/fuel mixture your ECU requested and what the wideband measured in '+sorted.length+' RPM ranges. Positive percentages mean the measured mixture was leaner than target. These are averages, not proof of a bad fuel table.':'There were not enough valid, independently mapped actual and target lambda readings to assess fueling. Check I/O Config and the original log headers.',
+  standout.length?'The biggest average fueling differences were at '+standout.map(x=>prettyBand(x)+': '+Math.abs(x.meanLambdaRatioErrorPct).toFixed(1)+'% '+(x.meanLambdaRatioErrorPct>0?'lean':'rich')).join('; ')+'.':sorted.length?'No RPM band averaged 1% or more off target in the screened data. Confirm channel independence and sensor calibration before concluding that fueling is accurate.':'',
   near.length?'The readings were closer to target around '+near.map(prettyBand).join(', ')+'.':'',
   '',
   'Channel mapping',
