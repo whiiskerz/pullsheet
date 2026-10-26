@@ -47,15 +47,15 @@ function analyze(){
 function dyno(){
  const d=typeof lastParsed!=='undefined'?lastParsed:null,out=$('aiDynoResult');
  if(!d||!finite(d.runtime)||!finite(d.rpm)||!finite(d.vss)||!finite(d.tps)){out.innerHTML=card('Not trusted','Load a log containing time, RPM, speed and throttle.');return;}
- const mass=Number($('aiMass').value),cda=Number($('aiCda').value),crr=Number($('aiCrr').value),gear=$('aiGear').value,drive=$('aiDrive').value,locked=$('aiLocked').checked;
- if(!(mass>500&&mass<5000&&cda>.2&&cda<2&&crr>.002&&crr<.05)){out.innerHTML=card('Invalid vehicle inputs','Check mass, CdA and rolling resistance.');return;}
+ const massLb=Number($('aiMass').value);const mass=window.RawestSignalUnits?.kilogramsFromPounds(massLb)??massLb*.45359237;const cda=Number($('aiCda').value),crr=Number($('aiCrr').value),gear=$('aiGear').value,drive=$('aiDrive').value,locked=$('aiLocked').checked;
+ if(!(massLb>1100&&massLb<11000&&cda>.2&&cda<2&&crr>.002&&crr<.05)){out.innerHTML=card('Invalid vehicle inputs','Check vehicle weight in pounds, drag area and rolling resistance.');return;}
  // MaxxECU speed convention is km/h; runtime convention varies, validated using observed span.
  let pts=[];let eligible=0;for(let i=0;i<d.rpm.length;i++){let t=d.runtime[i],v=d.vss[i],r=d.rpm[i],p=d.tps[i];if([t,v,r,p].every(Number.isFinite)&&r>=2000&&p>=85&&v>15){eligible++;pts.push({t,v:v/3.6,r,p,i,g:finite(d.gear)?d.gear[i]:NaN});}}
- if(pts.length<12){out.innerHTML=card('Not trusted · Data coverage','Only '+pts.length+' qualifying rows: RPM ≥2,000, TPS ≥85%, VSS >15 km/h, and valid time. Check TPS scaling, speed mapping, and whether this log contains a WOT pull.');return;}
+ if(pts.length<12){out.innerHTML=card('Not trusted · Data coverage','Only '+pts.length+' qualifying rows: RPM ≥2,000, TPS ≥85%, vehicle speed >9.3 mph, and valid time. Check TPS scaling, speed mapping, and whether this log contains a WOT pull.');return;}
  let best=[],cur=[];let dtPositive=pts.slice(1).map((x,i)=>x.t-pts[i].t).filter(x=>x>0).sort((a,b)=>a-b);let medianDt=dtPositive.length?dtPositive[Math.floor(dtPositive.length/2)]:NaN;let timeScale=medianDt>2?.001:1;let maxGap=Number.isFinite(medianDt)?Math.max(medianDt*8,0.25/timeScale):1/timeScale;for(let x of pts){if(cur.length&&(x.i!==cur[cur.length-1].i+1||x.t<=cur[cur.length-1].t||x.t-cur[cur.length-1].t>maxGap)){if(cur.length>best.length)best=cur;cur=[];}cur.push(x);}if(cur.length>best.length)best=cur;if(best.length<6){out.innerHTML=card('Not trusted · Fragmented pull','Found '+pts.length+' qualifying samples but the longest uninterrupted segment has '+best.length+'. Median time step: '+fmt(medianDt,3)+' raw units. Check runtime units, TPS threshold, VSS mapping and logging gaps.');return;}
  let span=best.at(-1).t-best[0].t,scale=timeScale; // infer from sample interval, not total duration; still requires verification
  let power=[];for(let j=2;j<best.length-2;j++){let a=best[j-2],b=best[j+2],dt=(b.t-a.t)*scale;if(dt<=0)continue;let acc=(b.v-a.v)/dt;if(acc<0||acc>12)continue;let v=best[j].v;let force=mass*acc+0.5*1.225*cda*v*v+mass*9.80665*crr;let kw=force*v/1000;power.push({hp:kw*1.341022,rpm:best[j].r});}
- if(power.length<8){let dt=best.slice(1).map((x,i)=>(x.t-best[i].t)*scale).filter(x=>x>0);let speedChange=(best.at(-1).v-best[0].v)*3.6;out.innerHTML=card('Not trusted · Acceleration diagnostics','Found '+pts.length+' qualifying rows; longest continuous segment: '+best.length+' rows over '+fmt(span*scale,2)+' seconds. Speed change: '+fmt(speedChange,2)+' km/h. Median time step: '+fmt(medianDt*scale,4)+' s. Valid acceleration windows: '+power.length+' (need ≥8). Likely causes: VSS quantization/flat readings, incorrect timebase, missing speed updates, or no clean single-gear pull. No horsepower number is reliable from these inputs.');return;}
+ if(power.length<8){let dt=best.slice(1).map((x,i)=>(x.t-best[i].t)*scale).filter(x=>x>0);let speedChange=(best.at(-1).v-best[0].v)*3.6;out.innerHTML=card('Not trusted · Acceleration diagnostics','Found '+pts.length+' qualifying rows; longest continuous segment: '+best.length+' rows over '+fmt(span*scale,2)+' seconds. Speed change: '+fmt(speedChange/1.609344,2)+' mph. Median time step: '+fmt(medianDt*scale,4)+' s. Valid acceleration windows: '+power.length+' (need ≥8). Likely causes: VSS quantization/flat readings, incorrect timebase, missing speed updates, or no clean single-gear pull. No horsepower number is reliable from these inputs.');return;}
  let peak=power.reduce((a,b)=>b.hp>a.hp?b:a),gears=new Set(best.map(x=>x.g).filter(Number.isFinite)),flags=[];
  if(gears.size>1)flags.push('gear change detected');
  if(!locked&&gear==='Automatic')flags.push('converter lockup not confirmed');
@@ -360,18 +360,37 @@ function renderEvents(){
  const limit=Math.min(500,Math.max(1,Number($('aiEventLimit')?.value)||50));
  const ranked=($('aiEventFilter')?.value==='lean')?[...rows].sort((a,b)=>((d.lambda?.[b]/d.targetLambda?.[b])||0)-((d.lambda?.[a]/d.targetLambda?.[a])||0)):rows;
  const selected=ranked.slice(0,limit);
- status.textContent=rows.length+' matching samples out of '+d.rpm.length+' total · displaying '+selected.length+'. Fuel pressure units are unverified. Select Lean to show the largest measured/target lambda ratios first; values are from the parsed log.';
- const cols=[['runtime','Time'],['rpm','RPM'],['tps','TPS'],['lambda','Lambda'],['targetLambda','Target λ'],['fuelPress','Fuel press'],['ethanol','Ethanol %'],['knock','Knock signal'],['warnings','Warnings'],['gear','Gear'],['vss','Speed']];
+ status.textContent=rows.length+' matching samples out of '+d.rpm.length+' total · displaying '+selected.length+'. '+(pressureInfo?.canShowPsi?'Fuel pressure converted to PSI ('+pressureInfo.source+').':'Fuel PSI unavailable until the original sensor source scale is verified in the report.')+' Speed shown in mph. Select Lean to rank deviations.';
+ const pressureInfo=window.RawestSignalUnits?.describe(d,'fuelPress');
+ const cols=[['runtime','Time'],['rpm','RPM'],['tps','TPS'],['lambda','Lambda'],['targetLambda','Target λ'],['fuelPress','Fuel PSI'],['ethanol','Ethanol %'],['knock','Knock signal'],['warnings','Warnings'],['gear','Gear'],['vss','Speed mph']];
  const table=document.createElement('table');const head=document.createElement('tr');
  for(const title of ['Row',...cols.map(x=>x[1])]){const th=document.createElement('th');th.textContent=title;head.append(th);}table.append(head);
- for(const i of selected){const tr=document.createElement('tr');const values=[i+1,...cols.map(([k])=>Array.isArray(d[k])?d[k][i]:null)];for(const v of values){const td=document.createElement('td');td.textContent=typeof v==='number'?(Number.isFinite(v)?Number(v.toFixed(3)):'—'):(v??'—');tr.append(td);}table.append(tr);}
+ for(const i of selected){
+  const tr=document.createElement('tr');
+  const values=[i+1,...cols.map(([k])=>{
+   const raw=Array.isArray(d[k])?d[k][i]:NaN;
+   if(k==='fuelPress')return pressureInfo?.display(raw)||'PSI unverified';
+   if(k==='vss')return Number.isFinite(raw)?Number((raw/1.609344).toFixed(1)):'—';
+   return raw;
+  })];
+  for(const v of values){const td=document.createElement('td');td.textContent=typeof v==='number'?(Number.isFinite(v)?Number(v.toFixed(3)):'—'):(v??'—');tr.append(td);}
+  table.append(tr);
+ }
  target.append(table);
 }
 function downloadEvents(){
  const {d,rows}=eventRows();if(!d||!rows.length){const status=$('aiEventStatus');if(status)status.textContent='No matching rows to export.';return;}
  const cols=['runtime','rpm','tps','lambda','targetLambda','fuelPress','ethanol','knock','warnings','gear','vss'];
+ const pressureInfo=window.RawestSignalUnits?.describe(d,'fuelPress');
  const escapeCsv=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
- const data=[['source_row',...cols].join(','),...rows.map(i=>[i+1,...cols.map(k=>Array.isArray(d[k])?d[k][i]:'')].map(escapeCsv).join(','))].join('\n');
+ const colNames=['time_source','rpm','tps_percent','lambda','lambda_target','fuel_pressure_psi','ethanol_percent','knock_raw','warnings_raw','gear','speed_mph'];
+ const data=[['source_row',...colNames].join(','),...rows.map(i=>[i+1,...cols.map(k=>{
+  const value=Array.isArray(d[k])?d[k][i]:NaN;
+  if(!Number.isFinite(value))return '';
+  if(k==='fuelPress')return pressureInfo?.canShowPsi?Number((value*pressureInfo.factor).toFixed(3)):'';
+  if(k==='vss')return Number((value/1.609344).toFixed(3));
+  return value;
+ })].map(escapeCsv).join(','))].join('\n');
  const blob=new Blob([data],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='rawest-signal-'+($('aiEventFilter')?.value||'events')+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
