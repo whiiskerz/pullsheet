@@ -329,6 +329,95 @@ function element(tag,text,cls){
  if(cls)n.className=cls;
  return n;
 }
+// Idle is screened independently of the 15% TPS fueling filter. Low-throttle
+// samples are not evidence that closed-loop idle control is actually active.
+function idleDiagnostics(d){
+ const empty={events:[],windows:0,qualified:0,lowThrottle:0,rpmMedian:NaN,rpmSpread:NaN,seconds:NaN,targetMapped:false,targetName:'not logged',notes:[]};
+ if(!d||!Array.isArray(d.rpm)||!Array.isArray(d.tps))return empty;
+ const length=d.rpm.length,at=(k,i)=>Array.isArray(d[k])?Number(d[k][i]):NaN;
+ const runtime=timebase(d),validClock=runtime.verified;
+ const targetAliases=['Idle RPM target','Idle target RPM','Idle control target RPM','Target idle RPM','Idle target speed'];
+ const clean=x=>String(x||'').replace(/\[\d+\]\s*$/,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+ const hits=(d.headers||[]).map((header,i)=>targetAliases.map(clean).includes(clean(header))?i:-1).filter(i=>i>=0);
+ const targetIndex=hits.length===1?hits[0]:-1;
+ const targetValue=i=>targetIndex>=0?numeric(d.rows?.[i]?.[targetIndex]):NaN;
+ const cutEntry=resolve(d,'fuelCut'),cut=read(d,cutEntry);
+ const eligible=new Array(length).fill(false);
+ const rpmSamples=[];let qualified=0,lowThrottle=0,seconds=0;
+ for(let i=0;i<length;i++){
+  const rpm=at('rpm',i),tps=at('tps',i),speed=at('vss',i),fuelCut=cut[i];
+  if(!ok(rpm)||rpm<450||rpm>1600||!ok(tps)||tps<0||tps>7)continue;
+  lowThrottle++;
+  if(Array.isArray(d.vss)&&d.vss.some(ok)&&(!ok(speed)||speed>3.22))continue;
+  if(ok(fuelCut)&&fuelCut>0)continue;
+  eligible[i]=true;qualified++;rpmSamples.push(rpm);
+ }
+ const spans=[];let start=-1;
+ for(let i=0;i<=length;i++){
+  const yes=i<length&&eligible[i];
+  if(yes&&start<0)start=i;
+  if(start>=0&&yes&&validClock&&i>start&&at('runtime',i)-at('runtime',i-1)>Math.max(.7,runtime.quantum*6)){
+   spans.push([start,i-1]);start=i;
+  }
+  if(!yes&&start>=0){spans.push([start,i-1]);start=-1;}
+ }
+ const events=[];let windows=0;
+ const mapEntry=resolve(d,'map'),mapRows=read(d,mapEntry);
+ for(const [begin,finish] of spans){
+  let from=begin;
+  while(from<=finish){
+   let end=from;
+   while(end<finish&&end-from<100&&(!validClock||at('runtime',end+1)-at('runtime',from)<2.5))end++;
+   if(!validClock)end=Math.min(finish,from+39);
+   const count=end-from+1;
+   const duration=validClock?Math.max(0,at('runtime',end)-at('runtime',from))+runtime.quantum:NaN;
+   if(count>=8&&(!validClock||duration>=.65)){
+    windows++;if(ok(duration))seconds+=duration;
+    const rpm=[],targets=[],maps=[],coolant=[],lambdaDiff=[];
+    for(let j=from;j<=end;j++){
+     if(ok(at('rpm',j)))rpm.push(at('rpm',j));
+     if(ok(targetValue(j)))targets.push(targetValue(j));
+     if(ok(mapRows[j]))maps.push(mapRows[j]);
+     const clt=at('coolantF',j),cltC=at('coolant',j);
+     const f=ok(clt)?clt:root.RawestSignalUnits?.fahrenheitFromC(cltC);
+     if(ok(f))coolant.push(f);
+     const l=at('lambda',j),t=at('targetLambda',j);
+     if(ok(l)&&ok(t)&&l>.5&&l<1.5&&t>.5&&t<1.5)lambdaDiff.push((l/t-1)*100);
+    }
+    const minRpm=Math.min(...rpm),maxRpm=Math.max(...rpm);
+    const medianRpm=median(rpm),spread=percentile(rpm,.9)-percentile(rpm,.1),targetMedian=median(targets),offset=ok(targetMedian)?medianRpm-targetMedian:NaN;
+    const a=from,b=end,center=Math.floor((a+b)/2);
+    let kind=null,context='';
+    if(minRpm<550){kind='IDLE LOW RPM';context='Engine approached or fell below 550 RPM while the car appeared stationary. Check load changes, idle airflow, coolant, ignition control and target RPM.';}
+    else if(spread>=150){kind='IDLE RPM VARIATION';context='RPM varied by at least 150 between the 10th and 90th percentile in a short low-throttle window. Verify closed-loop idle engagement, idle spark/air correction and accessory loads.';}
+    else if(ok(offset)&&Math.abs(offset)>=125){kind='IDLE TARGET OFFSET';context='Measured median RPM differs by at least 125 from the independently logged idle target. Verify ECU idle-control mode and target source.';}
+    if(kind)events.push({
+     kind,priority:'REVIEW',score:50,a,b,count,duration,rpm:medianRpm,tps:at('tps',center),
+     map:mapRows[center],coolantF:median(coolant),minRpm,maxRpm,rpmSpread:spread,
+     targetRpm:targetMedian,targetOffset:offset,idleTargetIndex:targetIndex,
+     peakError:NaN,lambda:at('lambda',center),target:at('targetLambda',center),
+     context,confidence:'limited',idle:true
+    });
+   }
+   from=end+1;
+  }
+ }
+ events.sort((a,b)=>a.kind==='IDLE LOW RPM'?-1:b.kind==='IDLE LOW RPM'?1:(b.rpmSpread||0)-(a.rpmSpread||0));
+ const notes=[
+  qualified+' stationary low-throttle candidate samples screened (TPS ≤7%, RPM 450–1,600; moving/fuel-cut samples excluded when available).',
+  windows+' short idle windows reviewed'+(validClock?' over approximately '+seconds.toFixed(1)+' logged seconds.':'; elapsed time unavailable.') ,
+  qualified?'Candidate median '+Math.round(median(rpmSamples))+' RPM; central 10–90% range '+Math.round(percentile(rpmSamples,.1))+'–'+Math.round(percentile(rpmSamples,.9))+' RPM.':'No stationary idle candidates. Check throttle and speed mapping.',
+  targetIndex>=0?'Separate logged idle target: '+d.headers[targetIndex]+'.':'Idle target RPM not confidently mapped; RPM stability can be reviewed but target error cannot.',
+  'Low throttle and zero speed do not prove the ECU was in idle-control mode. BTR/large-cam idle oscillations require context; no automatic fuel or spark changes.'
+ ];
+ return {events,windows,qualified,lowThrottle,rpmMedian:median(rpmSamples),rpmSpread:percentile(rpmSamples,.9)-percentile(rpmSamples,.1),
+  seconds:validClock?seconds:NaN,targetMapped:targetIndex>=0,targetName:targetIndex>=0?d.headers[targetIndex]:'not logged',notes};
+}
+function percentile(a,p){
+ if(!a.length)return NaN;
+ const values=[...a].sort((x,y)=>x-y),pos=(values.length-1)*p,left=Math.floor(pos),right=Math.ceil(pos);
+ return values[left]+(values[right]-values[left])*(pos-left);
+}
 // Workflows are scopes, not separate copies of the same generic fueling report.
 // Global safety gates always remain visible even when a workflow has no matching events.
 function forGoal(events,d,goal){
@@ -343,7 +432,7 @@ function forGoal(events,d,goal){
  }
  if(g==='spark')return events.filter(e=>e.kind==='KNOCK'||e.kind==='ECU WARNING');
  if(g==='exhaust')return events.filter(e=>e.fuelCut||e.kind==='ECU WARNING'&&Number(e.tps)<20);
- if(g==='idle')return events.filter(e=>Number(e.rpm)>=500&&Number(e.rpm)<=1400&&Number(e.tps)<20);
+ if(g==='idle')return idleDiagnostics(d).events;
  if(g==='cruise')return events.filter(e=>Number(e.rpm)>=1200&&Number(e.tps)>=10&&Number(e.tps)<40);
  if(g==='wot')return events.filter(e=>Number(e.rpm)>=2000&&Number(e.tps)>=80);
  if(g==='transient')return events.filter(e=>e.transient||e.enrich||e.trimAppearsHeld);
@@ -372,10 +461,12 @@ function workflowInfo(d,result,goal){
   notes.push('Overrun review requires a verified fuel-cut state, throttle/load and exhaust-temperature context. Fuel-cut and lambda spikes are NOT an overrun ignition recommendation.');
   notes.push('No anti-lag, flame or overrun calibration changes are generated.');
   break;
- case 'idle':
-  notes.push('Idle/cam assessment focuses on low RPM and throttle. The event detector initially screens lambda at ≥15% throttle and may not cover normal closed-throttle idle.');
-  notes.push(countSamples((r,i)=>r>=500&&r<=1400&&d.tps?.[i]<=10)+' low-throttle idle candidate samples. Verify MAP, target idle speed, coolant and idle-control mode before tuning.');
+ case 'idle':{
+  const idle=idleDiagnostics(d);
+  notes.push(...idle.notes);
+  notes.push('Idle-only findings: '+idle.events.length+' flagged windows. High-load lean/knock evidence stays in the separate global safety gates.');
   break;
+ }
  case 'cruise':
   notes.push('Cruise findings focus on 1,200+ RPM at 10–40% throttle. Closed-loop corrections, transient changes and steady MAP must be verified before changing fuel tables.');
   break;
@@ -548,5 +639,5 @@ function render(host,d,opts){
  const ul=element('ul');for(const item of result.next)ul.append(element('li',item));coach.append(ul);
  coach.append(element('p',result.limitation));area.append(coach);
 }
-root.RawestSignalIntelligence={analyze,render,forGoal,workflowInfo,version:'2.8.0'};
+root.RawestSignalIntelligence={analyze,render,forGoal,workflowInfo,idleDiagnostics,version:'2.8.0'};
 })(typeof window!=='undefined'?window:globalThis);
