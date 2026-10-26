@@ -28,4 +28,4 @@ jobs:
           node --check ai-tuner.js
           node --check signal-intelligence.js
       - name: Validate mapping safety
-        run: node --test tests/channel-mapping.test.js
+        run: node --test tests/*.test.js
