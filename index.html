@@ -1292,6 +1292,137 @@ html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),tr
 <section id="view-ai" class="view">
 <style>
 .ps-studio{--ps-border:rgba(160,170,195,.2);display:grid;gap:14px}.ps-hero{background:linear-gradient(115deg,rgba(247,177,45,.16),rgba(32,39,55,.2));border:1px solid var(--ps-border);border-radius:18px;padding:22px}.ps-hero h2{font-size:23px;letter-spacing:-.5px;margin:0 0 8px}.ps-hero p{line-height:1.6;margin:0;color:var(--dim,#aab0bd)}.ps-kicker{text-transform:uppercase;letter-spacing:1.6px;font-size:10px;font-weight:800;color:var(--amber)}.ps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.ps-panel{border:1px solid var(--ps-border);border-radius:15px;background:rgba(120,130,160,.055);padding:17px;min-width:0}.ps-panel h3{font-size:15px;margin:0 0 9px}.ps-panel p{font-size:12px;line-height:1.6;color:var(--dim,#aab0bd)}.ps-panel input,.ps-panel select,.ps-panel textarea{box-sizing:border-box;max-width:100%;background:var(--bg,#101216);color:var(--text,#eee);border:1px solid var(--ps-border);border-radius:9px;padding:10px}.ps-panel label{font-size:12px;display:grid;gap:5px}.ps-btn{background:var(--amber,#e8a227);color:#080a0c;border:0;border-radius:10px;padding:11px 15px;font-size:12px;font-weight:800;cursor:pointer}.ps-btn.secondary{background:transparent;color:var(--text,#eee);border:1px solid var(--ps-border)}.ps-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.ps-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.ps-chip{border:1px solid var(--ps-border);padding:5px 8px;border-radius:999px;font-size:11px}.ps-output{margin-top:13px;line-height:1.5}.ps-goal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:8px}.ps-goal-grid button{background:transparent;color:var(--text,#eee);text-align:left;border:1px solid var(--ps-border);border-radius:11px;padding:14px;cursor:pointer;font-weight:650}.ps-goal-grid button[aria-pressed="true"]{border-color:var(--amber);background:rgba(247,177,45,.13)}.ps-tiny{font-size:11px!important}.ps-table{overflow:auto;max-height:470px}.ps-table table{min-width:650px;width:100%;border-collapse:collapse;font-size:11px}.ps-table th,.ps-table td{text-align:left;padding:9px;border-bottom:1px solid var(--ps-border);vertical-align:top;overflow-wrap:anywhere}.ps-table tr.changed{background:rgba(249,176,51,.09)}.ps-metric{font-size:24px;font-weight:800}.ps-panel details{margin-top:12px}.ps-panel summary{cursor:pointer;font-weight:650;font-size:12px}
+
+/* SIGNAL INTELLIGENCE / EVENT INSPECTOR: fixes site-wide canvas height overrides */
+.signal-intelligence{min-width:0;max-width:100%;box-sizing:border-box}
+.signal-event-workspace{
+  display:grid;
+  grid-template-columns:minmax(245px,.85fr) minmax(0,1.9fr);
+  align-items:start;
+  gap:16px;
+  margin:16px 0;
+  min-width:0;
+}
+.signal-event-list{
+  min-width:0;
+  max-height:670px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:4px 8px 6px 2px;
+  scrollbar-width:thin;
+}
+.signal-event-detail{
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  padding:16px;
+  border:1px solid var(--ps-border,var(--line));
+  border-radius:14px;
+  background:var(--panel,#11111e);
+  box-sizing:border-box;
+}
+.signal-event-detail h4{margin:0 0 12px;font-size:15px;overflow-wrap:anywhere}
+.signal-event-detail p{overflow-wrap:anywhere;line-height:1.5}
+.signal-event-choice{
+  display:block;
+  width:100%;
+  text-align:left;
+  padding:11px 12px;
+  margin:0 0 8px;
+  border:1px solid var(--ps-border,var(--line));
+  border-radius:11px;
+  background:var(--panel,#11111e);
+  color:var(--text);
+  cursor:pointer;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  font-family:inherit;
+  line-height:1.45;
+  transition:border-color .15s,background .15s;
+}
+.signal-event-choice:hover,
+.signal-event-choice[aria-pressed="true"]{
+  border-color:var(--amber,#e7b45e);
+  background:rgba(231,180,94,.07);
+}
+.signal-event-choice:focus-visible{outline:2px solid var(--amber,#e7b45e);outline-offset:2px}
+.signal-event-choice strong{font-size:12px;letter-spacing:.04em}
+.signal-event-summary{
+  font-size:11px;
+  color:var(--dim,#b7bec4);
+  margin-top:5px;
+  line-height:1.5;
+  display:-webkit-box;
+  -webkit-line-clamp:3;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.signal-event-chart{
+  width:100%;
+  height:clamp(250px,24vw,340px);
+  min-width:0;
+  position:relative;
+  box-sizing:border-box;
+  padding:8px;
+  margin:14px 0 12px;
+  border:1px solid var(--ps-border,var(--line));
+  border-radius:12px;
+  overflow:hidden;
+}
+.signal-event-chart > canvas{
+  display:block !important;
+  height:100% !important;
+  width:100% !important;
+  max-height:100% !important;
+  max-width:100% !important;
+  min-height:0 !important;
+}
+.signal-event-samples{margin:14px 0 4px}
+.signal-event-samples summary{
+  cursor:pointer;
+  color:var(--text);
+  font-weight:650;
+  font-size:12px;
+  border:1px solid var(--ps-border,var(--line));
+  border-radius:9px;
+  padding:10px 12px;
+  background:var(--panel2,#171b26);
+}
+.signal-event-samples[open] summary{margin-bottom:10px}
+.signal-event-table-wrap{
+  overflow-x:auto;
+  max-width:100%;
+  min-width:0;
+  border:1px solid var(--ps-border,var(--line));
+  border-radius:8px;
+}
+.signal-event-table{
+  border-collapse:collapse;
+  font-size:11px;
+  width:100%;
+  min-width:740px;
+}
+.signal-event-table th,.signal-event-table td{
+  padding:7px 9px;
+  white-space:nowrap;
+  font-size:11px;
+  border-bottom:1px solid var(--ps-border,var(--line));
+  text-align:left;
+}
+.signal-event-table th{font-weight:650;background:var(--panel2,#171b26)}
+.signal-event-footnote{font-size:11px;opacity:.8}
+@media(max-width:1000px){
+  .signal-event-workspace{grid-template-columns:minmax(0,1fr)}
+  .signal-event-detail{order:0}
+  .signal-event-list{order:1;max-height:420px}
+}
+@media(max-width:600px){
+  .signal-intelligence{padding:12px !important}
+  .signal-event-detail{padding:10px}
+  .signal-event-chart{height:235px;margin:12px 0}
+  .signal-event-list{max-height:340px}
+  .signal-event-table{min-width:700px}
+}
 </style>
 <div class="ps-studio">
 <header class="ps-hero"><div class="ps-kicker">RAWEST PERFORMANCE / SIGNAL 01</div><h2>Understand the tune. Know the next move.</h2><p>Inspect real MaxxECU settings, compare revisions, check your logs and build evidence-backed review plans. Local-first; no ECU writes, no guesswork disguised as calibration.</p><div class="ps-badges"><span class="ps-chip">LOCAL ANALYSIS</span><span class="ps-chip">MAXXECU XML INSPECTOR</span><span class="ps-chip">CHANGE TRACKING</span><span class="ps-chip">READ-ONLY</span></div></header>
