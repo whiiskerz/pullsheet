@@ -2406,34 +2406,30 @@ function manualIndex(value){
 
 
 function findColumn(headers,configured,fallbacks){
-
   const manual=manualIndex(configured);
+  if(manual>=0 && manual<headers.length)return manual;
 
-  if(manual>=0 && manual<headers.length){
-    return manual;
-  }
+  const normalize=x=>String(x||'').toLowerCase()
+    .replace(/\[\d+\]\s*$/,'').replace(/[^a-z0-9]/g,'');
+  const names=headers.map(normalize);
+  const wanted=(fallbacks||[]).map(normalize).filter(Boolean);
+  const uniqueMatch=matches=>matches.length===1?matches[0]:-1;
 
   if(configured && configured!=='auto'){
-
-    const exact=headers.findIndex(h=>
-      String(h).trim().toLowerCase()===
-      String(configured).trim().toLowerCase()
-    );
-
-    if(exact>=0)return exact;
-
-    const includes=headers.findIndex(h=>
-      String(h).toLowerCase().includes(
-        String(configured).toLowerCase()
-      )
-    );
-
-    if(includes>=0)return includes;
+    const needle=normalize(configured);
+    const exact=names.map((name,i)=>name===needle?i:-1).filter(i=>i>=0);
+    if(exact.length)return uniqueMatch(exact);
+    const contained=names.map((name,i)=>name.includes(needle)?i:-1).filter(i=>i>=0);
+    return uniqueMatch(contained);
   }
 
-  // Conservative alias matching: exact normalized names only, never generic
-  // substring matches like "pressure" that could select oil or A/C.
-  const normalize=x=>String(x).toLowerCase().replace(/\[\d+\]\s*$/,'').replace(/[^a-z0-9]/g,'');
+  // Exact names outrank aliases and loose matches. In particular, Lambda [5]
+  // MUST NOT resolve to Lambda target [81], which would produce false 0% errors.
+  for(const needle of wanted){
+    const matches=names.map((name,i)=>name===needle?i:-1).filter(i=>i>=0);
+    if(matches.length)return uniqueMatch(matches);
+  }
+
   const aliasGroups=[
     ['fuelpressure','fuelpress','fuelp','railpressure','fuelrailpressure','fuelpsi','railpsi','fp'],
     ['oilpressure','oilpress','oilp','oilpsi'],
@@ -2443,26 +2439,34 @@ function findColumn(headers,configured,fallbacks){
     ['tps','throttleposition','throttlepositionpercent'],
     ['rpm','enginerpm','enginespeed']
   ];
-  const wanted=fallbacks.map(normalize);
+
+  // Only choose an alias group for an EXACT requested token, never by
+  // substring containment. Previously "lambda" matched "lambdatarget".
   for(const group of aliasGroups){
-    if(!group.some(a=>wanted.some(w=>w.includes(a)||a.includes(w))))continue;
-    const hits=headers.map((h,i)=>({i,key:normalize(h)})).filter(x=>group.includes(x.key));
-    if(hits.length===1)return hits[0].i;
-  }
-  for(const needle of fallbacks){
-
-    const i=headers.findIndex(h=>
-      String(h).toLowerCase().includes(
-        needle.toLowerCase()
-      )
-    );
-
-    if(i>=0)return i;
+    if(!wanted.some(w=>group.includes(w)))continue;
+    const matches=names.map((name,i)=>group.includes(name)?i:-1).filter(i=>i>=0);
+    if(matches.length)return uniqueMatch(matches);
   }
 
+  const measuredLambda=wanted.some(w=>['lambda','measuredlambda','wblambda','widebandlambda'].includes(w))
+    && !wanted.some(w=>['lambdatarget','targetlambda','commandedlambda','desiredlambda'].includes(w));
+  const targetLambda=wanted.some(w=>['lambdatarget','targetlambda','commandedlambda','desiredlambda'].includes(w));
+
+  // If more than one column matches the same generic fallback, require
+  // user selection instead of silently choosing a potentially wrong sensor.
+  for(const needle of wanted){
+    const matches=[];
+    for(let i=0;i<headers.length;i++){
+      const name=names[i];
+      if(!name.includes(needle))continue;
+      if(measuredLambda && /target|command|desired|setpoint/.test(name))continue;
+      if(targetLambda && !/target|command|desired|setpoint/.test(name))continue;
+      matches.push(i);
+    }
+    if(matches.length)return uniqueMatch(matches);
+  }
   return -1;
 }
-
 
 function detectDelimiter(line){
 
@@ -2728,6 +2732,18 @@ function parseLog(text){
 
   };
 
+  // Fail closed when a manually mapped actual and target are the same sensor.
+  // Never allow a circular self-comparison to look like perfect fueling.
+  const channelWarnings=[];
+  if(cfg.lambda>=0 && cfg.targetLambda>=0 && cfg.lambda===cfg.targetLambda){
+    channelWarnings.push('Measured lambda and target lambda both use "'+headers[cfg.lambda]+'". Select TWO different columns in I/O Config (e.g. Lambda [5] and Lambda target [81]). Fueling diagnosis is disabled until corrected.');
+    cfg.lambda=-1;
+  }
+  if(cfg.afr>=0 && cfg.targetAfr>=0 && cfg.afr===cfg.targetAfr){
+    channelWarnings.push('Measured AFR and target AFR use the same log channel. AFR-based comparisons are disabled until corrected.');
+    cfg.afr=-1;
+  }
+
   /*
     Sanity check for "wrong file dropped entirely" — RPM and
     Engine runtime are present in essentially every MaxxECU log
@@ -2751,6 +2767,7 @@ function parseLog(text){
     headers,
     rows,
     rowCount:rows.length,
+    channelWarnings,
     runtime:[],
     rpm:[],
     tps:[],
