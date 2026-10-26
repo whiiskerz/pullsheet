@@ -41,8 +41,8 @@ function buildHeatmap(log,result,options={}){
   maxRpm=Math.max(maxRpm,r);maxMap=Math.max(maxMap,m);validMapSamples++;
  }
  if(validMapSamples===0)return {error:'No usable operating samples with verified RPM, throttle and absolute MAP. Do not display invented map regions.'};
- const rpmUpper=Math.min(10500,Math.max(2500,Math.ceil(maxRpm/rpmStep)*rpmStep));
- const mapUpper=Math.min(360,Math.max(80,Math.ceil(maxMap/mapStep)*mapStep));
+ const rpmUpper=Math.min(10500,Math.max(2500,Math.ceil((maxRpm+.001)/rpmStep)*rpmStep));
+ const mapUpper=Math.min(360,Math.max(80,Math.ceil((maxMap+.001)/mapStep)*mapStep));
  const rpmBins=Math.ceil((rpmUpper-stepMin)/rpmStep),mapBins=Math.ceil((mapUpper-mapMin)/mapStep);
  const cells=Array.from({length:rpmBins*mapBins},(_,id)=>({
   id,ri:Math.floor(id/mapBins),mi:id%mapBins,observed:0,paired:0,eligible:0,sum:0,errors:[],
@@ -50,7 +50,6 @@ function buildHeatmap(log,result,options={}){
  }));
  const counts={operating:0,independentLambda:0,screened:0,excludedFuelCut:0,excludedEnrich:0,excludedTransition:0,excludedLambda:0,skippedOutside:0};
  const pressureFactor=result.pressureInfo?.factor??null;
- const mapRecord=val;
  for(let i=0;i<n;i++){
   const r=val(log.rpm,i),m=val(mapValues,i),t=val(log.tps,i);
   if(!finite(r)||!finite(m)||!finite(t)||r<800||t<15||m<mapMin||m>=mapUpper||r<stepMin||r>=rpmUpper){
@@ -108,7 +107,8 @@ function buildHeatmap(log,result,options={}){
   result.entries?.acceleration?.index<0?'Acceleration enrichment was not logged; enrichment exclusion is incomplete.':'Logged acceleration-enrichment-positive samples are excluded.',
   result.entries?.fuelCut?.index<0?'Fuel-cut state was not logged; overrun exclusion is incomplete.':'Logged fuel-cut-positive samples are excluded.',
   'Short TPS/MAP windows reduce obvious transitions but do not verify true steady state, closed-loop state, or repeatable load.',
-  'Sample counts are NOT seconds of engine operation. Logged sampling frequency may vary.'
+  'Sample counts are NOT seconds of engine operation. Logged sampling frequency may vary.',
+  'The 3D height scales the absolute magnitude of the observed median lambda deviation. It does not show active ECU VE values or an interpolated fuel surface.'
  ];
  return {source:'MaxxECU MAP [20]',rpmStep,mapStep,rpmMin:stepMin,mapMin,rpmBins,mapBins,cells,counts,adequate,minEvidence,quality,
   pressureVerified:pressureFactor!==null,
@@ -278,6 +278,8 @@ function render(host,log,options={}){
  modeChoice.value='2d';
  const wrapLabel=(label,control)=>{const group=el('label',label,'signal-brain-control');group.append(control);return group;};
  top.append(wrapLabel('RPM grid',rpmChoice),wrapLabel('Absolute MAP grid (display PSIA)',mapChoice),wrapLabel('Display',modeChoice));
+ const exportHeat=el('button','Export evidence cells CSV','ps-btn secondary');
+ exportHeat.type='button';top.append(exportHeat);
  area.append(top);
  const headline=el('div');headline.className='signal-brain-stats';area.append(headline);
  const surface=el('div');surface.className='signal-brain-surface';area.append(surface);
@@ -387,6 +389,21 @@ function render(host,log,options={}){
   const notes=el('details');notes.className='signal-brain-quality';notes.append(el('summary','Method, missing channels and restrictions'));
   const ul=el('ul');for(const note of map.quality)ul.append(el('li',note));notes.append(ul);inspector.append(notes);
  }
+ exportHeat.onclick=()=>{
+  if(!map||map.error)return;
+  const columns=['rpm_from','rpm_to','map_from_psia','map_to_psia','observed_samples','valid_lambda_pairs',
+   'screened_samples','median_actual_target_deviation_pct_if_supported','mean_actual_target_deviation_pct_if_supported',
+   'lean_samples_over_10pct','rich_samples_over_10pct','minimum_fuel_psi_if_verified','excluded_fuel_cut',
+   'excluded_accel_enrichment','excluded_transient','excluded_invalid_lambda','evidence_status'];
+  const rows=map.cells.filter(c=>c.observed).map(c=>[
+   c.rpmFrom,c.rpmTo,fmt(c.mapPsiaFrom,3),fmt(c.mapPsiaTo,3),c.observed,c.paired,c.eligible,
+   c.visible?fmt(c.medianError,3):'',c.visible?fmt(c.meanError,3):'',c.lean,c.rich,
+   map.pressureVerified&&finite(c.minPressurePsi)?fmt(c.minPressurePsi,2):'',
+   c.filtered.fuelCut,c.filtered.enrichment,c.filtered.transition,c.filtered.lambda,
+   c.visible?'screened observations':'insufficient evidence'
+  ].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','));
+  safeDownload([columns.join(','),...rows].join('\n'),'rawest-signal-observed-rpm-map-evidence.csv','text/csv;charset=utf-8');
+ };
  rpmChoice.onchange=build;mapChoice.onchange=build;modeChoice.onchange=drawGrid;
  build();
  function drawBrain(){
