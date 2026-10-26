@@ -827,6 +827,9 @@ function render(host,d,opts){
   link.href=url;link.download='rawest-signal-'+workflow.goal+'-findings.csv';link.click();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
  };
+ // Attach the complete analysis panel before Chart.js measures the canvas.
+ // Without this, all findings are built in memory but never appear onscreen.
+ host.append(area);
  draw();
  renderComparison(area,d,result);
  const coach=element('details');coach.style.marginTop='18px';const sum=element('summary','NEXT LOG COACH · '+result.next.length+' checks');coach.append(sum);
