@@ -4761,6 +4761,14 @@ function render(d,filename){
 
     ${healthUI(h)}
 
+    ${d.channelWarnings?.length?`
+      <section role="alert" style="margin:14px 0;padding:16px;border:1px solid var(--line);border-left:4px solid #d6a259;background:var(--panel2);border-radius:10px">
+        <strong>CHANNEL MAPPING ERROR — FUELING REVIEW DISABLED</strong>
+        <p style="margin:8px 0 0">${d.channelWarnings.map(escapeHTML).join(' · ')}</p>
+        <p style="margin:6px 0 0;font-size:12px">Open I/O Config and select separate measured and target channels before trusting any lean/rich result.</p>
+      </section>
+    `:''}
+
     ${buildFlexCard(d)}
 
     <div class="sectionTitle">
