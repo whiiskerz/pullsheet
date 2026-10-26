@@ -1295,6 +1295,37 @@ html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),tr
 /* SIGNAL INTELLIGENCE / EVENT INSPECTOR: fixes site-wide canvas height overrides */
 .signal-intelligence{min-width:0;max-width:100%;box-sizing:border-box}
 
+/* v3 MTune Calibration Intelligence: exact XML, revision audit and read-only table crosswalk */
+.signal-calibration-intelligence{min-width:0;max-width:100%;box-sizing:border-box}
+.signal-calibration-intelligence h3{margin:0 0 8px;font-size:17px}
+.signal-cal-note{font-size:12px;color:var(--dim,#c0c6d0);line-height:1.6}
+.signal-cal-warning{font-size:12px;line-height:1.6;border-left:3px solid #dfa459;padding:10px 12px;background:rgba(222,165,72,.07)}
+.signal-cal-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr));gap:10px;margin:14px 0}
+.signal-cal-metrics>div{display:flex;flex-direction:column;gap:5px;border:1px solid var(--ps-border,var(--line));border-radius:9px;padding:12px}
+.signal-cal-metrics strong{font-size:19px;font-variant-numeric:tabular-nums}
+.signal-cal-metrics span{color:var(--dim,#bcc1c8);font-size:11px}
+.signal-cal-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 15px}
+.signal-cal-tab{border:1px solid var(--ps-border,var(--line));border-radius:8px;padding:10px 13px;background:transparent;color:var(--text);cursor:pointer;font:inherit;font-size:12px;white-space:normal}
+.signal-cal-tab[aria-pressed="true"]{border-color:var(--amber,#e9ae41);background:rgba(230,170,60,.1);font-weight:700}
+.signal-cal-content{min-width:0}
+.signal-cal-search{width:100%;max-width:440px;background:var(--panel2);color:var(--text);border:1px solid var(--ps-border,var(--line));border-radius:8px;padding:10px;box-sizing:border-box}
+.signal-cal-key{display:block;text-align:left;width:100%;max-width:100%;border:0;border-bottom:1px solid var(--ps-border,var(--line));padding:7px;background:transparent;color:var(--text);font-size:12px;overflow-wrap:anywhere;cursor:pointer}
+.signal-cal-key:hover{background:rgba(210,220,240,.05)}
+.signal-cal-selection,.signal-cal-match,.signal-cal-status{border:1px solid var(--ps-border,var(--line));border-radius:10px;padding:12px;margin:14px 0;overflow:hidden}
+.signal-cal-raw{min-width:0;margin:8px 0}
+.signal-cal-raw strong{font-size:12px}
+.signal-cal-raw pre{max-height:260px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.6;border:1px solid var(--ps-border,var(--line));padding:10px;border-radius:8px;background:var(--panel2)}
+.signal-cal-diff{margin:8px 0;border:1px solid var(--ps-border,var(--line));border-radius:9px;min-width:0}
+.signal-cal-diff summary{padding:11px 12px;font-size:12px;cursor:pointer;overflow-wrap:anywhere}
+.signal-cal-diff .signal-cal-raw{padding:0 12px}
+.signal-cal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(250px,100%),1fr));gap:12px;margin:14px 0}
+.signal-cal-label{display:flex;flex-direction:column;gap:8px;font-size:12px;min-width:0;font-weight:600}
+.signal-cal-label select,.signal-cal-match select,.signal-cal-content>select{width:100%;padding:10px;min-width:0;border-radius:8px;border:1px solid var(--ps-border,var(--line));background:var(--panel2);color:var(--text)}
+.signal-cal-confirm{display:flex;align-items:flex-start;gap:9px;line-height:1.5;cursor:pointer;font-size:12px}
+.signal-cal-confirm input{margin-top:3px;flex-shrink:0}
+.signal-cal-cell-table{width:100%;border-collapse:collapse;font-size:12px;margin:10px 0;display:block;overflow-x:auto}
+.signal-cal-cell-table td,.signal-cal-cell-table th{border-bottom:1px solid var(--ps-border,var(--line));padding:8px 10px;text-align:left;white-space:nowrap}
+@media(max-width:600px){.signal-cal-tab{flex:1 1 44%}.signal-cal-grid{grid-template-columns:minmax(0,1fr)}.signal-cal-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* WOT Pull Sessions · ECU evidence, not a green-light indicator */
 .signal-pull-sessions{min-width:0;max-width:100%;box-sizing:border-box}
 .signal-pull-sessions h3{font-size:15px;letter-spacing:.02em;margin:0 0 8px}
@@ -1452,6 +1483,7 @@ html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),tr
 </div><select id="aiGoal" style="display:none" aria-label="Selected tuning goal"><option value="idle">Idle / cam</option><option value="cruise">Cruise fueling</option><option value="wot">WOT fueling</option><option value="transient">Throttle tip-in</option><option value="spark">Ignition / knock</option><option value="flex" selected>Flex fuel</option><option value="launch">Launch / 2-step</option><option value="exhaust">Overrun / exhaust</option></select><div class="ps-controls" style="margin-top:14px"><button class="ps-btn" id="aiPlanBtn" type="button">Build evidence report</button><button class="ps-btn secondary" id="aiAnalyzeBtn" type="button">Run safety check</button></div><div id="aiPlanResult" class="ps-output"></div><div id="aiFindings" class="ps-output" aria-live="polite"></div></div>
 <div class="ps-panel"><div class="ps-kicker">EVENT EXPLORER / LIVE LOG VIEW</div><h3>Find the moments that matter</h3><p>Filter the currently loaded log for operating conditions and inspect actual recorded rows. This is raw sample inspection, not proof of knock severity or a tuning correction.</p><div class="ps-controls"><label>Event<select id="aiEventFilter"><option value="all">All valid RPM samples</option><option value="idle">Idle · RPM 500–1200 / TPS ≤10%</option><option value="cruise">Cruise · RPM ≥1200 / TPS 10–40%</option><option value="load">Under load · RPM ≥1500 / TPS ≥40%</option><option value="wot">WOT candidate · RPM ≥2000 / TPS ≥80%</option><option value="knock">Knock indication positive</option><option value="warning">ECU warning positive</option><option value="lean">Measured lambda above target</option></select></label><label>Maximum rows<select id="aiEventLimit"><option value="50">50</option><option value="150">150</option><option value="500">500</option></select></label><button id="aiInspectEvents" type="button" class="ps-btn">Inspect events</button><button id="aiDownloadEvents" type="button" class="ps-btn secondary">Export filtered CSV</button></div><div id="aiEventStatus" class="ps-output" aria-live="polite">Load a log in Analyze, then inspect it here.</div><div id="aiEventTable" class="ps-table"></div></div>
 <div class="ps-grid"><div class="ps-panel"><h3>Calibration explorer</h3><p>Goal categories are search hints, not confirmation of a MaxxECU table's purpose. Never apply changes from keyword matches alone.</p><div class="ps-controls"><label style="flex:1;min-width:140px">Find setting<input id="aiSettingSearch" type="search" placeholder="ethanol, launch, ignition, fuel…"></label><label>View<select id="aiDiffFilter"><option value="all">All matching</option><option value="changed">Changed only</option></select></label></div><div id="aiTuneStatus" class="ps-output"></div><div id="aiTuneBrowser" class="ps-table"></div><button class="ps-btn secondary" id="aiExportDiff" type="button">Export comparison JSON</button></div><div class="ps-panel"><h3>Inspection checklist</h3><div id="aiSafetyChecklist" class="ps-output"></div><details><summary>What this app will not do</summary><p>It will not invent ECU-ready files, auto-flash, certify ignition/fuel settings, or prescribe flame/afterfire calibration. Verify hardware, calibration units and actual MTune settings before any changes.</p></details></div></div>
+<section id="aiCalibrationIntelligence" class="ps-panel" aria-label="MTune Calibration Intelligence"><h3>MTune Calibration Intelligence</h3><p>Load a genuine MaxxECU-save file to inspect exact settings and compare revisions. Stored table-cell lookup requires manual verification of the actual MTune axes and units.</p></section>
 <div class="ps-panel"><details><summary>Experimental virtual dyno · advanced tools</summary><p>Estimate from existing logged acceleration only. VSS/timebase, mass, gearing and converter slip determine reliability. Do not make unsafe or illegal road pulls for this tool.</p><div class="ps-controls"><label>Vehicle weight incl. driver (lb)<input id="aiMass" type="number" min="1100" max="11000" step="1" value="3650"></label><label>Drag area, CdA (ft²)<input id="aiCda" type="number" step=".1" value="7.5"></label><label>Rolling coefficient<input id="aiCrr" type="number" step=".001" value=".012"></label><label>Drive<select id="aiDrive"><option>RWD</option><option>AWD</option><option>4WD</option></select></label><label>Transmission<select id="aiGear"><option>Automatic</option><option>Manual</option></select></label><label>Converter lock confirmed <input type="checkbox" id="aiLocked"></label></div><div class="ps-controls"><button class="ps-btn secondary" id="aiDynoBtn" type="button">Calculate estimate</button></div><div id="aiDynoResult" class="ps-output"></div></details></div>
 </div></section>
 <section id="view-about" class="view">
@@ -7097,6 +7129,7 @@ renderHistory();
 </script>
 
 <script src="signal-units.js?v=2.9.1"></script>
+<script src="calibration-intelligence.js?v=3.0.0"></script>
 <script src="signal-intelligence.js?v=2.9.1"></script>
 <script src="ai-tuner.js?v=2.9.1"></script>
 <script>
