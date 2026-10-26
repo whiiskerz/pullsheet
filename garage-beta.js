@@ -221,10 +221,10 @@ function analyzeHardware(fields){
  return {checks,lift,actual,maxLift};
 }
 function analyzeLog(log,intelligence){
- if(!log||!Array.isArray(log.rpm))return {available:false,text:'No current datalog linked. Hardware checks still run, but power advice cannot be validated against operating evidence.',warnings:[],next:['Load a real datalog in Analyze to evaluate WOT lambda, pressure, protection and temperature evidence.']};
+ if(!log||!Array.isArray(log.rpm))return {available:false,text:'No current datalog linked. Hardware checks still run, but power advice cannot be validated against operating evidence.',alerts:[],next:['Load a real datalog in Analyze to evaluate WOT lambda, pressure, protection and temperature evidence.']};
  let r;
- try{r=intelligence?.analyze?.(log,{pressureUnit:'auto'});}catch(e){return {available:false,text:'Log analysis unavailable: '+safeText(e.message),warnings:[],next:[]};}
- if(!r||r.error)return {available:false,text:r?.error||'ECU analysis unavailable.',warnings:[],next:[]};
+ try{r=intelligence?.analyze?.(log,{pressureUnit:'auto'});}catch(e){return {available:false,text:'Log analysis unavailable: '+safeText(e.message),alerts:[],next:[]};}
+ if(!r||r.error)return {available:false,text:r?.error||'ECU analysis unavailable.',alerts:[],next:[]};
  const alerts=[],next=[];
  const lean=(r.events||[]).filter(e=>e.kind==='LEAN'&&e.highLoad&&(e.priority==='HIGH'||e.priority==='REVIEW'));
  const knock=(r.events||[]).filter(e=>e.kind==='KNOCK'||e.kind==='ECU WARNING');
