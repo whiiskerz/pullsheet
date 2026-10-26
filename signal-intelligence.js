@@ -360,9 +360,9 @@ function render(host,d,opts){
  const exportButton=element('button','Export findings CSV','ps-btn secondary');
  exportButton.type='button';controls.append(exportButton);
  area.append(controls);
- renderComparison(area,d,result);
- const list=element('div');area.append(list);
- const detail=element('div');detail.style.cssText='margin:15px 0 0';area.append(detail);
+ const workspace=element('div');workspace.className='signal-event-workspace';area.append(workspace);
+ const list=element('div');list.className='signal-event-list';workspace.append(list);
+ const detail=element('div');detail.className='signal-event-detail';workspace.append(detail);
  let activeChart=null;
  function selectEvent(e){
   if(activeChart){activeChart.destroy();activeChart=null;}
@@ -374,8 +374,14 @@ function render(host,d,opts){
   const facts=element('p',e.context+' | '+e.count+' samples'+(ok(e.duration)?' | approximately '+format(e.duration,2)+' seconds':' | duration unverified')+' | '+e.confidence+' confidence');
   facts.style.cssText='line-height:1.6;font-size:13px';detail.append(facts);
   if(typeof window!=='undefined'&&window.Chart){
-   const wrap=element('div');wrap.style.cssText='height:240px;margin:15px 0 8px;position:relative;border:1px solid var(--line);border-radius:10px;padding:8px';
-   const canvas=element('canvas');wrap.append(canvas);detail.append(wrap);
+   const wrap=element('div');wrap.className='signal-event-chart';
+   const canvas=element('canvas');
+   // The app's global canvas height is !important (340px). The event chart
+   // must instead fit its own responsive parent, including at mobile widths.
+   canvas.style.setProperty('width','100%','important');
+   canvas.style.setProperty('height','100%','important');
+   canvas.style.setProperty('max-height','100%','important');
+   wrap.append(canvas);detail.append(wrap);
    const labels=[],actual=[],target=[],throttle=[];
    const start=Math.max(0,e.a-10),end=Math.min(result.n-1,e.b+12);
    const stride=Math.max(1,Math.ceil((end-start+1)/100));
@@ -406,7 +412,10 @@ function render(host,d,opts){
    const subtitle=element('p','Event graph: actual vs target gasoline-equivalent AFR and throttle. A sample can reflect exhaust transport/wideband delay; the graph alone does not isolate a fuel-table error.');
    subtitle.style.fontSize='11px';detail.append(subtitle);
   }
-  const table=element('table');table.style.cssText='width:100%;font-size:11px;display:block;overflow:auto;border-collapse:collapse';
+  const samples=element('details');samples.className='signal-event-samples';
+  const sampleToggle=element('summary','VIEW LOGGED SAMPLES · rows '+(Math.max(0,e.a-5)+1)+'–'+(Math.min(result.n-1,e.b+5)+1));samples.append(sampleToggle);
+  const tableWrap=element('div');tableWrap.className='signal-event-table-wrap';samples.append(tableWrap);
+  const table=element('table');table.className='signal-event-table';
   const columns=['Row','RPM','TPS %','MAP','AFR actual','AFR target','Fuel pressure','Lambda corr A','Corr state raw','Acc enrich','Fuel cut'];
   const th=element('tr');for(const k of columns){const cell=element('th',k);cell.style.cssText='padding:6px;text-align:left;border-bottom:1px solid var(--line)';th.append(cell);}table.append(th);
   const lo=Math.max(0,e.a-5),hi=Math.min(result.n-1,e.b+5),stride=Math.max(1,Math.ceil((hi-lo+1)/35));
@@ -418,10 +427,12 @@ function render(host,d,opts){
    const tr=element('tr');if(i>=e.a&&i<=e.b)tr.style.background='rgba(255,180,70,.09)';
    for(const v of vals){const td=element('td',v);td.style.cssText='padding:5px;border-bottom:1px solid var(--line)';tr.append(td);}table.append(tr);
   }
-  detail.append(table);
-  detail.append(element('p','Rows shown around the event (subsampled when necessary). AFR is gasoline-equivalent. MAP and control-channel units must be verified against the ECU setup.'));
+  tableWrap.append(table);detail.append(samples);
+  const tableNote=element('p','Rows around the event (subsampled when needed). AFR is gasoline-equivalent; confirm MAP, pressure and ECU-control signal units.');
+  tableNote.className='signal-event-footnote';samples.append(tableNote);
  }
  function draw(){
+  if(activeChart){activeChart.destroy();activeChart=null;}
   list.replaceChildren();detail.replaceChildren();
   const v=filter.value;
   const events=result.events.filter(e=>v==='all'||v===e.priority||v===e.kind||(v==='transient'&&e.transient)||(v==='steady'&&e.context?.startsWith('STEADY-LOAD')));
@@ -429,13 +440,19 @@ function render(host,d,opts){
   list.append(element('p',events.length+' matching events · showing '+shown.length));
   if(!shown.length)list.append(element('p','No events match this filter. That is not proof the engine is safe.'));
   for(const e of shown){
-   const b=element('button');b.type='button';b.style.cssText='display:block;width:100%;text-align:left;margin:7px 0;padding:12px;border-radius:11px;border:1px solid var(--line);background:var(--panel);color:var(--text);cursor:pointer';
+   const b=element('button');b.type='button';b.className='signal-event-choice';
+   b.setAttribute('aria-pressed',e===shown[0]?'true':'false');
    const head=element('strong',e.priority+' · '+e.kind);b.title='Heuristic review priority score '+e.score+'/100 — not a probability, safety rating or diagnostic confidence';
    b.append(head);
    const desc=[e.count+' rows',ok(e.duration)?'~'+format(e.duration,2)+'s':'time unverified',format(e.rpm,0)+' RPM',format(e.tps)+'% TPS',ok(e.peakError)?format(e.peakError)+'% peak measured/target difference':null].filter(Boolean).join(' · ');
    const sub=element('div',desc);sub.style.cssText='font-size:12px;margin:5px 0';b.append(sub);
-   const why=element('div',e.context);why.style.cssText='font-size:12px;opacity:.8';b.append(why);
-   b.onclick=()=>selectEvent(e);list.append(b);
+   const why=element('div',e.context.split(';')[0]);why.className='signal-event-summary';b.append(why);
+   b.onclick=()=>{
+    for(const button of list.querySelectorAll('button.signal-event-choice'))button.setAttribute('aria-pressed','false');
+    b.setAttribute('aria-pressed','true');
+    selectEvent(e);
+   };
+   list.append(b);
   }
   if(shown.length)selectEvent(shown[0]);
  }
@@ -447,6 +464,7 @@ function render(host,d,opts){
   const url=URL.createObjectURL(new Blob([body],{type:'text/csv;charset=utf-8'})),a=element('a');a.href=url;a.download='rawest-signal-findings.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  };
  draw();
+ renderComparison(area,d,result);
  const coach=element('details');coach.style.marginTop='18px';const sum=element('summary','NEXT LOG COACH · '+result.next.length+' checks');coach.append(sum);
  const ul=element('ul');for(const item of result.next)ul.append(element('li',item));coach.append(ul);
  coach.append(element('p',result.limitation));area.append(coach);
