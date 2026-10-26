@@ -189,6 +189,101 @@ function analyze(d,options){
   pressureUnit,pressureFactor,pressureBaseline,events,next,high:events.filter(e=>e.priority==='HIGH').length,
   limitation:'Screening tool, not a calibration decision. Sample runs, ECU state flags, and pressure anomalies require sensor, unit and load verification.'};
 }
+// Before/after comparison uses matched RPM+MAP cells and records sample coverage.
+// It intentionally does not compare entire-drive means or claim that a tune change caused an improvement.
+const BASELINE_KEY='rawest-signal-baseline-2026';
+function fingerprint(d){
+ const a=d.rpm||[],t=d.runtime||[];
+ return [a.length,a[0],a[a.length-1],t[0],t[t.length-1]].join('|');
+}
+function snapshot(d,result,label){
+ const rpm=d.rpm||[],tps=d.tps||[],lambda=d.lambda||[],target=d.targetLambda||[];
+ const maps=result.signals.map||[],cuts=result.signals.fuelCut||[],enrich=result.signals.acceleration||[];
+ if(!maps.length)return {error:'MAP is missing. Matched RPM/load comparisons require a verified MAP channel.'};
+ const buckets=new Map(),es=(d.ethanol||[]).filter(Number.isFinite);
+ for(let i=2;i<rpm.length-2;i++){
+  if(![rpm[i],tps[i],lambda[i],target[i],maps[i]].every(ok)||rpm[i]<800||tps[i]<15||lambda[i]<=.5||lambda[i]>=1.5||target[i]<=.5||target[i]>=1.5)continue;
+  if(Math.abs((tps[i+2]??tps[i])-(tps[i-2]??tps[i]))>=5)continue;
+  if(ok(maps[i+2])&&ok(maps[i-2])&&Math.abs(maps[i+2]-maps[i-2])>=10)continue;
+  if(ok(cuts[i])&&cuts[i]>0)continue;
+  if(ok(enrich[i])&&enrich[i]>0)continue;
+  const r=Math.floor(rpm[i]/500)*500,m=Math.floor(maps[i]/20)*20;
+  const key=r+'|'+m,b=buckets.get(key)||{rpm:r,map:m,count:0,sum:0};
+  b.count++;b.sum+=(lambda[i]/target[i]-1)*100;buckets.set(key,b);
+ }
+ const bins={};for(const [key,b] of buckets)if(b.count>=15)bins[key]={rpm:b.rpm,map:b.map,count:b.count,error:b.sum/b.count};
+ return {label:String(label||'Baseline log'),fingerprint:fingerprint(d),savedAt:new Date().toISOString(),ethanol:median(es),bins,
+  samples:Object.values(bins).reduce((a,b)=>a+b.count,0)};
+}
+function compareSnapshots(base,current){
+ if(base.error||current.error)return {error:base.error||current.error};
+ if(base.fingerprint===current.fingerprint)return {error:'This appears to be the same log. Load the follow-up log for comparison.'};
+ const ethanolGap=ok(base.ethanol)&&ok(current.ethanol)?Math.abs(base.ethanol-current.ethanol):NaN;
+ const rows=[];
+ for(const [key,b] of Object.entries(base.bins||{})){
+  const a=current.bins[key];if(!a)continue;
+  rows.push({rpm:b.rpm,map:b.map,before:b.error,after:a.error,delta:Math.abs(a.error)-Math.abs(b.error),beforeN:b.count,afterN:a.count});
+ }
+ rows.sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta));
+ return {rows,ethanolGap,comparable:rows.length>0&&(!ok(ethanolGap)||ethanolGap<=10),
+  note:'Descriptive matched-bin comparison only; fuel trims, temperature, correction state, and drive conditions may differ. No table change is implied.'};
+}
+function readBaseline(){
+ try{const stored=JSON.parse(localStorage.getItem(BASELINE_KEY)||'null');return stored&&stored.bins?stored:null;}catch(e){return null;}
+}
+function saveBaseline(base){
+ try{localStorage.setItem(BASELINE_KEY,JSON.stringify(base));return true;}catch(e){return false;}
+}
+function clearBaseline(){try{localStorage.removeItem(BASELINE_KEY);}catch(e){}}
+function renderComparison(area,d,result){
+ const panel=element('details');panel.style.cssText='margin:20px 0;padding:12px;border:1px solid var(--line);border-radius:12px';
+ panel.append(element('summary','BEFORE / AFTER · compare matched RPM + MAP'));
+ const desc=element('p','Save the current log as your baseline, then import the follow-up log. Only overlapping steady-ish RPM/MAP bins with at least 15 samples on EACH log are compared. Baseline stays in this browser until cleared.');
+ desc.style.fontSize='12px';panel.append(desc);
+ const controls=element('div');controls.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+ const set=element('button','Use this log as baseline','ps-btn');set.type='button';
+ const clear=element('button','Clear baseline','ps-btn secondary');clear.type='button';
+ controls.append(set,clear);panel.append(controls);
+ const status=element('p');panel.append(status);
+ const output=element('div');output.style.cssText='overflow:auto';panel.append(output);
+ const current=snapshot(d,result,typeof lastFilename!=='undefined'?lastFilename:'Current log');
+ const draw=()=>{
+  output.replaceChildren();const baseline=readBaseline();
+  if(!baseline){status.textContent='No baseline saved yet.';return;}
+  status.textContent='Baseline saved '+new Date(baseline.savedAt).toLocaleString()+' · '+baseline.samples+' valid comparison samples in '+Object.keys(baseline.bins).length+' bins.';
+  const comparison=compareSnapshots(baseline,current);
+  if(comparison.error){output.append(element('p',comparison.error));return;}
+  if(!comparison.comparable){
+   output.append(element('p',comparison.rows.length===0?'No matched bins with enough steady samples on BOTH logs. Log comparable RPM and MAP conditions.':'Ethanol differs by '+format(comparison.ethanolGap)+' percentage points. Fueling comparison is confounded; do not interpret changes as calibration improvement.'));
+   return;
+  }
+  const note=element('p','Matched load areas: '+comparison.rows.length+' · '+(ok(comparison.ethanolGap)?'ethanol difference '+format(comparison.ethanolGap)+' percentage points · ':'')+comparison.note);
+  note.style.fontSize='12px';output.append(note);
+  const table=element('table');table.style.cssText='width:100%;font-size:12px;border-collapse:collapse';
+  const head=element('tr');
+  for(const label of ['RPM bin','MAP bin','Before error','After error','Shift toward target','Sample coverage']){
+   const th=element('th',label);th.style.cssText='padding:6px;text-align:left;border-bottom:1px solid var(--line)';head.append(th);
+  }
+  table.append(head);
+  for(const b of comparison.rows.slice(0,15)){
+   const tr=element('tr');
+   const vals=[b.rpm+'–'+(b.rpm+499),b.map+'–'+(b.map+19)+' kPa',
+    format(b.before,2)+'%',format(b.after,2)+'%',(b.delta<0?'closer ':'farther ')+format(Math.abs(b.delta),2)+' pp',
+    b.beforeN+' / '+b.afterN];
+   for(const v of vals){const td=element('td',v);td.style.cssText='padding:6px;border-bottom:1px solid var(--line)';tr.append(td);}
+   table.append(tr);
+  }
+  output.append(table);
+ };
+ set.onclick=()=>{
+  if(current.error){status.textContent=current.error;return;}
+  if(!Object.keys(current.bins).length){status.textContent='No comparable steady-state bins with enough samples. Capture a suitable log first.';return;}
+  if(!saveBaseline(current)){status.textContent='Could not save the baseline in this browser (storage may be unavailable).';return;}
+  draw();
+ };
+ clear.onclick=()=>{clearBaseline();draw();};
+ draw();area.append(panel);
+}
 function element(tag,text,cls){
  const n=document.createElement(tag);
  if(text!==undefined&&text!==null)n.textContent=String(text);
@@ -270,6 +365,7 @@ function render(host,d,opts){
   const url=URL.createObjectURL(new Blob([body],{type:'text/csv;charset=utf-8'})),a=element('a');a.href=url;a.download='rawest-signal-findings.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  };
  draw();
+ renderComparison(area,d,result);
  const coach=element('details');coach.style.marginTop='18px';const sum=element('summary','NEXT LOG COACH · '+result.next.length+' checks');coach.append(sum);
  const ul=element('ul');for(const item of result.next)ul.append(element('li',item));coach.append(ul);
  coach.append(element('p',result.limitation));area.append(coach);
