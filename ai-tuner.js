@@ -124,7 +124,8 @@ function plan(){
   return found>=0?(d.headers[found]+' (auto-matched; verify)'):'not identified — select in I/O Config';
  }const n=value.startsWith('__INDEX__')?Number(value.slice(9)):Number(value);return Number.isInteger(n)&&d.headers?.[n]?d.headers[n]:value;};
  const pressureHeader=mappedHeader('cfgFuel');
- const explicitUnit=(pressureHeader.match(/\\[(kpa|bar|psi)\\]/i)||pressureHeader.match(/\\((kpa|bar|psi)\\)/i)||[])[1]?.toLowerCase()||null;
+ const declaredUnit=d?.sourceFormat==='holley'?String(d.sourceUnits?.fuelPress||'').toLowerCase():null;
+ const explicitUnit=(pressureHeader.match(/\[(kpa|bar|psi)\]/i)||pressureHeader.match(/\((kpa|bar|psi)\)/i)||[])[1]?.toLowerCase()||(/^(kpa|bar|psi)$/.test(declaredUnit||'')?declaredUnit:null);
  const pressureUnit=$('aiPressureUnit')?.value||'auto';
  const chosenUnit=pressureUnit==='auto'?explicitUnit:pressureUnit;
  const pressureFactor=chosenUnit==='kpa'?0.1450377377:chosenUnit==='bar'?14.5037738:chosenUnit==='psi'?1:null;
