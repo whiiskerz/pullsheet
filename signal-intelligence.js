@@ -343,12 +343,13 @@ function idleDiagnostics(d){
  const targetValue=i=>targetIndex>=0?numeric(d.rows?.[i]?.[targetIndex]):NaN;
  const cutEntry=resolve(d,'fuelCut'),cut=read(d,cutEntry);
  const eligible=new Array(length).fill(false);
+ const hasSpeed=Array.isArray(d.vss)&&d.vss.some(ok);
  const rpmSamples=[];let qualified=0,lowThrottle=0,seconds=0;
  for(let i=0;i<length;i++){
   const rpm=at('rpm',i),tps=at('tps',i),speed=at('vss',i),fuelCut=cut[i];
   if(!ok(rpm)||rpm<450||rpm>1600||!ok(tps)||tps<0||tps>7)continue;
   lowThrottle++;
-  if(Array.isArray(d.vss)&&d.vss.some(ok)&&(!ok(speed)||speed>3.22))continue;
+  if(hasSpeed&&(!ok(speed)||speed>3.22))continue;
   if(ok(fuelCut)&&fuelCut>0)continue;
   eligible[i]=true;qualified++;rpmSamples.push(rpm);
  }
@@ -631,14 +632,20 @@ function render(host,d,opts){
  }
  filter.onchange=draw;
  exportButton.onclick=()=>{
-  const columns=['kind','priority','score','first_row','last_row','samples','seconds_approx','rpm','tps','map_psia_if_verified','fuel_psi_if_verified','peak_error_pct','context'];
-  const escape=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-  const body=[columns.join(',')].concat(result.events.map(e=>[e.kind,e.priority,e.score,e.a+1,e.b+1,e.count,ok(e.duration)?format(e.duration,2):'',format(e.rpm),format(e.tps),result.mapInPsia?format(e.map*.1450377377,2):'',result.pressureFactor!==null?format(e.pressure*result.pressureFactor,2):'',format(e.peakError),e.context].map(escape).join(','))).join('\n');
-  const url=URL.createObjectURL(new Blob([body],{type:'text/csv;charset=utf-8'})),a=element('a');a.href=url;a.download='rawest-signal-findings.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const v=filter.value,source=v==='global'?result.events:workflow.events;
+  const rows=source.filter(e=>v==='all'||v==='global'||v===e.priority||v===e.kind||(v==='transient'&&e.transient)||(v==='steady'&&e.context?.startsWith('STEADY-LOAD')));
+  const columns=['kind','priority','first_row','last_row','samples','duration_seconds_approx','rpm','rpm_spread','target_idle_rpm','tps_percent','map_psia_if_verified','fuel_psi_if_verified','deviation_percent','context'];
+  const escape=value=>'"'+String(value??'').replace(/"/g,'""')+'"';
+  const entries=rows.map(e=>[
+   e.kind,e.priority,e.a+1,e.b+1,e.count,ok(e.duration)?format(e.duration,2):'',format(e.rpm),format(e.rpmSpread),
+   format(e.targetRpm),format(e.tps),result.mapInPsia?format(e.map*.1450377377,2):'',
+   result.pressureFactor!==null?format(e.pressure*result.pressureFactor,2):'',format(e.peakError),e.context
+  ].map(escape).join(','));
+  const content=[columns.join(','),...entries].join('\n');
+  const url=URL.createObjectURL(new Blob([content],{type:'text/csv;charset=utf-8'})),link=element('a');
+  link.href=url;link.download='rawest-signal-'+workflow.goal+'-findings.csv';link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
  };
- // Chart.js must measure an attached element. Previously its canvas was
- // created while the entire report was detached, producing unreliable sizing.
- host.append(area);
  draw();
  renderComparison(area,d,result);
  const coach=element('details');coach.style.marginTop='18px';const sum=element('summary','NEXT LOG COACH · '+result.next.length+' checks');coach.append(sum);
