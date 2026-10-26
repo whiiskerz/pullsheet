@@ -362,7 +362,7 @@ function renderEvents(){
  const selected=ranked.slice(0,limit);
  const pressureInfo=window.RawestSignalUnits?.describe(d,'fuelPress');
  status.textContent=rows.length+' matching samples out of '+d.rpm.length+' total · displaying '+selected.length+'. '+(pressureInfo?.canShowPsi?'Fuel pressure converted to PSI ('+pressureInfo.source+').':'Fuel PSI unavailable until the original sensor source scale is verified in the report.')+' Speed shown in mph. Select Lean to rank deviations.';
- const cols=[['runtime','Time'],['rpm','RPM'],['tps','TPS'],['lambda','Lambda'],['targetLambda','Target λ'],['fuelPress','Fuel PSI'],['ethanol','Ethanol %'],['knock','Knock signal'],['warnings','Warnings'],['gear','Gear'],['vss','Speed mph']];
+ const cols=[['runtime','Time'],['rpm','RPM'],['tps','TPS'],['lambda','Lambda'],['targetLambda','Target λ'],['fuelPress','Fuel PSI'],['coolantF','Coolant °F'],['ethanol','Ethanol %'],['knock','Knock signal'],['warnings','Warnings'],['gear','Gear'],['vss','Speed mph']];
  const table=document.createElement('table');const head=document.createElement('tr');
  for(const title of ['Row',...cols.map(x=>x[1])]){const th=document.createElement('th');th.textContent=title;head.append(th);}table.append(head);
  for(const i of selected){
@@ -370,6 +370,10 @@ function renderEvents(){
   const values=[i+1,...cols.map(([k])=>{
    const raw=Array.isArray(d[k])?d[k][i]:NaN;
    if(k==='fuelPress')return pressureInfo?.display(raw)||'PSI unverified';
+   if(k==='coolantF'){
+    const temp=Number.isFinite(raw)?raw:window.RawestSignalUnits?.fahrenheitFromC(d.coolant?.[i]);
+    return Number.isFinite(temp)?Number(temp.toFixed(1)):'—';
+   }
    if(k==='vss')return Number.isFinite(raw)?Number((raw/1.609344).toFixed(1)):'—';
    return raw;
   })];
@@ -380,14 +384,15 @@ function renderEvents(){
 }
 function downloadEvents(){
  const {d,rows}=eventRows();if(!d||!rows.length){const status=$('aiEventStatus');if(status)status.textContent='No matching rows to export.';return;}
- const cols=['runtime','rpm','tps','lambda','targetLambda','fuelPress','ethanol','knock','warnings','gear','vss'];
+ const cols=['runtime','rpm','tps','lambda','targetLambda','fuelPress','coolantF','ethanol','knock','warnings','gear','vss'];
  const pressureInfo=window.RawestSignalUnits?.describe(d,'fuelPress');
  const escapeCsv=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
- const colNames=['time_source','rpm','tps_percent','lambda','lambda_target','fuel_pressure_psi','ethanol_percent','knock_raw','warnings_raw','gear','speed_mph'];
+ const colNames=['time_source','rpm','tps_percent','lambda','lambda_target','fuel_pressure_psi','coolant_f','ethanol_percent','knock_raw','warnings_raw','gear','speed_mph'];
  const data=[['source_row',...colNames].join(','),...rows.map(i=>[i+1,...cols.map(k=>{
   const value=Array.isArray(d[k])?d[k][i]:NaN;
   if(!Number.isFinite(value))return '';
   if(k==='fuelPress')return pressureInfo?.canShowPsi?Number((value*pressureInfo.factor).toFixed(3)):'';
+  if(k==='coolantF')return Number(value.toFixed(3));
   if(k==='vss')return Number((value/1.609344).toFixed(3));
   return value;
  })].map(escapeCsv).join(','))].join('\n');
