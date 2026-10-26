@@ -1090,7 +1090,7 @@ html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),tr
 
 </header>
 
-<section id="view-analyze" class="view active"><div class="signal-home"><div class="signal-card"><div class="signal-eyebrow">RAWEST PERFORMANCE // SIGNAL 01</div><h2>Your tuning command center.</h2><p>Drop a datalog, investigate engine behavior, review safety flags and inspect calibration revisions—all in one workspace. MaxxECU is the primary workflow; Holley CSV support is evolving.</p><div class="signal-actions"><button class="signal-action primary" id="signalChooseLog" type="button">+ Import datalog</button><button class="signal-action" id="signalOpenStudio" type="button">Open calibration studio</button></div></div><div class="signal-card"><div class="signal-eyebrow">WORKFLOW / FOUR STEPS</div><div class="signal-step"><b>01</b><span>Import a MaxxECU log</span></div><div class="signal-step"><b>02</b><span>Inspect charts and event data</span></div><div class="signal-step"><b>03</b><span>Run evidence-based safety review</span></div><div class="signal-step"><b>04</b><span>Compare tunes and export findings</span></div></div></div>
+<section id="view-analyze" class="view active"><div class="signal-home"><div class="signal-card"><div class="signal-eyebrow">RAWEST PERFORMANCE // SIGNAL 01</div><h2>Your tuning command center.</h2><p>Drop a datalog, investigate engine behavior, review safety flags and inspect calibration revisions—all in one workspace. MaxxECU is the primary workflow; Holley CSV support is evolving.</p><div class="signal-actions"><button class="signal-action primary" id="signalChooseLog" type="button">+ Import datalog</button><button class="signal-action" id="signalOpenStudio" type="button">Open calibration studio</button><button class="signal-action" id="signalOpenGarage" type="button">My Garage <span style="opacity:.7">BETA</span></button></div></div><div class="signal-card"><div class="signal-eyebrow">WORKFLOW / FOUR STEPS</div><div class="signal-step"><b>01</b><span>Import a MaxxECU log</span></div><div class="signal-step"><b>02</b><span>Inspect charts and event data</span></div><div class="signal-step"><b>03</b><span>Run evidence-based safety review</span></div><div class="signal-step"><b>04</b><span>Compare tunes and export findings</span></div></div></div>
 
   <div id="drop" class="drop">
 
@@ -7229,6 +7229,10 @@ renderHistory();
 document.addEventListener('DOMContentLoaded',()=>{
  document.getElementById('signalChooseLog')?.addEventListener('click',()=>document.getElementById('fileInput')?.click());
  document.getElementById('signalOpenStudio')?.addEventListener('click',()=>document.querySelector('.tabs [data-tab="ai"]')?.click());
+ document.getElementById('signalOpenGarage')?.addEventListener('click',()=>{
+  document.querySelector('.tabs [data-tab="ai"]')?.click();
+  document.getElementById('aiGarageBeta')?.scrollIntoView({behavior:'smooth',block:'start'});
+ });
 });
 </script>
 </body>
