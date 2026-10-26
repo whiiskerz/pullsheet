@@ -250,7 +250,7 @@ function plan(){
  const container=$('aiPlanResult');container.replaceChildren();
  const controls=document.createElement('div');controls.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px';const unitLabel=document.createElement('label');unitLabel.textContent='Original fuel-pressure unit: ';const unitSelect=document.createElement('select');unitSelect.id='aiPressureUnit';for(const [v,t] of [['auto','Auto (header only)'],['kpa','kPa → PSI'],['bar','bar → PSI'],['psi','Already PSI']]){const o=document.createElement('option');o.value=v;o.textContent=t;unitSelect.append(o);}unitSelect.value=pressureUnit;unitSelect.onchange=plan;unitLabel.append(unitSelect);controls.append(unitLabel);container.append(controls);
  const heading=document.createElement('h3');heading.textContent=label+' · Tuning report';container.append(heading);
- const summary=document.createElement('p');summary.textContent='Plain-English findings, limitations and next steps. Detailed RPM data is available under Advanced.';container.append(summary);
+ const summary=document.createElement('p');summary.textContent='Inspect prioritized events, AFR graphs, ECU corrections and next-log checks. Expand the full text report below or copy/download it.';container.append(summary);
  if(typeof window!=='undefined'&&window.RawestSignalIntelligence){
   try{
    window.RawestSignalIntelligence.render(container,d,{pressureUnit:pressureUnit});
@@ -258,7 +258,9 @@ function plan(){
    const warning=document.createElement('p');warning.textContent='Signal Intelligence was unable to review this log: '+err.message;container.append(warning);
   }
  }
- const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;color:var(--text);font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px';pre.textContent=report;container.append(pre);
+ const fullText=document.createElement('details');fullText.className='signal-full-text-report';fullText.style.marginTop='18px';
+ const fullTextLabel=document.createElement('summary');fullTextLabel.textContent='FULL DIAGNOSTIC TEXT · Expand report';fullText.append(fullTextLabel);
+ const pre=document.createElement('pre');pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;color:var(--text);font-size:12px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;max-height:560px;overflow:auto';pre.textContent=report;fullText.append(pre);container.append(fullText);
  const actions=document.createElement('div');actions.style.cssText='display:flex;gap:9px;flex-wrap:wrap;margin-top:12px';container.append(actions);
  const download=(content,type,name)=>{const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
  const txt=document.createElement('button');txt.textContent='Download text report (.txt)';txt.className='ps-btn';txt.onclick=()=>download(report,'text/plain;charset=utf-8','rawest-signal-'+goal+'-report.txt');actions.append(txt);
