@@ -47,8 +47,8 @@ function analyze(){
 function dyno(){
  const d=typeof lastParsed!=='undefined'?lastParsed:null,out=$('aiDynoResult');
  if(!d||!finite(d.runtime)||!finite(d.rpm)||!finite(d.vss)||!finite(d.tps)){out.innerHTML=card('Not trusted','Load a log containing time, RPM, speed and throttle.');return;}
- const massLb=Number($('aiMass').value);const mass=window.RawestSignalUnits?.kilogramsFromPounds(massLb)??massLb*.45359237;const cda=Number($('aiCda').value),crr=Number($('aiCrr').value),gear=$('aiGear').value,drive=$('aiDrive').value,locked=$('aiLocked').checked;
- if(!(massLb>1100&&massLb<11000&&cda>.2&&cda<2&&crr>.002&&crr<.05)){out.innerHTML=card('Invalid vehicle inputs','Check vehicle weight in pounds, drag area and rolling resistance.');return;}
+ const massLb=Number($('aiMass').value);const mass=window.RawestSignalUnits?.kilogramsFromPounds(massLb)??massLb*.45359237;const cdaFt2=Number($('aiCda').value);const cda=cdaFt2*0.09290304;const crr=Number($('aiCrr').value),gear=$('aiGear').value,drive=$('aiDrive').value,locked=$('aiLocked').checked;
+ if(!(massLb>1100&&massLb<11000&&cdaFt2>2.15&&cdaFt2<21.5&&crr>.002&&crr<.05)){out.innerHTML=card('Invalid vehicle inputs','Check weight (lb), drag area (ft²), and rolling resistance.');return;}
  // MaxxECU speed convention is km/h; runtime convention varies, validated using observed span.
  let pts=[];let eligible=0;for(let i=0;i<d.rpm.length;i++){let t=d.runtime[i],v=d.vss[i],r=d.rpm[i],p=d.tps[i];if([t,v,r,p].every(Number.isFinite)&&r>=2000&&p>=85&&v>15){eligible++;pts.push({t,v:v/3.6,r,p,i,g:finite(d.gear)?d.gear[i]:NaN});}}
  if(pts.length<12){out.innerHTML=card('Not trusted · Data coverage','Only '+pts.length+' qualifying rows: RPM ≥2,000, TPS ≥85%, vehicle speed >9.3 mph, and valid time. Check TPS scaling, speed mapping, and whether this log contains a WOT pull.');return;}
