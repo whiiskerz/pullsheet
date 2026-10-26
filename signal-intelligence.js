@@ -531,7 +531,11 @@ function render(host,d,opts){
  function selectEvent(e){
   if(activeChart){activeChart.destroy();activeChart=null;}
   detail.replaceChildren();
-  const h=element('h4','EVENT INSPECTOR — rows '+(e.a+1)+'–'+(e.b+1));detail.append(h);
+  const h=element('h4',(e.idle?'IDLE INSPECTOR':'EVENT INSPECTOR')+' — rows '+(e.a+1)+'–'+(e.b+1));detail.append(h);
+  if(e.idle){
+   const overview=element('p','Idle window: '+format(e.rpm,0)+' RPM median · '+format(e.rpmSpread,0)+' RPM central spread · '+(ok(e.targetRpm)?format(e.targetRpm,0)+' RPM logged target':'target RPM not logged')+' · '+(ok(e.duration)?format(e.duration,2)+' s':'duration unverified')+'. Low TPS does not prove closed-loop idle-control engagement.');
+   overview.className='signal-event-idle-overview';detail.append(overview);
+  }
   if(e.possibleCorrectionLimit)detail.append(element('p','Correction signal repeatedly approached the observed absolute extreme ('+format(e.correctionObservedEdge,1)+' raw). Verify the actual correction limit and sign convention in MTune; this alone is not proof the ECU is maxed out.'));
   if(e.negativeWhileLean)detail.append(element('p','The log reads lean while Lambda corr A is negative. MaxxECU may HOLD a previous correction after a throttle/load change. The sign alone does not establish what the ECU was actively doing; inspect Lambda corr state and transient deactivation settings.'));
   if(e.trimAppearsHeld)detail.append(element('p','Lambda corr A remained unchanged across a substantial part of this event ('+e.longestHeldRun+' consecutive readings). A held correction is possible but not confirmed.'));
@@ -546,35 +550,37 @@ function render(host,d,opts){
    canvas.style.setProperty('height','100%','important');
    canvas.style.setProperty('max-height','100%','important');
    wrap.append(canvas);detail.append(wrap);
+   const idleView=!!e.idle;
    const labels=[],actual=[],target=[],throttle=[],flagged=[];
    const start=Math.max(0,e.a-10),end=Math.min(result.n-1,e.b+12);
    const stride=Math.max(1,Math.ceil((end-start+1)/100));
    for(let i=start;i<=end;i+=stride){
     const at=(key)=>Array.isArray(d[key])?d[key][i]:NaN;
     labels.push(result.time.verified&&ok(at('runtime'))?format(at('runtime')-d.runtime[e.a],2)+'s':'#'+(i+1));
-    actual.push(ok(at('lambda'))&&at('lambda')>.5&&at('lambda')<1.5?at('lambda')*14.7:null);
+    actual.push(idleView?(ok(at('rpm'))?at('rpm'):null):(ok(at('lambda'))&&at('lambda')>.5&&at('lambda')<1.5?at('lambda')*14.7:null));
     flagged.push(i>=e.a&&i<=e.b);
-    target.push(ok(at('targetLambda'))&&at('targetLambda')>.5&&at('targetLambda')<1.5?at('targetLambda')*14.7:null);
+    const requestedIdle=e.idleTargetIndex>=0?numeric(d.rows?.[i]?.[e.idleTargetIndex]):NaN;
+    target.push(idleView?(ok(requestedIdle)?requestedIdle:null):(ok(at('targetLambda'))&&at('targetLambda')>.5&&at('targetLambda')<1.5?at('targetLambda')*14.7:null));
     throttle.push(ok(at('tps'))?at('tps'):null);
    }
    try{
     activeChart=new window.Chart(canvas,{
      type:'line',
      data:{labels,datasets:[
-      {label:'Measured AFR',data:actual,borderColor:'#f17f83',backgroundColor:'#f17f83',pointBackgroundColor:'#ffd166',pointBorderColor:'#f17f83',pointRadius:flagged.map(v=>v?3:0),pointHoverRadius:5,tension:.12,spanGaps:false,yAxisID:'afr'},
-      {label:'Target AFR',data:target,borderColor:'#63cdb4',backgroundColor:'#63cdb4',pointRadius:0,borderDash:[5,4],tension:0,yAxisID:'afr'},
+      {label:idleView?'Actual RPM':'Measured AFR',data:actual,borderColor:'#f17f83',backgroundColor:'#f17f83',pointBackgroundColor:'#ffd166',pointBorderColor:'#f17f83',pointRadius:flagged.map(v=>v?3:0),pointHoverRadius:5,tension:.12,spanGaps:false,yAxisID:'afr'},
+      {label:idleView?'Logged idle target RPM':'Target AFR',data:target,borderColor:'#63cdb4',backgroundColor:'#63cdb4',pointRadius:0,borderDash:[5,4],tension:0,yAxisID:'afr'},
       {label:'Throttle %',data:throttle,borderColor:'#e7b45e',backgroundColor:'#e7b45e',pointRadius:0,tension:.12,yAxisID:'tps'}
      ]},
      options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},
       plugins:{legend:{labels:{color:'#cbd4d1',boxWidth:14,font:{size:10}}},tooltip:{mode:'index',intersect:false}},
       scales:{
        x:{ticks:{color:'#9da7a5',maxTicksLimit:8},grid:{color:'rgba(150,160,165,.08)'}},
-       afr:{type:'linear',position:'left',title:{display:true,text:'Gasoline-equivalent AFR',color:'#cbd4d1'},ticks:{color:'#cbd4d1'},grid:{color:'rgba(150,160,165,.12)'}},
+       afr:{type:'linear',position:'left',title:{display:true,text:idleView?'Engine RPM':'Gasoline-equivalent AFR',color:'#cbd4d1'},ticks:{color:'#cbd4d1'},grid:{color:'rgba(150,160,165,.12)'}},
        tps:{type:'linear',position:'right',min:0,max:100,title:{display:true,text:'TPS %',color:'#cbd4d1'},ticks:{color:'#cbd4d1'},grid:{drawOnChartArea:false}}
       }}
     });
    }catch(err){wrap.replaceChildren(element('p','Chart unavailable. Use the original sample table below.'));}
-   const subtitle=element('p','Orange dots mark flagged samples. Graph shows actual vs target gasoline-equivalent AFR plus throttle. Exhaust transport and wideband delay can shift apparent timing; do not diagnose fuel tables from this trace alone.');
+   const subtitle=element('p',idleView?'Orange dots mark the low-throttle RPM-variation window. RPM versus logged idle target (if independently available), with TPS on the second axis. This does not confirm which idle-control mode was active.':'Orange dots mark flagged samples. Graph shows actual vs target gasoline-equivalent AFR plus throttle. Exhaust transport and wideband delay can shift apparent timing; do not diagnose fuel tables from this trace alone.');
    subtitle.style.fontSize='11px';detail.append(subtitle);
   }
   const samples=element('details');samples.className='signal-event-samples';
