@@ -56,6 +56,8 @@ function analyze(d,options){
  for(const name of Object.keys(spec))entries[name]=resolve(d,name);
  const signals={};
  for(const name of Object.keys(entries))signals[name]=read(d,entries[name]);
+ const correctionValues=(signals.correction||[]).filter(ok);
+ const correctionObservedEdge=correctionValues.length>=25?Math.max(...correctionValues.map(Math.abs)):NaN;
  const get=(k,i)=>{const a=signals[k];return Array.isArray(a)&&i>=0&&i<a.length?a[i]:NaN;};
  const dv=(k,i)=>{const a=d[k];return Array.isArray(a)&&i>=0&&i<a.length?a[i]:NaN;};
  const time=timebase(d);
@@ -98,6 +100,8 @@ function analyze(d,options){
   const enrich=Array.from({length:count},(_,j)=>get('acceleration',a+j)).some(v=>ok(v)&&v>0);
   const correcting=Array.from({length:count},(_,j)=>get('correction',a+j)).some(v=>ok(v)&&Math.abs(v)>0.01);
   const correctionState=Array.from({length:count},(_,j)=>get('correctionState',a+j)).some(v=>ok(v)&&v!==0);
+  const edgeReadings=Array.from({length:count},(_,j)=>get('correction',a+j)).filter(v=>ok(v)&&ok(correctionObservedEdge)&&correctionObservedEdge>=3&&Math.abs(v)>=correctionObservedEdge-.15);
+  const possibleCorrectionLimit=edgeReadings.length>=Math.max(3,Math.ceil(count*.25));
   const samples=[];
   for(let j=a;j<=b;j++)if(ok(deviation(j)))samples.push(deviation(j));
   const peakError=samples.length?Math.max(...samples.map(Math.abs))*100:NaN;
@@ -107,9 +111,11 @@ function analyze(d,options){
   let context='DURATION/LOAD UNVERIFIED';
   if(kind==='KNOCK' || kind==='ECU WARNING')context='Verify channel meaning and investigate protection';
   else if(fuelCut)context='FUEL CUT FLAG ACTIVE — mixture may not represent normal combustion';
+  else if(possibleCorrectionLimit&&ok(duration)&&duration>=.7)context='POSSIBLE CORRECTION LIMIT — sustained deviation near observed trim endpoint; verify configured limits';
+  else if(stable)context='STEADY-LOAD DEVIATION — inspect closed-loop and calibration context';
+  else if(transient&&recovered&&ok(duration)&&duration>=1)context='PROLONGED TRANSIENT + RECOVERY — verify enrichment and correction response';
   else if(transient&&recovered)context='TRANSIENT + RECOVERY — possible normal ECU response, verify corrections';
   else if(transient)context='THROTTLE/LOAD TRANSITION — recovery and correction need review';
-  else if(stable)context='STEADY-LOAD DEVIATION — inspect closed-loop and calibration context';
   else if(recovered)context='RETURNED TO TARGET — verify time and control state';
   if(enrich)context+='; acceleration enrichment channel active';
   if(correctionState)context+='; lambda correction state nonzero';
@@ -119,15 +125,17 @@ function analyze(d,options){
   if(highLoad)score+=22;
   if(stable)score+=15;
   if(kind==='LEAN'&&transient&&!recovered)score+=8;
+  if(possibleCorrectionLimit&&!fuelCut)score+=20;
+  if(possibleCorrectionLimit&&ok(duration)&&duration>=1)score+=10;
   if(fuelCut)score-=30;
-  if(transient&&recovered&&!highLoad)score-=18;
-  if(kind==='RICH'&&transient&&recovered)score-=8;
+  if(transient&&recovered&&!highLoad&&!possibleCorrectionLimit)score-=18;
+  if(kind==='RICH'&&transient&&recovered&&!possibleCorrectionLimit)score-=8;
   score=Math.max(0,Math.min(100,Math.round(score)));
   const priority=score>=75?'HIGH':score>=45?'REVIEW':'CONTEXT';
   const confidence=time.verified&&entries.map.index>=0&&validLambda(center)?'medium':'limited';
   events.push({kind,a,b,count,duration,rpm,tps,map,lambda:dv('lambda',center),target:dv('targetLambda',center),
    pressure:pressureAt(center),peakError,transient,recovered,fuelCut,enrich,correcting,correctionState,
-   context,score,priority,confidence,highLoad});
+   context,score,priority,confidence,highLoad,possibleCorrectionLimit,correctionObservedEdge});
  }
  const masks=[
   {kind:'LEAN',test:i=>eligible(i)&&ok(deviation(i))&&deviation(i)>.10},
@@ -184,6 +192,7 @@ function analyze(d,options){
  if(pressureFactor===null)next.push('Verify the fuel-pressure channel unit in MTune before interpreting PSI.');
  if(!d.knock?.some(ok))next.push('Log a verified knock-detection or correction channel.');
  if(events.some(e=>e.kind==='LEAN'&&e.highLoad))next.push('Review high-load lean episodes, correction limits and pressure response before more loaded testing.');
+ if(events.some(e=>e.possibleCorrectionLimit))next.push('Check configured MaxxECU lambda-correction limits and when closed-loop correction is enabled. Observed trim endpoints are not proof of a configured clamp.');
  if(!next.length)next.push('Repeat a comparable warmed-up steady-state log; compare correction behavior at matched RPM and MAP.');
  return {version:'2.6.0',n,source:d.sourceFormat==='holley'?'Holley CSV':'MaxxECU log',time,quality,entries,signals,
   pressureUnit,pressureFactor,pressureBaseline,events,next,high:events.filter(e=>e.priority==='HIGH').length,
@@ -323,6 +332,7 @@ function render(host,d,opts){
  function selectEvent(e){
   detail.replaceChildren();
   const h=element('h4','EVENT INSPECTOR — rows '+(e.a+1)+'–'+(e.b+1));detail.append(h);
+  if(e.possibleCorrectionLimit)detail.append(element('p','Correction signal repeatedly approached the observed absolute extreme ('+format(e.correctionObservedEdge,1)+' raw). Verify the actual correction limit and sign convention in MTune; this alone is not proof the ECU is maxed out.'));
   const facts=element('p',e.context+' | '+e.count+' samples'+(ok(e.duration)?' | approximately '+format(e.duration,2)+' seconds':' | duration unverified')+' | '+e.confidence+' confidence');
   facts.style.cssText='line-height:1.6;font-size:13px';detail.append(facts);
   const table=element('table');table.style.cssText='width:100%;font-size:11px;display:block;overflow:auto;border-collapse:collapse';
