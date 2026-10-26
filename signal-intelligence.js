@@ -533,6 +533,32 @@ function renderWotSessions(area,d,result,selectEvent){
  panel.append(element('h3','PULL SESSIONS · '+sessions.length+' segmented high-throttle runs'));
  const desc=element('p','Groups RPM ≥2,000 / TPS ≥80% into separate continuous runs of at least 8 samples. These are candidate pulls—not certified WOT, single-gear, road-speed or engine-safety tests.');
  desc.style.cssText='font-size:12px;line-height:1.5';panel.append(desc);
+ if(sessions.length){
+  const exportPulls=element('button','Export Pull Sessions CSV','ps-btn secondary');
+  exportPulls.type='button';
+  exportPulls.onclick=()=>{
+   const columns=['start_row','end_row','samples','duration_seconds_approx','start_rpm','end_rpm',
+    'start_mph','end_mph','peak_tps_percent','valid_lambda_pairs','lean_samples_over_10pct',
+    'early_lean_samples_first_half_second','later_lean_samples','rich_samples_over_10pct',
+    'fuel_pressure_min_psi_if_verified','fuel_pressure_median_psi_if_verified',
+    'coolant_f','ethanol_min_percent','ethanol_max_percent','logged_gear_transitions',
+    'assessment','cautions'];
+   const esc=x=>'"'+String(x??'').replace(/"/g,'""')+'"';
+   const rows=sessions.map(p=>[
+    p.a+1,p.b+1,p.count,ok(p.duration)?format(p.duration,3):'',format(p.startRpm,0),
+    format(p.endRpm,0),ok(p.startMph)?format(p.startMph,2):'',ok(p.endMph)?format(p.endMph,2):'',
+    format(p.peakThrottle),p.validLambda,p.leanCount,p.earlyLean,p.lateLean,p.richCount,
+    ok(p.pressureMinPsi)?format(p.pressureMinPsi,2):'',
+    ok(p.pressureMedianPsi)?format(p.pressureMedianPsi,2):'',ok(p.coolantF)?format(p.coolantF,1):'',
+    ok(p.ethanolMin)?format(p.ethanolMin,1):'',ok(p.ethanolMax)?format(p.ethanolMax,1):'',
+    ok(p.gearChanges)?p.gearChanges:'',p.status,p.cautions.join(' | ')
+   ].map(esc).join(','));
+   const body=[columns.join(','),...rows].join('\n'),url=URL.createObjectURL(new Blob([body],{type:'text/csv;charset=utf-8'}));
+   const link=element('a');link.href=url;link.download='rawest-signal-wot-pull-sessions.csv';
+   link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  };
+  panel.append(exportPulls);
+ }
  if(!sessions.length){
   panel.append(element('p','No high-throttle segment had enough contiguous samples. Try a different logged session; do not create unsafe road pulls to satisfy the analyzer.'));
   area.append(panel);return;
