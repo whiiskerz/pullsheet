@@ -6,6 +6,7 @@
 'use strict';
 const KEY='rawest-signal-garage-beta-v1';
 const VERSION=1,MAX_BUILDS=25,MAX_SNAPSHOTS=12;
+const logCache=new WeakMap();
 const finite=Number.isFinite;
 const num=v=>{if(v===null||v===undefined||String(v).trim()==='')return NaN;const n=Number(v);return finite(n)?n:NaN;};
 const round=(n,d=3)=>finite(n)?n.toFixed(d):'unverified';
@@ -222,6 +223,10 @@ function analyzeHardware(fields){
 }
 function analyzeLog(log,intelligence){
  if(!log||!Array.isArray(log.rpm))return {available:false,text:'No current datalog linked. Hardware checks still run, but power advice cannot be validated against operating evidence.',alerts:[],next:['Load a real datalog in Analyze to evaluate WOT lambda, pressure, protection and temperature evidence.']};
+ const unit=root.RawestSignalUnits?.describe?.(log,'fuelPress')?.unit||'unverified';
+ const stamp=JSON.stringify([unit,log.rpm.length,log.rpm[log.rpm.length-1],log.runtime?.[log.runtime.length-1],log.sourceColumns]);
+ const hit=logCache.get(log);
+ if(hit&&hit.stamp===stamp&&hit.intelligence===intelligence)return hit.result;
  let r;
  try{r=intelligence?.analyze?.(log,{pressureUnit:'auto'});}catch(e){return {available:false,text:'Log analysis unavailable: '+safeText(e.message),alerts:[],next:[]};}
  if(!r||r.error)return {available:false,text:r?.error||'ECU analysis unavailable.',alerts:[],next:[]};
@@ -245,8 +250,10 @@ function analyzeLog(log,intelligence){
  if(wot<20)next.push('Log enough representative operating data to evaluate load and fueling. Do not conduct unsafe or illegal test pulls.');
  if(r.quality?.find(q=>q.key==='Timebase')?.status==='unverified')next.push('Verify a valid seconds-based time channel to distinguish transient spikes from sustained events.');
  if(!r.pressureInfo?.canShowPsi)next.push('Confirm original fuel-pressure units so pressure can be interpreted in PSI.');
- return {available:true,samples:r.n,wotCandidates:wot,pullSegments:snaps,events:r.events.length,high,lean:lean.length,alerts,next,
+ const result={available:true,samples:r.n,wotCandidates:wot,pullSegments:snaps,events:r.events.length,high,lean:lean.length,alerts,next,
   text:r.n.toLocaleString()+' samples · '+wot+' WOT candidate samples · '+snaps+' segmented high-throttle runs · '+r.events.length+' flagged multi-sample events. This is not a safety certification.'};
+ logCache.set(log,{stamp,intelligence,result});
+ return result;
 }
 function powerPlan(fields,hardware,logReport){
  const goal=num(fields.goalWhp),current=num(fields.currentWhp),asp=fields.aspiration||'';
@@ -419,6 +426,11 @@ function mount(host,getLog){
   power.append(mk('h3','MORE POWER · BUILD-AWARE OPTIONS'),mk('p',analysis.plan.headline,'garage-muted'));
   for(const p of analysis.plan.options)power.append(item(p));audit.append(power);
   audit.append(mk('p',analysis.disclaimer,'garage-disclaimer'));
+ const source=mk('p','Technical reference: COMP Cams Valve Springs 101 · minimum 0.060-inch coil clearance is an illustrative check; follow the actual spring/cam manufacturer and measure the engine.','garage-disclaimer');
+ const citation=mk('a','Read valve spring clearance guidance');
+ citation.href='https://www.compcams.com/valve-springs-101/';
+ citation.target='_blank';citation.rel='noopener noreferrer';
+ source.append(citation);audit.append(source);
  }
  function drawHistory(){
   logs.replaceChildren();logs.append(mk('h3','BUILD HISTORY · COMPACT LOG SNAPSHOTS'));
