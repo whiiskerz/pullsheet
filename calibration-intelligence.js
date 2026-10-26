@@ -320,15 +320,16 @@ function render(host,original,compare,log,goal){
    const match=mapEvent(verdict,event,logInfo.map);
    if(match.error){display.append(element('p','NO VERIFIED CELL MATCH · '+match.error));return;}
    display.append(element('h4','Stored cells near logged event '+(event.a+1)+'–'+(event.b+1)));
-   display.append(element('p','Logged '+Math.round(match.rpm)+' RPM · '+match.load.toFixed(1)+' '+(match.loadUnit==='psia'?'PSIA':'kPa absolute')+' (source table axis units, not a display preference).'));
+   const asPsia=value=>match.loadUnit==='psia'?value:value*0.1450377377;
+   display.append(element('p','Logged '+Math.round(match.rpm)+' RPM · '+asPsia(match.load).toFixed(2)+' PSIA. The original source axis uses '+(match.loadUnit==='psia'?'PSIA':'kPa absolute converted to PSIA for display')+'.'));
    const table=element('table');table.className='signal-cal-cell-table';
-   const head=element('tr');for(const title of ['RPM axis','Absolute MAP axis','Original stored value','Revision stored value'])head.append(element('th',title));table.append(head);
+   const head=element('tr');for(const title of ['RPM axis','MAP (PSIA)','Original stored value','Revision stored value'])head.append(element('th',title));table.append(head);
    const alt=compare?verifyTable(compare.settings,state.binding):null;
    const comparable=alt&&!alt.error&&JSON.stringify(alt.rpm)===JSON.stringify(verdict.rpm)&&JSON.stringify(alt.load)===JSON.stringify(verdict.load);
    for(const cell of match.cells){
     const tr=element('tr');
     const current=comparable?alt.values[cell.index]:null;
-    for(const value of [cell.rpm,cell.load,cell.value,current===null?'Not verified / mismatched axes':current])tr.append(element('td',value));
+    for(const value of [cell.rpm,asPsia(cell.load).toFixed(2),cell.value,current===null?'Not verified / mismatched axes':current])tr.append(element('td',value));
     table.append(tr);
    }
    display.append(table);display.append(element('p',match.note));
