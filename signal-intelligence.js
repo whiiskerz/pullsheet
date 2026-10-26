@@ -473,7 +473,7 @@ function detectWotSessions(d,context){
    if(ok(seconds)){if(seconds<=early)earlyLean++;else lateLean++;}
   }
   const elapsedVerified=rt.verified&&ok(duration);
-  const pressureMedian=median(pressures),pressureMin=pressures.length?Math.min(...pressures):NaN;
+  const pressureMedian=median(pressures),pressureMin=pressures.length?pressures.reduce((m,v)=>Math.min(m,v),Infinity):NaN;
   const relativeDrop=ok(pressureMedian)&&pressureMedian>0?(pressureMedian-pressureMin)/pressureMedian:NaN;
   const gearChanges=entryGear?gears.filter((g,i)=>i&&g!==gears[i-1]).length:NaN;
   const entryObserved=a>0&&ok(get('tps',a-1))&&get('tps',a-1)<80;
@@ -500,12 +500,12 @@ function detectWotSessions(d,context){
   const status=lean.length||ok(relativeDrop)&&relativeDrop>.15||fuelCutSamples.length?'REVIEW':
     completeness.duration&&completeness.lambda&&completeness.speed&&completeness.gear?'CHANNELS PRESENT':'LIMITED DATA';
   sessions.push({
-   a,b,count,duration,elapsedVerified,startRpm,endRpm,maxRpm:Math.max(...rpms),minRpm:Math.min(...rpms),
+   a,b,count,duration,elapsedVerified,startRpm,endRpm,maxRpm:rpms.reduce((m,v)=>Math.max(m,v),-Infinity),minRpm:rpms.reduce((m,v)=>Math.min(m,v),Infinity),
    startMph,endMph,peakThrottle:maxThrottle,gearChanges,entryObserved,
-   ethanolMin:ethanols.length?Math.min(...ethanols):NaN,ethanolMax:ethanols.length?Math.max(...ethanols):NaN,
+   ethanolMin:ethanols.length?ethanols.reduce((m,v)=>Math.min(m,v),Infinity):NaN,ethanolMax:ethanols.length?ethanols.reduce((m,v)=>Math.max(m,v),-Infinity):NaN,
    coolantF:median(coolants),validLambda:afr.length,leanCount:lean.length,richCount:rich.length,
-   earlyLean,lateLean,peakLean:lean.length?Math.max(...lean.map(x=>x.error)):NaN,
-   peakRich:rich.length?Math.min(...rich.map(x=>x.error)):NaN,
+   earlyLean,lateLean,peakLean:lean.length?lean.reduce((m,x)=>Math.max(m,x.error),-Infinity):NaN,
+   peakRich:rich.length?rich.reduce((m,x)=>Math.min(m,x.error),Infinity):NaN,
    peakLeanSample:lean.length?lean.reduce((x,y)=>y.error>x.error?y:x):null,
    pressureMinPsi:pressureMin,pressureMedianPsi:pressureMedian,pressureDropRatio:relativeDrop,
    fuelCutCount:fuelCutSamples.length,wotState,status,cautions,completeness,
@@ -547,7 +547,7 @@ function renderWotSessions(area,d,result,selectEvent){
    const rows=sessions.map(p=>[
     p.a+1,p.b+1,p.count,ok(p.duration)?format(p.duration,3):'',format(p.startRpm,0),
     format(p.endRpm,0),ok(p.startMph)?format(p.startMph,2):'',ok(p.endMph)?format(p.endMph,2):'',
-    format(p.peakThrottle),p.validLambda,p.leanCount,p.earlyLean,p.lateLean,p.richCount,
+    format(p.peakThrottle),p.validLambda,p.leanCount,p.elapsedVerified?p.earlyLean:'',p.elapsedVerified?p.lateLean:'',p.richCount,
     ok(p.pressureMinPsi)?format(p.pressureMinPsi,2):'',
     ok(p.pressureMedianPsi)?format(p.pressureMedianPsi,2):'',ok(p.coolantF)?format(p.coolantF,1):'',
     ok(p.ethanolMin)?format(p.ethanolMin,1):'',ok(p.ethanolMax)?format(p.ethanolMax,1):'',
