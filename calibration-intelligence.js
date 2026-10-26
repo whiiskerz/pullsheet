@@ -141,6 +141,38 @@ function eventInventory(log,goal){
   note:(goal==='idle'?'Idle windows must be matched only to verified idle-control tables. ':'')+
    result.events.length+' flagged full-log events, '+focused.length+' in the selected workflow. Event-to-table links require separate manual axis verification.'};
 }
+function protectionEvidence(d){
+ if(!d||!Array.isArray(d.rpm))return {error:'No current engine log is loaded. Protection settings can still be inspected as raw XML.'};
+ const mapped=key=>Number.isInteger(d.sourceColumns?.[key])&&d.sourceColumns[key]>=0;
+ const at=(key,i)=>Array.isArray(d[key])?num(d[key][i]):NaN;
+ const units=root.RawestSignalUnits;
+ const oilInfo=units?.describe(d,'oilPress')||null,fuelInfo=units?.describe(d,'fuelPress')||null;
+ let rpmSamples=0,loadSamples=0,knockCount=0,warningCount=0,maxCoolant=-Infinity,minOilPsi=Infinity,minFuelPsi=Infinity;
+ for(let i=0;i<d.rpm.length;i++){
+  const rpm=at('rpm',i),tps=at('tps',i);
+  if(!finite(rpm)||rpm<800)continue;rpmSamples++;
+  const f=finite(at('coolantF',i))?at('coolantF',i):units?.fahrenheitFromC(at('coolant',i));
+  if(finite(f))maxCoolant=Math.max(maxCoolant,f);
+  if(mapped('knock')&&at('knock',i)>0)knockCount++;
+  if(mapped('warnings')&&at('warnings',i)>0)warningCount++;
+  if(!(rpm>=1500&&finite(tps)&&tps>=40))continue;loadSamples++;
+  const fuel=at('fuelPress',i),oil=at('oilPress',i);
+  if(fuelInfo?.canShowPsi&&finite(fuel)&&fuel>0)minFuelPsi=Math.min(minFuelPsi,fuelInfo.psi(fuel));
+  if(oilInfo?.canShowPsi&&finite(oil)&&oil>0)minOilPsi=Math.min(minOilPsi,oilInfo.psi(oil));
+ }
+ const minOrNull=x=>x===Infinity?null:x,maxOrNull=x=>x===-Infinity?null:x;
+ const notes=[
+  'Operating samples (RPM ≥800): '+rpmSamples+'; loaded samples (RPM ≥1,500, TPS ≥40%): '+loadSamples+'.',
+  'Highest logged coolant temperature while running: '+(maxCoolant>-Infinity?maxCoolant.toFixed(1)+' °F':'not available')+'. Verify coolant sensor calibration.',
+  'Lowest positive fuel pressure in loaded samples: '+(minFuelPsi<Infinity?minFuelPsi.toFixed(1)+' PSI':'PSI unavailable / no valid loaded samples')+'. Verify input scale, regulator reference and expected behavior.',
+  'Lowest positive oil pressure in loaded samples: '+(minOilPsi<Infinity?minOilPsi.toFixed(1)+' PSI':'PSI unavailable / no valid loaded samples')+'. Verify pressure sensor and warm-oil operation.',
+  mapped('knock')?knockCount+' running sample(s) with a positive mapped knock signal. Signal meaning and protection strategy unverified.':'Knock input is not confidently mapped; detection status cannot be determined.',
+  mapped('warnings')?warningCount+' running sample(s) with a positive mapped ECU warning. A zero reading does not prove protections were enabled.':'ECU warning input is not confidently mapped; detection status cannot be determined.',
+  'These are recorded observations—not verified configured protection limits or proof of intervention. Never infer protection engagement from XML keywords.'
+ ];
+ return {rpmSamples,loadSamples,knockCount:mapped('knock')?knockCount:null,warningCount:mapped('warnings')?warningCount:null,
+  maxCoolantF:maxOrNull(maxCoolant),minFuelPsi:minOrNull(minFuelPsi),minOilPsi:minOrNull(minOilPsi),notes};
+}
 function element(tag,value,cls){
  const e=document.createElement(tag);
  if(value!==undefined&&value!==null)e.textContent=text(value);
@@ -261,6 +293,12 @@ function render(host,original,compare,log,goal){
   search.oninput=drawChanges;drawChanges();
  }
  function drawProtections(){
+  const evidence=protectionEvidence(log);
+  const logPanel=element('section');logPanel.className='signal-cal-selection';
+  logPanel.append(element('h4','ENGINE PROTECTION EVIDENCE · CURRENT LOG'));
+  if(evidence.error)logPanel.append(element('p',evidence.error));
+  else{const ul=element('ul');for(const note of evidence.notes)ul.append(element('li',note));logPanel.append(ul);}
+  content.append(logPanel);
   const keys=[...settings.keys()].filter(key=>classifyKey(key)==='protection');
   content.append(element('p','These are keyword-matched settings. A setting name alone does NOT establish whether protection is enabled, configured, or triggered. Check the actual ECU strategy in MTune and the corresponding log state.'));
   const list=element('div');content.append(list);
@@ -339,5 +377,5 @@ function render(host,original,compare,log,goal){
  }
  drawPane();host.append(area);
 }
-root.RawestCalibrationIntelligence={parseVector,verifyAxis,verifyTable,mapEvent,diffSettings,classifyKey,candidateKeys,eventInventory,render,version:'3.0.0'};
+root.RawestCalibrationIntelligence={parseVector,verifyAxis,verifyTable,mapEvent,diffSettings,classifyKey,candidateKeys,eventInventory,protectionEvidence,render,version:'3.0.0'};
 })(typeof window!=='undefined'?window:globalThis);
