@@ -196,6 +196,12 @@ function plan(){
  const standout=[...sorted].filter(x=>Math.abs(x.meanLambdaRatioErrorPct)>=1).sort((a,b)=>Math.abs(b.meanLambdaRatioErrorPct)-Math.abs(a.meanLambdaRatioErrorPct)).slice(0,3);
  const near=sorted.filter(x=>Math.abs(x.meanLambdaRatioErrorPct)<=3);
  const prettyBand=x=>x.rpmBand[0].toLocaleString()+' to '+x.rpmBand[1].toLocaleString()+' RPM';
+ const intelligence=typeof window!=='undefined'&&window.RawestSignalIntelligence&&d?window.RawestSignalIntelligence.analyze(d,{pressureUnit}):null;
+ const smartEvents=intelligence&&!intelligence.error?intelligence.events:null;
+ const smartEventLine=e=>[e.priority+' '+e.kind,'rows '+(e.a+1)+'-'+(e.b+1),e.count+' samples',Number.isFinite(e.duration)?e.duration.toFixed(2)+' seconds':'duration unknown',Math.round(e.rpm)+' RPM',Number(e.tps).toFixed(1)+'% TPS',e.context].join(' | ');
+ const knockTracked=d&&Number.isInteger(d.sourceColumns?.knock)&&d.sourceColumns.knock>=0;
+ const warningsTracked=d&&Number.isInteger(d.sourceColumns?.warnings)&&d.sourceColumns.warnings>=0;
+
  const plain=[
   'RAWEST SIGNAL — '+label+' report',
   '',
