@@ -70,7 +70,9 @@ function dyno(){
  out.innerHTML=card(status+' · Road-load wheel-power estimate','Peak '+fmt(peak.hp,0)+' hp at '+fmt(peak.rpm,0)+' RPM. Window '+fmt(span*scale,1)+' s; '+power.length+' acceleration samples. '+(flags.length?'Limitations: '+flags.join('; ')+'. ':'')+'Assumes level road, calibrated speed, known mass, no wheelspin and accurate timebase. Not a certified dyno. No automatic tune edits. This calculation does not verify ignition, fueling or mechanical safety.');
 }
 function plan(){
- const goal=$('aiGoal').value,d=typeof lastParsed!=='undefined'?lastParsed:null;
+ const goal=$('aiGoal').value,loaded=typeof lastParsed!=='undefined'?lastParsed:null;
+ const sameLambdaColumn=loaded&&Number.isInteger(loaded.sourceColumns?.lambda)&&loaded.sourceColumns.lambda>=0&&loaded.sourceColumns.lambda===loaded.sourceColumns?.targetLambda;
+ const d=sameLambdaColumn?{...loaded,lambda:[],channelWarnings:[...(loaded.channelWarnings||[]),'Actual lambda and target lambda use the same log column. Fueling evaluation is disabled until I/O Config is fixed.']}:loaded;
  const tune=workspace.original;
  const targets={
  launch:['Launch input activation','Launch target / limiter conditions','Gear and speed conditions','Shift-cut and engine protection'],
