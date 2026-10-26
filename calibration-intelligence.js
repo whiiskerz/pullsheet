@@ -119,8 +119,11 @@ function classifyKey(name){
  if(/(?:idle|iac|stall|crank|warmup|startup)/i.test(n))return 'idle';
  return 'other';
 }
+const candidateCache=new WeakMap();
 function candidateKeys(settings,role){
  if(!settings)return [];
+ const cached=candidateCache.get(settings)||{};
+ if(cached[role])return cached[role];
  const output=[];
  for(const [key] of settings){
   const p=parseVector(settings,key,role==='values'?4:2,role==='values'?4096:128);
@@ -128,7 +131,9 @@ function candidateKeys(settings,role){
   if(role!=='values'&&!strictlyIncreasing(p.vector))continue;
   output.push({key,n:p.vector.length});
  }
- return output.sort((a,b)=>a.key.localeCompare(b.key));
+ const sorted=output.sort((a,b)=>a.key.localeCompare(b.key));
+ cached[role]=sorted;candidateCache.set(settings,cached);
+ return sorted;
 }
 function eventInventory(log,goal){
  const engine=root.RawestSignalIntelligence;
@@ -168,6 +173,7 @@ function protectionEvidence(d){
   'Lowest positive oil pressure in loaded samples: '+(minOilPsi<Infinity?minOilPsi.toFixed(1)+' PSI':'PSI unavailable / no valid loaded samples')+'. Verify pressure sensor and warm-oil operation.',
   mapped('knock')?knockCount+' running sample(s) with a positive mapped knock signal. Signal meaning and protection strategy unverified.':'Knock input is not confidently mapped; detection status cannot be determined.',
   mapped('warnings')?warningCount+' running sample(s) with a positive mapped ECU warning. A zero reading does not prove protections were enabled.':'ECU warning input is not confidently mapped; detection status cannot be determined.',
+  d.sourceFormat==='holley'?'Holley source logged: telemetry context only; MaxxECU-specific table and protection meanings cannot be inferred.':'MaxxECU log channels still require sensor configuration and engine protection settings to be verified in MTune.',
   'These are recorded observations—not verified configured protection limits or proof of intervention. Never infer protection engagement from XML keywords.'
  ];
  return {rpmSamples,loadSamples,knockCount:mapped('knock')?knockCount:null,warningCount:mapped('warnings')?warningCount:null,
