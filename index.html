@@ -3023,7 +3023,9 @@ function parseHolleyLog(lines,headers){
     headers,
     rows,
     rowCount:rows.length,
-    sourceFormat:'holley'
+    sourceFormat:'holley',
+    sourceColumns:colIdx,
+    channelWarnings:[]
   };
 
   for(const k in want)out[k]=[];
