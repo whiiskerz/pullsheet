@@ -1278,13 +1278,12 @@ html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),tr
   <div id="detectedChannels" class="detected" style="display:none"></div>
 
   <div class="configNote">
-    <b>Conversions:</b>
-    Fuel pressure = KPA → PSI.
-    Oil pressure = BAR → PSI.
-    Temperature = °C → °F.
-    TPS/Ethanol = %.
-    Battery = V.
-    Speed = km/h → mph.
+    <b>US display units:</b>
+    Fuel and oil pressure = PSI (only when the original input scale is verified).
+    Coolant and transmission temperature = °F.
+    Vehicle speed = mph.
+    Weight = lb.
+    ECU source units can differ; verify pressure sensor calibration before converting.
   </div>
 
 </section>
@@ -1432,7 +1431,7 @@ html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),tr
 </div><select id="aiGoal" style="display:none" aria-label="Selected tuning goal"><option value="idle">Idle / cam</option><option value="cruise">Cruise fueling</option><option value="wot">WOT fueling</option><option value="transient">Throttle tip-in</option><option value="spark">Ignition / knock</option><option value="flex" selected>Flex fuel</option><option value="launch">Launch / 2-step</option><option value="exhaust">Overrun / exhaust</option></select><div class="ps-controls" style="margin-top:14px"><button class="ps-btn" id="aiPlanBtn" type="button">Build evidence report</button><button class="ps-btn secondary" id="aiAnalyzeBtn" type="button">Run safety check</button></div><div id="aiPlanResult" class="ps-output"></div><div id="aiFindings" class="ps-output" aria-live="polite"></div></div>
 <div class="ps-panel"><div class="ps-kicker">EVENT EXPLORER / LIVE LOG VIEW</div><h3>Find the moments that matter</h3><p>Filter the currently loaded log for operating conditions and inspect actual recorded rows. This is raw sample inspection, not proof of knock severity or a tuning correction.</p><div class="ps-controls"><label>Event<select id="aiEventFilter"><option value="all">All valid RPM samples</option><option value="idle">Idle · RPM 500–1200 / TPS ≤10%</option><option value="cruise">Cruise · RPM ≥1200 / TPS 10–40%</option><option value="load">Under load · RPM ≥1500 / TPS ≥40%</option><option value="wot">WOT candidate · RPM ≥2000 / TPS ≥80%</option><option value="knock">Knock indication positive</option><option value="warning">ECU warning positive</option><option value="lean">Measured lambda above target</option></select></label><label>Maximum rows<select id="aiEventLimit"><option value="50">50</option><option value="150">150</option><option value="500">500</option></select></label><button id="aiInspectEvents" type="button" class="ps-btn">Inspect events</button><button id="aiDownloadEvents" type="button" class="ps-btn secondary">Export filtered CSV</button></div><div id="aiEventStatus" class="ps-output" aria-live="polite">Load a log in Analyze, then inspect it here.</div><div id="aiEventTable" class="ps-table"></div></div>
 <div class="ps-grid"><div class="ps-panel"><h3>Calibration explorer</h3><p>Goal categories are search hints, not confirmation of a MaxxECU table's purpose. Never apply changes from keyword matches alone.</p><div class="ps-controls"><label style="flex:1;min-width:140px">Find setting<input id="aiSettingSearch" type="search" placeholder="ethanol, launch, ignition, fuel…"></label><label>View<select id="aiDiffFilter"><option value="all">All matching</option><option value="changed">Changed only</option></select></label></div><div id="aiTuneStatus" class="ps-output"></div><div id="aiTuneBrowser" class="ps-table"></div><button class="ps-btn secondary" id="aiExportDiff" type="button">Export comparison JSON</button></div><div class="ps-panel"><h3>Inspection checklist</h3><div id="aiSafetyChecklist" class="ps-output"></div><details><summary>What this app will not do</summary><p>It will not invent ECU-ready files, auto-flash, certify ignition/fuel settings, or prescribe flame/afterfire calibration. Verify hardware, calibration units and actual MTune settings before any changes.</p></details></div></div>
-<div class="ps-panel"><details><summary>Experimental virtual dyno · advanced tools</summary><p>Estimate from existing logged acceleration only. VSS/timebase, mass, gearing and converter slip determine reliability. Do not make unsafe or illegal road pulls for this tool.</p><div class="ps-controls"><label>Vehicle mass incl. driver (kg)<input id="aiMass" type="number" min="500" max="5000" value="1650"></label><label>CdA (m²)<input id="aiCda" type="number" step=".01" value=".70"></label><label>Rolling coefficient<input id="aiCrr" type="number" step=".001" value=".012"></label><label>Drive<select id="aiDrive"><option>RWD</option><option>AWD</option><option>4WD</option></select></label><label>Transmission<select id="aiGear"><option>Automatic</option><option>Manual</option></select></label><label>Converter lock confirmed <input type="checkbox" id="aiLocked"></label></div><div class="ps-controls"><button class="ps-btn secondary" id="aiDynoBtn" type="button">Calculate estimate</button></div><div id="aiDynoResult" class="ps-output"></div></details></div>
+<div class="ps-panel"><details><summary>Experimental virtual dyno · advanced tools</summary><p>Estimate from existing logged acceleration only. VSS/timebase, mass, gearing and converter slip determine reliability. Do not make unsafe or illegal road pulls for this tool.</p><div class="ps-controls"><label>Vehicle weight incl. driver (lb)<input id="aiMass" type="number" min="1100" max="11000" step="1" value="3650"></label><label>Drag area, CdA (ft²)<input id="aiCda" type="number" step=".1" value="7.5"></label><label>Rolling coefficient<input id="aiCrr" type="number" step=".001" value=".012"></label><label>Drive<select id="aiDrive"><option>RWD</option><option>AWD</option><option>4WD</option></select></label><label>Transmission<select id="aiGear"><option>Automatic</option><option>Manual</option></select></label><label>Converter lock confirmed <input type="checkbox" id="aiLocked"></label></div><div class="ps-controls"><button class="ps-btn secondary" id="aiDynoBtn" type="button">Calculate estimate</button></div><div id="aiDynoResult" class="ps-output"></div></details></div>
 </div></section>
 <section id="view-about" class="view">
 
@@ -7076,8 +7075,9 @@ renderHistory();
 
 </script>
 
-<script src="signal-intelligence.js?v=2.7.0"></script>
-<script src="ai-tuner.js?v=2.7.0"></script>
+<script src="signal-units.js?v=2.8.0"></script>
+<script src="signal-intelligence.js?v=2.8.0"></script>
+<script src="ai-tuner.js?v=2.8.0"></script>
 <script>
 document.addEventListener('DOMContentLoaded',()=>{
  document.getElementById('signalChooseLog')?.addEventListener('click',()=>document.getElementById('fileInput')?.click());
