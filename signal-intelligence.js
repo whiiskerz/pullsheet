@@ -57,7 +57,7 @@ function analyze(d,options){
  const signals={};
  for(const name of Object.keys(entries))signals[name]=read(d,entries[name]);
  const correctionValues=(signals.correction||[]).filter(ok);
- const correctionObservedEdge=correctionValues.length>=25?Math.max(...correctionValues.map(Math.abs)):NaN;
+ const correctionObservedEdge=correctionValues.length>=25?correctionValues.reduce((m,v)=>Math.max(m,Math.abs(v)),0):NaN;
  const get=(k,i)=>{const a=signals[k];return Array.isArray(a)&&i>=0&&i<a.length?a[i]:NaN;};
  const dv=(k,i)=>{const a=d[k];return Array.isArray(a)&&i>=0&&i<a.length?a[i]:NaN;};
  const time=timebase(d);
