@@ -65,7 +65,8 @@ function analyze(d,options){
  let pressureUnit=(options.pressureUnit||'auto').toLowerCase();
  if(pressureUnit==='auto'){
   const fromName=String(unitHeader||'').match(/[\[(](kpa|bar|psi)[\])]/i);
-  pressureUnit=fromName?fromName[1].toLowerCase():'unknown';
+  const holleyDeclared=d.sourceFormat==='holley'?String(d.sourceUnits?.fuelPress||'').toLowerCase():'';
+  pressureUnit=/^(kpa|bar|psi)$/.test(holleyDeclared)?holleyDeclared:(fromName?fromName[1].toLowerCase():'unknown');
  }
  const pressureFactor=pressureUnit==='kpa'?.1450377377:pressureUnit==='bar'?14.5037738:pressureUnit==='psi'?1:null;
  const pressures=(d.fuelPress||[]).filter((v,i)=>ok(v)&&dv('rpm',i)>800&&dv('tps',i)>=15&&v>0);
