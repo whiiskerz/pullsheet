@@ -349,7 +349,7 @@ function render(host,d,opts){
   metrics.append(c);
  }
  area.append(metrics);
- const paragraph=element('p','Prioritized by relative severity, observed load, persistence and control context—not simply sample count. An ECU correction channel being nonzero does not prove the mixture was safely corrected.');
+ const paragraph=element('p','Priority labels are diagnostic triage, NOT confidence percentages or a safety score. High-throttle lean events remain worth investigating even if they recover. MaxxECU can freeze lambda correction during throttle changes; a nonzero signal does not prove active feedback.');
  paragraph.style.cssText='font-size:12px;opacity:.85';area.append(paragraph);
  const controls=element('div');controls.style.cssText='display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:12px 0';
  const filter=element('select');filter.setAttribute('aria-label','Filter diagnostic findings');
@@ -363,7 +363,9 @@ function render(host,d,opts){
  renderComparison(area,d,result);
  const list=element('div');area.append(list);
  const detail=element('div');detail.style.cssText='margin:15px 0 0';area.append(detail);
+ let activeChart=null;
  function selectEvent(e){
+  if(activeChart){activeChart.destroy();activeChart=null;}
   detail.replaceChildren();
   const h=element('h4','EVENT INSPECTOR — rows '+(e.a+1)+'–'+(e.b+1));detail.append(h);
   if(e.possibleCorrectionLimit)detail.append(element('p','Correction signal repeatedly approached the observed absolute extreme ('+format(e.correctionObservedEdge,1)+' raw). Verify the actual correction limit and sign convention in MTune; this alone is not proof the ECU is maxed out.'));
@@ -371,6 +373,39 @@ function render(host,d,opts){
   if(e.trimAppearsHeld)detail.append(element('p','Lambda corr A remained unchanged across a substantial part of this event ('+e.longestHeldRun+' consecutive readings). A held correction is possible but not confirmed.'));
   const facts=element('p',e.context+' | '+e.count+' samples'+(ok(e.duration)?' | approximately '+format(e.duration,2)+' seconds':' | duration unverified')+' | '+e.confidence+' confidence');
   facts.style.cssText='line-height:1.6;font-size:13px';detail.append(facts);
+  if(typeof window!=='undefined'&&window.Chart){
+   const wrap=element('div');wrap.style.cssText='height:240px;margin:15px 0 8px;position:relative;border:1px solid var(--line);border-radius:10px;padding:8px';
+   const canvas=element('canvas');wrap.append(canvas);detail.append(wrap);
+   const labels=[],actual=[],target=[],throttle=[];
+   const start=Math.max(0,e.a-10),end=Math.min(result.n-1,e.b+12);
+   const stride=Math.max(1,Math.ceil((end-start+1)/100));
+   for(let i=start;i<=end;i+=stride){
+    const at=(key)=>Array.isArray(d[key])?d[key][i]:NaN;
+    labels.push(result.time.verified&&ok(at('runtime'))?format(at('runtime')-d.runtime[e.a],2)+'s':'#'+(i+1));
+    actual.push(ok(at('lambda'))&&at('lambda')>.5&&at('lambda')<1.5?at('lambda')*14.7:null);
+    target.push(ok(at('targetLambda'))&&at('targetLambda')>.5&&at('targetLambda')<1.5?at('targetLambda')*14.7:null);
+    throttle.push(ok(at('tps'))?at('tps'):null);
+   }
+   try{
+    activeChart=new window.Chart(canvas,{
+     type:'line',
+     data:{labels,datasets:[
+      {label:'Measured AFR',data:actual,borderColor:'#f17f83',backgroundColor:'#f17f83',pointRadius:0,tension:.12,spanGaps:false,yAxisID:'afr'},
+      {label:'Target AFR',data:target,borderColor:'#63cdb4',backgroundColor:'#63cdb4',pointRadius:0,borderDash:[5,4],tension:0,yAxisID:'afr'},
+      {label:'Throttle %',data:throttle,borderColor:'#e7b45e',backgroundColor:'#e7b45e',pointRadius:0,tension:.12,yAxisID:'tps'}
+     ]},
+     options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{color:'#cbd4d1',boxWidth:14,font:{size:10}}},tooltip:{mode:'index',intersect:false}},
+      scales:{
+       x:{ticks:{color:'#9da7a5',maxTicksLimit:8},grid:{color:'rgba(150,160,165,.08)'}},
+       afr:{type:'linear',position:'left',title:{display:true,text:'Gasoline-equivalent AFR',color:'#cbd4d1'},ticks:{color:'#cbd4d1'},grid:{color:'rgba(150,160,165,.12)'}},
+       tps:{type:'linear',position:'right',min:0,max:100,title:{display:true,text:'TPS %',color:'#cbd4d1'},ticks:{color:'#cbd4d1'},grid:{drawOnChartArea:false}}
+      }}
+    });
+   }catch(err){wrap.replaceChildren(element('p','Chart unavailable. Use the original sample table below.'));}
+   const subtitle=element('p','Event graph: actual vs target gasoline-equivalent AFR and throttle. A sample can reflect exhaust transport/wideband delay; the graph alone does not isolate a fuel-table error.');
+   subtitle.style.fontSize='11px';detail.append(subtitle);
+  }
   const table=element('table');table.style.cssText='width:100%;font-size:11px;display:block;overflow:auto;border-collapse:collapse';
   const columns=['Row','RPM','TPS %','MAP','AFR actual','AFR target','Fuel pressure','Lambda corr A','Corr state raw','Acc enrich','Fuel cut'];
   const th=element('tr');for(const k of columns){const cell=element('th',k);cell.style.cssText='padding:6px;text-align:left;border-bottom:1px solid var(--line)';th.append(cell);}table.append(th);
@@ -395,9 +430,9 @@ function render(host,d,opts){
   if(!shown.length)list.append(element('p','No events match this filter. That is not proof the engine is safe.'));
   for(const e of shown){
    const b=element('button');b.type='button';b.style.cssText='display:block;width:100%;text-align:left;margin:7px 0;padding:12px;border-radius:11px;border:1px solid var(--line);background:var(--panel);color:var(--text);cursor:pointer';
-   const head=element('strong',e.priority+' · '+e.kind+' · '+e.score+'/100 review score');
+   const head=element('strong',e.priority+' · '+e.kind);b.title='Heuristic review priority score '+e.score+'/100 — not a probability, safety rating or diagnostic confidence';
    b.append(head);
-   const desc=[e.count+' rows',ok(e.duration)?'~'+format(e.duration,2)+'s':'time unverified',format(e.rpm,0)+' RPM',format(e.tps)+'% TPS',ok(e.peakError)?format(e.peakError)+'% peak AFR deviation':null].filter(Boolean).join(' · ');
+   const desc=[e.count+' rows',ok(e.duration)?'~'+format(e.duration,2)+'s':'time unverified',format(e.rpm,0)+' RPM',format(e.tps)+'% TPS',ok(e.peakError)?format(e.peakError)+'% peak measured/target difference':null].filter(Boolean).join(' · ');
    const sub=element('div',desc);sub.style.cssText='font-size:12px;margin:5px 0';b.append(sub);
    const why=element('div',e.context);why.style.cssText='font-size:12px;opacity:.8';b.append(why);
    b.onclick=()=>selectEvent(e);list.append(b);
