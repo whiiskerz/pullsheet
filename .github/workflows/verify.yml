@@ -5,6 +5,12 @@ on:
       - 'index.html'
       - 'ai-tuner.js'
       - 'signal-intelligence.js'
+      - 'signal-brain.js'
+      - 'signal-units.js'
+      - 'calibration-intelligence.js'
+      - 'garage-beta.js'
+      - 'sw.js'
+      - 'manifest.json'
       - 'tests/**'
       - '.github/workflows/verify.yml'
   pull_request:
@@ -12,6 +18,12 @@ on:
       - 'index.html'
       - 'ai-tuner.js'
       - 'signal-intelligence.js'
+      - 'signal-brain.js'
+      - 'signal-units.js'
+      - 'calibration-intelligence.js'
+      - 'garage-beta.js'
+      - 'sw.js'
+      - 'manifest.json'
       - 'tests/**'
       - '.github/workflows/verify.yml'
 
@@ -27,5 +39,10 @@ jobs:
         run: |
           node --check ai-tuner.js
           node --check signal-intelligence.js
+          node --check signal-brain.js
+          node --check signal-units.js
+          node --check calibration-intelligence.js
+          node --check garage-beta.js
+          node --check sw.js
       - name: Validate mapping safety
         run: node --test tests/*.test.js
