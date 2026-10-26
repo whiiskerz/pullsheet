@@ -150,7 +150,20 @@ function plan(){
     if(count>=3){
      const middle=Math.floor((start+end)/2);
      const actual=val('lambda',middle),target=val('targetLambda',middle);
-     detective.push({kind:type.kind,start,end,count,rpm:val('rpm',middle),tps:val('tps',middle),actual,target,pressure:val('fuelPress',middle),time:val('runtime',middle)});
+     const before=Math.max(0,start-5),after=Math.min(n-1,end+5);
+     const tpsValues=Array.from({length:after-before+1},(_,j)=>val('tps',before+j)).filter(Number.isFinite);
+     const tpsSwing=tpsValues.length?Math.max(...tpsValues)-Math.min(...tpsValues):NaN;
+     const t0=val('runtime',start),t1=val('runtime',end);
+     // Runtime units differ by ECU/export. Do not claim seconds without verification.
+     const nextLambda=val('lambda',after),nextTarget=val('targetLambda',after);
+     const recovered=Number.isFinite(nextLambda)&&Number.isFinite(nextTarget)&&nextTarget>.5&&Math.abs(nextLambda/nextTarget-1)<=.05;
+     const context=type.kind==='LEAN'||type.kind==='RICH'
+       ?Number.isFinite(tpsSwing)&&tpsSwing>=8
+         ?'THROTTLE TRANSITION — possible transient fueling; verify corrections'
+         :recovered?'RETURNED TO TARGET — check elapsed time and corrections'
+         :'UNRESOLVED — verify duration, load and fuel corrections'
+       :'CHECK ECU SIGNAL DEFINITION';
+     detective.push({kind:type.kind,start,end,count,rpm:val('rpm',middle),tps:val('tps',middle),actual,target,pressure:val('fuelPress',middle),time:val('runtime',middle),runtimeDelta:Number.isFinite(t0)&&Number.isFinite(t1)?t1-t0:null,tpsSwing,context});
     }
     start=-1;
    };
@@ -165,6 +178,7 @@ function plan(){
   if(Number.isFinite(e.tps))bits.push(e.tps.toFixed(1)+'% TPS');
   if(Number.isFinite(e.actual)&&Number.isFinite(e.target))bits.push('measured '+(e.actual*14.7).toFixed(2)+' vs target '+(e.target*14.7).toFixed(2)+' gasoline-equivalent AFR');
   if(Number.isFinite(e.pressure))bits.push('fuel pressure '+pressureText(e.pressure));
+  bits.push(e.context);
   return bits.join(' | ');
  };
  const ratioAfr=ratio=>(14.7*ratio).toFixed(2);
@@ -187,7 +201,7 @@ function plan(){
   'Fuel pressure: '+mappedHeader('cfgFuel')+'; ethanol: '+mappedHeader('cfgEthanol')+'. Check original header units in I/O Config. Do not interpret raw pressure values as kPa or psi without verification.',
   '',
   'Event Detective — consecutive readings',
-  detective.length?'Found '+detective.length+' runs of at least 3 consecutive samples. These are sample sequences, not verified time durations; review throttle transitions and sensor accuracy.':'No runs of at least 3 consecutive qualifying lean/rich/knock/warning samples were identified. This does not prove the log is safe.',
+  detective.length?'Found '+detective.length+' runs of at least 3 consecutive samples. These are sample sequences, not verified time durations. Throttle transitions and recovery are screened, but fuel corrections, MAP and timebase must be verified before diagnosing a tune fault.':'No runs of at least 3 consecutive qualifying lean/rich/knock/warning samples were identified. This does not prove the log is safe.',
   ...detective.slice(0,8).map(eventLine),
   detective.length>8?'Plus '+(detective.length-8)+' additional runs.':'',
   '',
