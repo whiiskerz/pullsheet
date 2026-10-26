@@ -238,6 +238,16 @@ function plan(){
    'No automatic VE, spark or boost changes were inferred from these segments.',
    ''
   ]:[]),
+  ...(intelligence&&d&&typeof window!=='undefined'&&window.RawestSignalBrain?(()=>{
+   const coverage=window.RawestSignalBrain.buildHeatmap(d,intelligence);
+   return [
+    'RPM × MAP EVIDENCE HEATMAP',
+    coverage.error?'Evidence heatmap unavailable: '+coverage.error:
+     coverage.counts.operating+' mapped RPM/MAP samples, '+coverage.counts.screened+' screened lambda samples, '+coverage.adequate+' cells with at least '+coverage.minEvidence+' screened samples. This is NOT the ECU VE/fuel table.',
+    'The on-screen Diagnostic Brain lists event-specific hypotheses, observed support, contrary evidence and missing sensors. These are rules, not calibrated diagnosis probabilities.',
+    ''
+   ];
+  })():[]),
   'Significant events — ECU-aware screening',
   smartEvents?'In the selected '+label+' workflow: '+relevantEvents.length+' matching events. The full log has '+smartEvents.length+' events and '+intelligence.high+' higher-priority findings (regardless of selected workflow). Safety flags remain visible.':'Advanced event engine unavailable; falling back to sample runs.',
   ...(smartEvents?relevantEvents.slice(0,8).map(smartEventLine):detective.slice(0,8).map(eventLine)),
@@ -295,6 +305,20 @@ function plan(){
    window.RawestSignalIntelligence.render(container,d,{pressureUnit:pressureUnit,goal});
   }catch(err){
    const warning=document.createElement('p');warning.textContent='Signal Intelligence was unable to review this log: '+err.message;container.append(warning);
+  }
+ }
+ // Evidence heatmap and Diagnostic Brain reuse the same analyzed log. This is
+ // deterministic on-device triage, not a remote model or an ECU write action.
+ if(typeof window!=='undefined'&&window.RawestSignalBrain){
+  try{
+   const brainHost=document.createElement('div');
+   brainHost.id='aiSignalBrain';
+   container.append(brainHost);
+   window.RawestSignalBrain.render(brainHost,d,{report:intelligence,goal,pressureUnit});
+  }catch(err){
+   const warning=document.createElement('p');
+   warning.textContent='Signal Brain unavailable for this log: '+err.message;
+   container.append(warning);
   }
  }
  const fullText=document.createElement('details');fullText.className='signal-full-text-report';fullText.style.marginTop='18px';
