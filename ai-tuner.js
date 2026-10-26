@@ -382,7 +382,17 @@ function selectStudioGoal(goal){
  renderWorkspace();const plan=$('aiPlanResult');if(plan)plan.replaceChildren();
 }
 
-window.pullsheetAI={analyze,dyno,plan,renderWorkspace,refreshStudio};
+let studioLogIdentity=null;
+function onLogChanged(d){
+ if(studioLogIdentity!==d){
+  studioLogIdentity=d;
+  const report=$('aiPlanResult');if(report)report.replaceChildren();
+  const findings=$('aiFindings');if(findings)findings.replaceChildren();
+ }
+ refreshStudio();
+ renderEvents();
+}
+window.pullsheetAI={analyze,dyno,plan,renderWorkspace,refreshStudio,renderEvents,onLogChanged};
 document.addEventListener('DOMContentLoaded',()=>{
  $('aiAnalyzeBtn')?.addEventListener('click',analyze);
  $('aiDynoBtn')?.addEventListener('click',dyno);
