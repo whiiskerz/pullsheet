@@ -300,13 +300,13 @@ function renderComparison(area,d,result){
   note.style.fontSize='12px';output.append(note);
   const table=element('table');table.style.cssText='width:100%;font-size:12px;border-collapse:collapse';
   const head=element('tr');
-  for(const label of ['RPM bin','MAP bin','Before error','After error','Shift toward target','Sample coverage']){
+  for(const label of ['RPM band',result.mapInPsia?'MAP (PSIA)':'MAP (unknown)','Before error','After error','Shift toward target','Sample coverage']){
    const th=element('th',label);th.style.cssText='padding:6px;text-align:left;border-bottom:1px solid var(--line)';head.append(th);
   }
   table.append(head);
   for(const b of comparison.rows.slice(0,15)){
    const tr=element('tr');
-   const vals=[b.rpm+'–'+(b.rpm+499),b.map+'–'+(b.map+19)+' kPa',
+   const vals=[b.rpm+'–'+(b.rpm+499),(result.mapInPsia?(b.map*.1450377377).toFixed(1)+'–'+((b.map+19)*.1450377377).toFixed(1)+' PSIA':'MAP source units unverified'),
     format(b.before,2)+'%',format(b.after,2)+'%',(b.delta<0?'closer ':'farther ')+format(Math.abs(b.delta),2)+' pp',
     b.beforeN+' / '+b.afterN];
    for(const v of vals){const td=element('td',v);td.style.cssText='padding:6px;border-bottom:1px solid var(--line)';tr.append(td);}
@@ -490,13 +490,14 @@ function render(host,d,opts){
   const sampleToggle=element('summary','VIEW LOGGED SAMPLES · rows '+(Math.max(0,e.a-5)+1)+'–'+(Math.min(result.n-1,e.b+5)+1));samples.append(sampleToggle);
   const tableWrap=element('div');tableWrap.className='signal-event-table-wrap';samples.append(tableWrap);
   const table=element('table');table.className='signal-event-table';
-  const columns=['Row','RPM','TPS %',result.mapInPsia?'MAP PSIA':'MAP (unit unverified)','AFR actual','AFR target','Fuel PSI','Lambda corr A','Corr state raw','Acc enrich','Fuel cut'];
+  const columns=['Row','RPM','TPS %',result.mapInPsia?'MAP PSIA':'MAP (unit unverified)','AFR actual','AFR target','Fuel PSI','Coolant °F','Lambda corr A','Corr state raw','Acc enrich','Fuel cut'];
   const th=element('tr');for(const k of columns){const cell=element('th',k);cell.style.cssText='padding:6px;text-align:left;border-bottom:1px solid var(--line)';th.append(cell);}table.append(th);
   const lo=Math.max(0,e.a-5),hi=Math.min(result.n-1,e.b+5),stride=Math.max(1,Math.ceil((hi-lo+1)/35));
   for(let i=lo;i<=hi;i+=stride){
    const g=k=>Array.isArray(d[k])?d[k][i]:NaN,s=k=>result.signals[k]?.[i];
    const vals=[i+1,format(g('rpm'),0),format(g('tps')),result.mapInPsia?format(s('map')*.1450377377,2):'—',format(g('lambda')*14.7,2),format(g('targetLambda')*14.7,2),
     result.pressureInfo?.display(g('fuelPress'))||'PSI unavailable',
+    format(ok(g('coolantF'))?g('coolantF'):(root.RawestSignalUnits?.fahrenheitFromC(g('coolant'))??NaN),1),
     format(s('correction')),format(s('correctionState'),0),format(s('acceleration')),format(s('fuelCut'),0)];
    const tr=element('tr');if(i>=e.a&&i<=e.b)tr.style.background='rgba(255,180,70,.09)';
    for(const v of vals){const td=element('td',v);td.style.cssText='padding:5px;border-bottom:1px solid var(--line)';tr.append(td);}table.append(tr);
