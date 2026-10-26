@@ -360,8 +360,8 @@ function renderEvents(){
  const limit=Math.min(500,Math.max(1,Number($('aiEventLimit')?.value)||50));
  const ranked=($('aiEventFilter')?.value==='lean')?[...rows].sort((a,b)=>((d.lambda?.[b]/d.targetLambda?.[b])||0)-((d.lambda?.[a]/d.targetLambda?.[a])||0)):rows;
  const selected=ranked.slice(0,limit);
- status.textContent=rows.length+' matching samples out of '+d.rpm.length+' total · displaying '+selected.length+'. '+(pressureInfo?.canShowPsi?'Fuel pressure converted to PSI ('+pressureInfo.source+').':'Fuel PSI unavailable until the original sensor source scale is verified in the report.')+' Speed shown in mph. Select Lean to rank deviations.';
  const pressureInfo=window.RawestSignalUnits?.describe(d,'fuelPress');
+ status.textContent=rows.length+' matching samples out of '+d.rpm.length+' total · displaying '+selected.length+'. '+(pressureInfo?.canShowPsi?'Fuel pressure converted to PSI ('+pressureInfo.source+').':'Fuel PSI unavailable until the original sensor source scale is verified in the report.')+' Speed shown in mph. Select Lean to rank deviations.';
  const cols=[['runtime','Time'],['rpm','RPM'],['tps','TPS'],['lambda','Lambda'],['targetLambda','Target λ'],['fuelPress','Fuel PSI'],['ethanol','Ethanol %'],['knock','Knock signal'],['warnings','Warnings'],['gear','Gear'],['vss','Speed mph']];
  const table=document.createElement('table');const head=document.createElement('tr');
  for(const title of ['Row',...cols.map(x=>x[1])]){const th=document.createElement('th');th.textContent=title;head.append(th);}table.append(head);
