@@ -71,6 +71,7 @@ function dyno(){
 }
 function plan(){
  const goal=$('aiGoal').value,loaded=typeof lastParsed!=='undefined'?lastParsed:null;
+ const fuelingWorkflow=['flex','cruise','wot','transient','idle'].includes(goal);
  const sameLambdaColumn=loaded&&Number.isInteger(loaded.sourceColumns?.lambda)&&loaded.sourceColumns.lambda>=0&&loaded.sourceColumns.lambda===loaded.sourceColumns?.targetLambda;
  const d=sameLambdaColumn?{...loaded,lambda:[],channelWarnings:[...(loaded.channelWarnings||[]),'Actual lambda and target lambda use the same log column. Fueling evaluation is disabled until I/O Config is fixed.']}:loaded;
  const tune=workspace.original;
@@ -96,7 +97,7 @@ function plan(){
   changes:[],
   note:'No native MaxxECU tune was generated. No calibration values or cell indices are proposed without verified table schema, cell axes and log alignment.'
  };
- if(d&&finite(d.lambda)&&finite(d.targetLambda)){
+ if(fuelingWorkflow&&d&&finite(d.lambda)&&finite(d.targetLambda)){
   const x=samples(d).filter(x=>goal==='wot'?x.r>=2000&&x.t>=80:x.t>=15);
   const bins=new Map();for(const v of x){const k=Math.floor(v.r/500)*500;const b=bins.get(k)||[];b.push(v);bins.set(k,b);}
   proposal.evidence=[...bins].filter(([k,v])=>v.length>=15).map(([rpm,v])=>({rpmBand:[rpm,rpm+499],samples:v.length,meanLambdaRatioErrorPct:+(mean(v.map(x=>x.err))*100).toFixed(2),interpretation:'Diagnostic only; not a VE/fuel-table correction'}));
@@ -198,6 +199,8 @@ function plan(){
  const prettyBand=x=>x.rpmBand[0].toLocaleString()+' to '+x.rpmBand[1].toLocaleString()+' RPM';
  const intelligence=typeof window!=='undefined'&&window.RawestSignalIntelligence&&d?window.RawestSignalIntelligence.analyze(d,{pressureUnit}):null;
  const smartEvents=intelligence&&!intelligence.error?intelligence.events:null;
+ const workflow=intelligence&&!intelligence.error&&d?window.RawestSignalIntelligence.workflowInfo(d,intelligence,goal):null;
+ const relevantEvents=workflow?.events||null;
  const smartEventLine=e=>[e.priority+' '+e.kind,'rows '+(e.a+1)+'-'+(e.b+1),e.count+' samples',Number.isFinite(e.duration)?e.duration.toFixed(2)+' seconds':'duration unknown',Math.round(e.rpm)+' RPM',Number(e.tps).toFixed(1)+'% TPS',e.context].join(' | ');
  const knockTracked=d&&Number.isInteger(d.sourceColumns?.knock)&&d.sourceColumns.knock>=0;
  const warningsTracked=d&&Number.isInteger(d.sourceColumns?.warnings)&&d.sourceColumns.warnings>=0;
@@ -210,21 +213,22 @@ function plan(){
   '',
   'What I found',
   ...(d?.channelWarnings||[]).map(w=>'CHANNEL ERROR: '+w),
-  sorted.length?'I found differences between the air/fuel mixture your ECU requested and what the wideband measured in '+sorted.length+' RPM ranges. Positive percentages mean the measured mixture was leaner than target. These are averages, not proof of a bad fuel table.':'There were not enough valid, independently mapped actual and target lambda readings to assess fueling. Check I/O Config and the original log headers.',
-  standout.length?'The biggest average fueling differences were at '+standout.map(x=>prettyBand(x)+': '+Math.abs(x.meanLambdaRatioErrorPct).toFixed(1)+'% '+(x.meanLambdaRatioErrorPct>0?'lean':'rich')).join('; ')+'.':sorted.length?'No RPM band averaged 1% or more off target in the screened data. Confirm channel independence and sensor calibration before concluding that fueling is accurate.':'',
-  near.length?'The readings were closer to target around '+near.map(prettyBand).join(', ')+'.':'',
+  ...((workflow?.notes||[]).map(n=>'WORKFLOW: '+n)),
+  fuelingWorkflow?(sorted.length?'I found differences between measured and requested fueling in '+sorted.length+' RPM ranges; those averages do not prove a bad fuel table.':'There were not enough qualified, independent lambda readings to assess fueling in this workflow.'):'This workflow does NOT infer two-step, ignition or overrun calibration from generic lambda data. Global engine-safety findings are shown separately.',
+  fuelingWorkflow?(standout.length?'Largest RPM-band fueling differences: '+standout.map(x=>prettyBand(x)+': '+Math.abs(x.meanLambdaRatioErrorPct).toFixed(1)+'% '+(x.meanLambdaRatioErrorPct>0?'lean':'rich')).join('; ')+'.':''):'',
+  fuelingWorkflow&&near.length?'Readings were closer to target around '+near.map(prettyBand).join(', ')+'.':'',
   '',
   'Channel mapping',
   'Measured lambda: '+mappedHeader('cfgLambda')+'; target lambda: '+mappedHeader('cfgTargetLambda')+'.',
   'Fuel pressure: '+mappedHeader('cfgFuel')+'; ethanol: '+mappedHeader('cfgEthanol')+'. Check original header units in I/O Config. Do not interpret raw pressure values as kPa or psi without verification.',
   '',
   'Significant events — ECU-aware screening',
-  smartEvents?'Found '+smartEvents.length+' multi-sample events, including '+intelligence.high+' higher-priority findings. Priority labels are triage, not certainty or risk probabilities.':'Advanced event engine unavailable; falling back to sample runs.',
-  ...(smartEvents?smartEvents.slice(0,8).map(smartEventLine):detective.slice(0,8).map(eventLine)),
-  smartEvents&&smartEvents.length>8?'Plus '+(smartEvents.length-8)+' additional ranked events in the inspector.':!smartEvents&&detective.length>8?'Plus '+(detective.length-8)+' additional runs.':'',
+  smartEvents?'In the selected '+label+' workflow: '+relevantEvents.length+' matching events. The full log has '+smartEvents.length+' events and '+intelligence.high+' higher-priority findings (regardless of selected workflow). Safety flags remain visible.':'Advanced event engine unavailable; falling back to sample runs.',
+  ...(smartEvents?relevantEvents.slice(0,8).map(smartEventLine):detective.slice(0,8).map(eventLine)),
+  smartEvents&&relevantEvents.length>8?'Plus '+(relevantEvents.length-8)+' relevant events in the inspector.':!smartEvents&&detective.length>8?'Plus '+(detective.length-8)+' additional runs.':'',
   smartEvents?.some(e=>e.kind==='LEAN'&&e.highLoad&&e.negativeWhileLean)?'High-throttle lean and negative Lambda corr A overlap. MaxxECU can hold old correction during transients: verify closed-loop state, configured hold/deactivation behavior and feedback settings.':'',
   '',
-  'Sample-level checks',
+  fuelingWorkflow?'Sample-level checks':'Full-log fueling safety context (not evidence of '+label+' activation)',
   paired.length?'Of '+paired.length+' valid fueling readings: '+lean10.length+' were over 10% lean, and '+rich10.length+' were over 10% rich. For reference, lambda 1.00 = 14.7 gasoline-scale AFR, lambda 0.85 = 12.50, and lambda 0.80 = 11.76. These AFR numbers are gasoline-equivalent even on ethanol blends. Individual readings are not sustained events.':'There were no usable paired lambda readings in the selected operating filter.',
   pressureAtLean.length&&pressureAtOther.length?'Average fuel pressure: '+pressureText(mean(pressureAtLean))+' during lean readings versus '+pressureText(mean(pressureAtOther))+' during other readings. '+pressureNote+' Averages cannot rule out momentary pressure drops.':'Fuel pressure cannot be compared reliably against lean samples because paired pressure data is missing.',
   safetyRows.length?'Attention: '+safetyRows.length+' qualifying samples contained a positive knock or ECU-warning indication. Verify what those channels mean and investigate before loaded testing.':(knockTracked||warningsTracked)?'No positive indications appeared in the available mapped knock/warning channels. This does NOT confirm that knock detection and engine protection were active or calibrated.':'Knock and ECU warning channels are not mapped; the log cannot establish the absence of knock or protection events.',
@@ -253,7 +257,7 @@ function plan(){
  const summary=document.createElement('p');summary.textContent='Inspect prioritized events, AFR graphs, ECU corrections and next-log checks. Expand the full text report below or copy/download it.';container.append(summary);
  if(typeof window!=='undefined'&&window.RawestSignalIntelligence){
   try{
-   window.RawestSignalIntelligence.render(container,d,{pressureUnit:pressureUnit});
+   window.RawestSignalIntelligence.render(container,d,{pressureUnit:pressureUnit,goal});
   }catch(err){
    const warning=document.createElement('p');warning.textContent='Signal Intelligence was unable to review this log: '+err.message;container.append(warning);
   }
