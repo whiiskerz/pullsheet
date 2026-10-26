@@ -171,8 +171,16 @@ function analyze(d,options){
   }
  }
  events.sort((a,b)=>b.score-a.score||b.count-a.count||a.a-b.a);
+ const validPairCount=d.rpm.reduce((num,_,i)=>num+(validLambda(i)&&eligible(i)?1:0),0);
+ const wotCount=d.rpm.reduce((num,_,i)=>num+(dv('rpm',i)>=2000&&dv('tps',i)>=80?1:0),0);
+ const gates=[];
+ if(validPairCount<20)gates.push('Fueling review limited: fewer than 20 plausible actual/target lambda pairs in operating samples.');
+ if(events.some(e=>e.kind==='KNOCK'&&e.highLoad))gates.push('Under-load knock indicator seen. Verify the signal and engine protection before additional high-load testing.');
+ if(events.some(e=>e.kind==='LEAN'&&e.highLoad&&e.priority==='HIGH'))gates.push('Significant lean deviation with high throttle/elevated MAP. Investigate ECU corrections and fuel pressure before additional loaded testing.');
+ if(events.some(e=>e.kind==='PRESSURE DIP'))gates.push('Relative fuel-pressure drop was logged under load. Verify sensor calibration, pressure reference, and fuel-system response.');
+ if(!wotCount)gates.push('No WOT samples found; full-load fueling and spark are not evaluated.');
  const quality=[
-  {key:'Wideband',status:d.lambda?.some(ok)&&d.targetLambda?.some(ok)?'present':'missing',note:'Actual + target lambda'},
+  {key:'Wideband',status:validPairCount>=20?'usable':d.lambda?.some(ok)&&d.targetLambda?.some(ok)?'suspect':'missing',note:validPairCount+' valid actual/target lambda pairs in operating samples'},
   {key:'RPM / TPS',status:d.rpm?.some(ok)&&d.tps?.some(ok)?'present':'missing',note:'Operating condition'},
   {key:'MAP / load',status:entries.map.index>=0?'present':'missing',note:entries.map.name},
   {key:'Timebase',status:time.verified?'present':'unverified',note:time.why},
@@ -195,7 +203,7 @@ function analyze(d,options){
  if(events.some(e=>e.possibleCorrectionLimit))next.push('Check configured MaxxECU lambda-correction limits and when closed-loop correction is enabled. Observed trim endpoints are not proof of a configured clamp.');
  if(!next.length)next.push('Repeat a comparable warmed-up steady-state log; compare correction behavior at matched RPM and MAP.');
  return {version:'2.6.0',n,source:d.sourceFormat==='holley'?'Holley CSV':'MaxxECU log',time,quality,entries,signals,
-  pressureUnit,pressureFactor,pressureBaseline,events,next,high:events.filter(e=>e.priority==='HIGH').length,
+  pressureUnit,pressureFactor,pressureBaseline,events,next,gates,validPairCount,wotCount,high:events.filter(e=>e.priority==='HIGH').length,
   limitation:'Screening tool, not a calibration decision. Sample runs, ECU state flags, and pressure anomalies require sensor, unit and load verification.'};
 }
 // Before/after comparison uses matched RPM+MAP cells and records sample coverage.
@@ -308,6 +316,11 @@ function render(host,d,opts){
  title.style.margin='0 0 6px';area.append(title);
  if(result.error){area.append(element('p',result.error));host.append(area);return;}
  area.append(element('p',result.source+' · '+result.n.toLocaleString()+' rows · '+result.events.length+' multi-sample events · '+result.high+' higher-priority findings. Nothing here changes ECU settings.'));
+ if(result.gates.length){
+  const safety=element('div');safety.style.cssText='padding:12px;margin:12px 0;border:1px solid var(--line);border-left:3px solid #df9e4a;border-radius:9px';
+  safety.append(element('strong','SAFETY & EVIDENCE GATES'));
+  const ul=element('ul');for(const g of result.gates)ul.append(element('li',g));safety.append(ul);area.append(safety);
+ }
  const metrics=element('div');metrics.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin:12px 0';
  for(const item of result.quality){
   const c=element('span',item.key+': '+item.status);
