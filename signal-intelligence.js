@@ -388,7 +388,7 @@ function workflowInfo(d,result,goal){
  default:{
   const ethanol=(d.ethanol||[]).filter(Number.isFinite);
   if(ethanol.length){
-   const min=Math.min(...ethanol),max=Math.max(...ethanol);
+   let min=Infinity,max=-Infinity;for(const value of ethanol){if(value<min)min=value;if(value>max)max=value;}
    notes.push('Ethanol range '+min.toFixed(1)+'–'+max.toFixed(1)+'%. '+(max-min<10?'There is no large logged ethanol transition to validate flex-fuel interpolation.':'Compare correction behavior between verified ethanol blend conditions.'));
   }else notes.push('Ethanol-content channel unavailable: flex-fuel behavior cannot be checked.');
   notes.push('Fuel blending remains unverified without a confirmed fuel type, ethanol calibration and matching MTune blend tables.');
