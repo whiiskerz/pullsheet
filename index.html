@@ -3011,6 +3011,8 @@ function parseHolleyLog(lines,headers){
 
   for(const k in want)out[k]=[];
 
+  out.sourceUnits={fuelPress:unitOf('Fuel Pressure'),oilPress:unitOf('Oil Pressure'),transLinePress:unitOf('Line Pressure PSI')};
+
   for(const row of rows){
 
     for(const k in colIdx){
@@ -3035,14 +3037,14 @@ function parseHolleyLog(lines,headers){
 
   function pressureToPsiFactor(unit){
 
-    if(!unit)return 1;
+    if(!unit)return null;
 
     const u=unit.toLowerCase();
 
     if(u.includes('kpa'))return 0.145038;
     if(u.includes('bar'))return 14.5038;
 
-    return 1;
+    return u.includes('psi')?1:null;
 
   }
 
@@ -3050,11 +3052,11 @@ function parseHolleyLog(lines,headers){
 
     const factor=pressureToPsiFactor(unitOf('Fuel Pressure'));
 
-    out.fuelPressSourceUnit=factor===1?'psi':(factor>1?'bar':'kpa');
-
-    out.fuelPressPsi=out.fuelPress.map(v=>
-      Number.isFinite(v)?v*factor:NaN
-    );
+    out.fuelPressSourceUnit=factor===null?'unknown':(factor===1?'psi':(factor>1?'bar':'kpa'));
+    out.fuelPressConfidence=factor===null?'unknown':'declared-header-unit';
+    if(factor!==null){
+      out.fuelPressPsi=out.fuelPress.map(v=>Number.isFinite(v)?v*factor:NaN);
+    }
 
   }
 
@@ -3062,11 +3064,10 @@ function parseHolleyLog(lines,headers){
 
     const factor=pressureToPsiFactor(unitOf('Oil Pressure'));
 
-    out.oilPressSourceUnit=factor===1?'psi':(factor>1?'bar':'kpa');
-
-    out.oilPressPsi=out.oilPress.map(v=>
-      Number.isFinite(v)?v*factor:NaN
-    );
+    out.oilPressSourceUnit=factor===null?'unknown':(factor===1?'psi':(factor>1?'bar':'kpa'));
+    if(factor!==null){
+      out.oilPressPsi=out.oilPress.map(v=>Number.isFinite(v)?v*factor:NaN);
+    }
 
   }
 
@@ -3074,9 +3075,9 @@ function parseHolleyLog(lines,headers){
 
     const factor=pressureToPsiFactor(unitOf('Line Pressure PSI'));
 
-    out.transLinePressPsi=out.transLinePress.map(v=>
-      Number.isFinite(v)?v*factor:NaN
-    );
+    if(factor!==null){
+      out.transLinePressPsi=out.transLinePress.map(v=>Number.isFinite(v)?v*factor:NaN);
+    }
 
   }else{
 
