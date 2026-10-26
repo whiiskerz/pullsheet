@@ -1,4 +1,4 @@
-/* RAWEST SIGNAL Intelligence v3.1.0
+/* RAWEST SIGNAL Intelligence v3.2.0
    Deterministic, local-only diagnostics. Nothing writes an ECU calibration.
    A signal is never called "correcting" merely because a throttle moves. */
 (function(root){
@@ -224,7 +224,7 @@ function analyze(d,options){
  if(events.some(e=>e.possibleCorrectionLimit))next.push('Check configured MaxxECU lambda-correction limits and when closed-loop correction is enabled. Observed trim endpoints are not proof of a configured clamp.');
  if(events.some(e=>e.negativeWhileLean))next.push('Inspect MTune lambda-control transient deactivation (off/hold), reactivation delay, max negative/positive correction, and raw Lambda corr state during lean events.');
  if(!next.length)next.push('Repeat a comparable warmed-up steady-state log; compare correction behavior at matched RPM and MAP.');
- return {version:'3.1.0',n,source:d.sourceFormat==='holley'?'Holley CSV':'MaxxECU log',time,quality,entries,signals,
+ return {version:'3.2.0',n,source:d.sourceFormat==='holley'?'Holley CSV':'MaxxECU log',time,quality,entries,signals,
   pressureUnit,pressureFactor,pressureInfo,pressureBaseline,mapInPsia,events,wotSessions:detectWotSessions(d,{time,signals,pressureInfo}),next,gates,validPairCount,wotCount,high:events.filter(e=>e.priority==='HIGH').length,
   limitation:'Screening tool, not a calibration decision. Sample runs, ECU state flags, and pressure anomalies require sensor, unit and load verification.'};
 }
@@ -674,7 +674,7 @@ function render(host,d,opts){
  const result=analyze(d,opts),goal=opts?.goal||'flex',area=element('section');
  area.className='signal-intelligence';
  area.style.cssText='margin:24px 0;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--panel2);color:var(--text)';
- const title=element('h3','SIGNAL INTELLIGENCE · v3.1.0');
+ const title=element('h3','SIGNAL INTELLIGENCE · v3.2.0');
  title.style.margin='0 0 6px';area.append(title);
  if(result.error){area.append(element('p',result.error));host.append(area);return;}
  const workflow=workflowInfo(d,result,goal);
@@ -836,5 +836,5 @@ function render(host,d,opts){
  const ul=element('ul');for(const item of result.next)ul.append(element('li',item));coach.append(ul);
  coach.append(element('p',result.limitation));area.append(coach);
 }
-root.RawestSignalIntelligence={analyze,render,forGoal,workflowInfo,idleDiagnostics,detectWotSessions,version:'3.1.0'};
+root.RawestSignalIntelligence={analyze,render,forGoal,workflowInfo,idleDiagnostics,detectWotSessions,version:'3.2.0'};
 })(typeof window!=='undefined'?window:globalThis);
