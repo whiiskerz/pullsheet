@@ -148,7 +148,7 @@ function analyze(d,options){
   let a=-1;
   for(let i=0;i<=n;i++){
    const press=i<n?pressureAt(i):NaN;
-   const yes=i<n&&ok(press)&&press>0&&press<pressureBaseline*.8&&dv('rpm',i)>=1500&&dv('tps',i)>=30;
+   const yes=i<n&&ok(press)&&press>0&&press<pressureBaseline*.8&&dv('rpm',i)>=1500&&dv('tps',i)>=30&&!(ok(get('fuelCut',i))&&get('fuelCut',i)>0);
    if(yes&&a<0)a=i;
    if(!yes&&a>=0){
     if(i-a>=3){
@@ -172,7 +172,7 @@ function analyze(d,options){
   {key:'Correction state',status:entries.correctionState.index>=0?'present':'missing',note:entries.correctionState.name},
   {key:'Acceleration enrichment',status:entries.acceleration.index>=0?'present':'missing',note:entries.acceleration.name},
   {key:'Fuel cut',status:entries.fuelCut.index>=0?'present':'missing',note:entries.fuelCut.name},
-  {key:'Fuel pressure units',status:pressureFactor!==null?'verified selection':'unverified',note:pressureFactor!==null?pressureUnit:'Select original unit above; sensor calibration still needs checking'},
+  {key:'Fuel pressure units',status:pressureFactor!==null?(options.pressureUnit&&options.pressureUnit!=='auto'?'user-selected':'header-labeled'):'unverified',note:pressureFactor!==null?pressureUnit:'Select original unit above; sensor calibration still needs checking'},
   {key:'Knock indicator',status:d.knock?.some(ok)?'present':'missing',note:'Raw indicator; verify meaning'}
  ];
  const next=[];
@@ -317,6 +317,7 @@ function render(host,d,opts){
  const exportButton=element('button','Export findings CSV','ps-btn secondary');
  exportButton.type='button';controls.append(exportButton);
  area.append(controls);
+ renderComparison(area,d,result);
  const list=element('div');area.append(list);
  const detail=element('div');detail.style.cssText='margin:15px 0 0';area.append(detail);
  function selectEvent(e){
@@ -365,7 +366,6 @@ function render(host,d,opts){
   const url=URL.createObjectURL(new Blob([body],{type:'text/csv;charset=utf-8'})),a=element('a');a.href=url;a.download='rawest-signal-findings.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  };
  draw();
- renderComparison(area,d,result);
  const coach=element('details');coach.style.marginTop='18px';const sum=element('summary','NEXT LOG COACH · '+result.next.length+' checks');coach.append(sum);
  const ul=element('ul');for(const item of result.next)ul.append(element('li',item));coach.append(ul);
  coach.append(element('p',result.limitation));area.append(coach);
