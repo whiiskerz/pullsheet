@@ -1759,6 +1759,10 @@ function saveConfig(){
     const el=$(id);
     if(el){
       localStorage.setItem('logbook-'+id,el.value);
+      const index=manualIndex(el.value);
+      const name=index>=0?rawHeaders[index]:null;
+      if(name)localStorage.setItem('rawest-channel-'+id,name);
+      else localStorage.removeItem('rawest-channel-'+id);
     }
   });
 
@@ -1817,11 +1821,12 @@ function populateConfigOptions(headers){
 
     });
 
-    if([...el.options].some(o=>o.value===previous)){
-      el.value=previous;
-    }else{
-      el.value='auto';
-    }
+    const remembered=localStorage.getItem('rawest-channel-'+id);
+    const match=remembered?headers.findIndex(h=>String(h).trim().toLowerCase()===remembered.trim().toLowerCase()):-1;
+    if(match>=0)el.value='__INDEX__'+match;
+    else if(remembered)el.value='auto';
+    else if([...el.options].some(o=>o.value===previous))el.value=previous;
+    else el.value='auto';
 
     el.classList.toggle('selected',el.value!=='auto');
 
