@@ -1,4 +1,4 @@
-/* RAWEST SIGNAL Intelligence v2.6.3
+/* RAWEST SIGNAL Intelligence v2.6.4
    Deterministic, local-only diagnostics. Nothing writes an ECU calibration.
    A signal is never called "correcting" merely because a throttle moves. */
 (function(root){
@@ -223,7 +223,7 @@ function analyze(d,options){
  if(events.some(e=>e.possibleCorrectionLimit))next.push('Check configured MaxxECU lambda-correction limits and when closed-loop correction is enabled. Observed trim endpoints are not proof of a configured clamp.');
  if(events.some(e=>e.negativeWhileLean))next.push('Inspect MTune lambda-control transient deactivation (off/hold), reactivation delay, max negative/positive correction, and raw Lambda corr state during lean events.');
  if(!next.length)next.push('Repeat a comparable warmed-up steady-state log; compare correction behavior at matched RPM and MAP.');
- return {version:'2.6.3',n,source:d.sourceFormat==='holley'?'Holley CSV':'MaxxECU log',time,quality,entries,signals,
+ return {version:'2.6.4',n,source:d.sourceFormat==='holley'?'Holley CSV':'MaxxECU log',time,quality,entries,signals,
   pressureUnit,pressureFactor,pressureBaseline,events,next,gates,validPairCount,wotCount,high:events.filter(e=>e.priority==='HIGH').length,
   limitation:'Screening tool, not a calibration decision. Sample runs, ECU state flags, and pressure anomalies require sensor, unit and load verification.'};
 }
@@ -333,7 +333,7 @@ function render(host,d,opts){
  const result=analyze(d,opts),area=element('section');
  area.className='signal-intelligence';
  area.style.cssText='margin:24px 0;padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--panel2);color:var(--text)';
- const title=element('h3','SIGNAL INTELLIGENCE · v2.6.3');
+ const title=element('h3','SIGNAL INTELLIGENCE · v2.6.4');
  title.style.margin='0 0 6px';area.append(title);
  if(result.error){area.append(element('p',result.error));host.append(area);return;}
  area.append(element('p',result.source+' · '+result.n.toLocaleString()+' rows · '+result.events.length+' multi-sample events · '+result.high+' higher-priority findings. Nothing here changes ECU settings.'));
@@ -452,5 +452,5 @@ function render(host,d,opts){
  coach.append(element('p',result.limitation));area.append(coach);
  host.append(area);
 }
-root.RawestSignalIntelligence={analyze,render,version:'2.6.3'};
+root.RawestSignalIntelligence={analyze,render,version:'2.6.4'};
 })(typeof window!=='undefined'?window:globalThis);
