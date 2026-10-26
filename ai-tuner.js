@@ -222,6 +222,22 @@ function plan(){
   'Measured lambda: '+mappedHeader('cfgLambda')+'; target lambda: '+mappedHeader('cfgTargetLambda')+'.',
   'Fuel pressure sensor: '+mappedHeader('cfgFuel')+'; ethanol: '+mappedHeader('cfgEthanol')+'. Fuel pressure will only display in PSI after its original unit is confirmed.',
   '',
+  ...(goal==='wot'?[
+   'Pull Sessions — separate high-throttle runs',
+   intelligence?.wotSessions?.length
+    ? 'Detected '+intelligence.wotSessions.length+' continuous high-throttle segments of at least 8 samples. These are candidate runs, not proof of clean single-gear full-load testing.'
+    : 'No high-throttle segment had enough continuous samples to review as a run.',
+   ...((intelligence?.wotSessions||[]).slice(0,8).map((p,i)=>{
+    const mph=Number.isFinite(p.startMph)&&Number.isFinite(p.endMph)?p.startMph.toFixed(1)+'–'+p.endMph.toFixed(1)+' mph':'mph not logged';
+    const pressure=Number.isFinite(p.pressureMinPsi)?'minimum '+p.pressureMinPsi.toFixed(1)+' PSI (input source '+intelligence.pressureInfo?.source+')':'Fuel PSI unavailable';
+    const timing=Number.isFinite(p.duration)?'~'+p.duration.toFixed(2)+' s':'time unverified';
+    const pattern=p.elapsedVerified?p.earlyLean+' lean samples in first 0.5 s; '+p.lateLean+' later':'lean timing not verified';
+    return 'Run '+(i+1)+' | rows '+(p.a+1)+'–'+(p.b+1)+' | '+timing+' | '+Math.round(p.startRpm)+'–'+Math.round(p.endRpm)+' RPM | '+mph+' | '+p.leanCount+' over 10% lean, '+p.richCount+' over 10% rich | '+pattern+' | '+pressure+' | '+(Number.isFinite(p.gearChanges)?p.gearChanges+' logged gear transitions':'gear not verified')+'.';
+   })),
+   (intelligence?.wotSessions?.length||0)>8?'Additional runs are in the interactive Pull Sessions panel.':'',
+   'No automatic VE, spark or boost changes were inferred from these segments.',
+   ''
+  ]:[]),
   'Significant events — ECU-aware screening',
   smartEvents?'In the selected '+label+' workflow: '+relevantEvents.length+' matching events. The full log has '+smartEvents.length+' events and '+intelligence.high+' higher-priority findings (regardless of selected workflow). Safety flags remain visible.':'Advanced event engine unavailable; falling back to sample runs.',
   ...(smartEvents?relevantEvents.slice(0,8).map(smartEventLine):detective.slice(0,8).map(eventLine)),
