@@ -301,6 +301,7 @@ function plan(){
  unitSelect.value=pressureUnit;
  unitSelect.onchange=()=>{
   window.RawestSignalUnits?.save?.(window.RawestSignalUnits.mappedHeader(d,'fuelPress'),unitSelect.value);
+  garageController?.refresh?.(true);
   plan();
  };
  unitLabel.append(unitSelect);controls.append(unitLabel);
