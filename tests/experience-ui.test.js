@@ -10,12 +10,12 @@ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 
 test('the experience is wired to the real parser and caches offline',()=>{
- assert.match(html,/signal-experience\.css\?v=4\.0\.0/);
- assert.match(html,/signal-experience\.js\?v=4\.0\.0/);
+ assert.match(html,/signal-experience\.css\?v=4\.0\.1/);
+ assert.match(html,/signal-experience\.js\?v=4\.0\.1/);
  assert.match(html,/RawestSignalExperience\?\.showResults\?\.\(d,h,filename\)/);
  assert.match(html,/RawestSignalExperience\?\.clearResults\?\.\(\)/);
- assert.match(sw,/signal-experience\.css\?v=4\.0\.0/);
- assert.match(sw,/signal-experience\.js\?v=4\.0\.0/);
+ assert.match(sw,/signal-experience\.css\?v=4\.0\.1/);
+ assert.match(sw,/signal-experience\.js\?v=4\.0\.1/);
  assert.doesNotThrow(()=>new vm.Script(source));
 });
 test('new companion flags uncertain channels, explains evidence and can reset',()=>{
