@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="RAWEST SIGNAL">
 <meta name="theme-color" content="#100b21">
 <meta name="application-version" content="4.0.0">
-<title>RAWEST SIGNAL v4.0.0 — ECU Intelligence</title>
+<title>RAWEST SIGNAL v4.0.1 — ECU Intelligence</title>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
@@ -1061,8 +1061,8 @@ html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),tr
 .signal-step span{color:var(--dim)}
 @media(max-width:760px){.signal-home{grid-template-columns:1fr}.top{padding:12px}.wrap{width:min(100% - 18px,1450px)}.signal-home .signal-card{padding:18px}}
 </style>
-<link rel="stylesheet" href="./signal-experience.css?v=4.0.0">
-<link rel="stylesheet" href="./signal-v4.css?v=4.0.0">
+<link rel="stylesheet" href="./signal-experience.css?v=4.0.1">
+<link rel="stylesheet" href="./signal-v4.css?v=4.0.1">
 </head>
 
 <body>
@@ -1075,7 +1075,7 @@ html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),tr
     <div class="logoMark">R//</div>
     <div>
       <h1>RAWEST<span> SIGNAL</span></h1>
-      <small>RAWEST PERFORMANCE · ECU INTELLIGENCE · v4.0.0</small>
+      <small>RAWEST PERFORMANCE · ECU INTELLIGENCE · v4.0.1</small>
       <a class="creditLink" href="https://instagram.com/whiiskerzbuilt" target="_blank" rel="noopener">
         BUILT BY @WHIISKERZBUILT
       </a>
@@ -1695,7 +1695,7 @@ html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),tr
   <div class="configHeader">
     <h2>Recent fixes</h2>
     <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
-      <b>v4.0.0</b> — beginner-first guided experience, real-log companion, interactive glossary and clearer import flow. <b>v2.1.2</b> — Plain-English tuning report and TXT export. v2.1.0 — RAWEST SIGNAL rebrand, Calibration Studio, safety screening, event explorer and GitHub Pages migration. <b>v2.0</b> — added Holley EFI CSV support (parses to the same
+      <b>v4.0.1</b> — beginner-first guided experience, real-log companion, interactive glossary and clearer import flow. <b>v2.1.2</b> — Plain-English tuning report and TXT export. v2.1.0 — RAWEST SIGNAL rebrand, Calibration Studio, safety screening, event explorer and GitHub Pages migration. <b>v2.0</b> — added Holley EFI CSV support (parses to the same
       internal format as MaxxECU, so health scoring/charts/unit
       toggles all work identically); pressure units now auto-detect
       per channel instead of assuming a fixed source unit; fixed a
@@ -1750,6 +1750,7 @@ let units={
   press:'psi'
 };
 
+let fuelGraphMode='auto'; // lambda-first, no guessed stoichiometry
 let activeSeries={
   rpm:true,
   tps:true,
@@ -5526,6 +5527,7 @@ function render(d,filename){
       <div class="chartTop">
 
         <div class="toggles" id="seriesToggles"></div>
+        <div class="toggles" id="fuelModeControls" aria-label="Fuel graph units"></div>
 
         <button class="btn" id="resetZoom">
           RESET ZOOM
@@ -5536,7 +5538,7 @@ function render(d,filename){
       <canvas id="mainChart"></canvas>
 
       <div class="hint">
-        SCROLL / PINCH TO ZOOM · DRAG TO PAN
+        <span id="fuelGraphNote" role="status" aria-live="polite"></span> SCROLL / PINCH TO ZOOM · DRAG TO PAN
       </div>
 
     </div>
@@ -6265,22 +6267,44 @@ function buildChart(d){
   }
 
 
+  // A displayed target must come from the same fuel basis as the actual trace.
+  const fuel=window.RawestSignalFuelGraph?.choose(d,fuelGraphMode)||{mode:'none',actual:[],target:[],available:{lambda:false,afr:false},source:'Unavailable',notice:'No paired fueling data'};
+  const modeControls=$('fuelModeControls');
+  if(modeControls){
+    modeControls.replaceChildren();
+    for(const [mode,label] of [['lambda','Lambda'],['afr','AFR']]){
+      const button=document.createElement('button');button.type='button';
+      button.className='toggle '+(fuel.mode===mode?'on':'');
+      button.textContent=label+(fuel.available?.[mode]?'':' · unavailable');
+      button.setAttribute('aria-pressed',String(fuel.mode===mode));
+      button.style.setProperty('--accent',mode==='lambda'?'#b88cff':'#ffcf95');
+      button.onclick=()=>{fuelGraphMode=mode;buildChart(d);};
+      modeControls.appendChild(button);
+    }
+  }
+  const fuelNote=$('fuelGraphNote');
+  if(fuelNote)fuelNote.textContent=(fuel.mode==='lambda'?'Showing measured and commanded lambda. ':fuel.mode==='afr'?'Showing measured and commanded AFR. ':'')+
+    (fuel.notice||fuel.source||'')+' · Actual and target must share the same fuel basis.';
+  const isLambda=fuel.mode==='lambda';
+  const graphSeries={...SERIES,
+    afr:{...SERIES.afr,label:isLambda?'Actual λ':'Actual AFR',axis:'afr'},
+    targetAfr:{...SERIES.targetAfr,label:isLambda?'Target λ':'Target AFR',axis:'afr'}
+  };
   const toggles=$('seriesToggles');
-
   toggles.innerHTML='';
 
 
-  Object.keys(SERIES).forEach(key=>{
+  Object.keys(graphSeries).forEach(key=>{
 
     let available=false;
 
     if(key==='fuelPress')available=!!d.fuelPressPsi;
     else if(key==='oilPress')available=!!d.oilPressPsi;
-    else available=!!d[key];
-
+    else if(key==='afr')available=fuel.mode!=='none'&&fuel.actual.some(Number.isFinite);
+    else if(key==='targetAfr')available=fuel.mode!=='none'&&fuel.target.some(Number.isFinite);
+    else available=Array.isArray(d[key])&&d[key].some(Number.isFinite);
     if(!available)return;
-
-    const s=SERIES[key];
+    const s=graphSeries[key];
 
     const b=document.createElement('button');
 
@@ -6309,6 +6333,8 @@ function buildChart(d){
 
   function getArray(key){
 
+    if(key==='afr')return fuel.actual;
+    if(key==='targetAfr')return fuel.target;
     if(key==='fuelPress')return d.fuelPressPsi;
     if(key==='oilPress')return d.oilPressPsi;
     if(key==='coolant')return d.coolantF;
@@ -6319,13 +6345,13 @@ function buildChart(d){
   }
 
 
-  Object.keys(SERIES).forEach(key=>{
+  Object.keys(graphSeries).forEach(key=>{
 
     const arr=getArray(key);
 
     if(!arr || !activeSeries[key])return;
 
-    const s=SERIES[key];
+    const s=graphSeries[key];
 
     const data=[];
 
@@ -6413,8 +6439,8 @@ function buildChart(d){
 
 
   if(
-    (activeSeries.afr && d.afr) ||
-    (activeSeries.targetAfr && d.targetAfr)
+    (activeSeries.afr && fuel.actual.some(Number.isFinite)) ||
+    (activeSeries.targetAfr && fuel.target.some(Number.isFinite))
   ){
 
     scales.afr={
@@ -6423,7 +6449,7 @@ function buildChart(d){
       ticks:{color:'#b88cff'},
       title:{
         display:true,
-        text:'AFR',
+        text:isLambda?'λ (actual / target)':'AFR (actual / target)',
         color:'#b88cff'
       }
     };
@@ -7256,14 +7282,15 @@ renderHistory();
 
 </script>
 
-<script src="signal-units.js?v=4.0.0"></script>
-<script src="calibration-intelligence.js?v=4.0.0"></script>
-<script src="signal-intelligence.js?v=4.0.0"></script>
-<script src="signal-brain.js?v=4.0.0"></script>
-<script src="garage-beta.js?v=4.0.0"></script>
-<script src="ai-tuner.js?v=4.0.0"></script>
-<script src="./signal-experience.js?v=4.0.0"></script>
-<script src="./signal-v4-core.js?v=4.0.0"></script>
-<script src="./signal-v4.js?v=4.0.0"></script>
+<script src="signal-units.js?v=4.0.1"></script>
+<script src="calibration-intelligence.js?v=4.0.1"></script>
+<script src="signal-intelligence.js?v=4.0.1"></script>
+<script src="signal-brain.js?v=4.0.1"></script>
+<script src="garage-beta.js?v=4.0.1"></script>
+<script src="ai-tuner.js?v=4.0.1"></script>
+<script src="./signal-experience.js?v=4.0.1"></script>
+<script src="./signal-fuel-graph.js?v=4.0.1"></script>
+<script src="./signal-v4-core.js?v=4.0.1"></script>
+<script src="./signal-v4.js?v=4.0.1"></script>
 </body>
 </html>
