@@ -1,50 +1,82 @@
-# RAWEST SIGNAL · v4.0.0
+# RAWEST SIGNAL · v4.0.1
 
-RAWEST Performance local-first MaxxECU log analyzer that runs entirely in your browser. Drop in a log file and get WOT pull breakdowns, health checks, and channel traces back instantly.
+**Know your build. Know your next move.**
 
-**GitHub Pages (after enabling Pages):** https://whiiskerz.github.io/pullsheet/\n\n**Hosting:** GitHub Pages via `.github/workflows/pages.yml`. Under repository **Settings → Pages**, select **GitHub Actions** as the build and deployment source. Then run the workflow or push to `main`. The former Netlify URL is legacy and can be disconnected after Pages is confirmed live.\n\n**Versioning:** `MAJOR.MINOR.PATCH`. The displayed app version, PWA manifest and service-worker cache are updated together for releases.
+RAWEST SIGNAL is a beginner-friendly, local-first ECU datalog review app by RAWEST Performance. Upload a real log, understand what it shows, explore flagged moments, and investigate potential causes without needing a professional tuning interface.
 
-## RAWEST SIGNAL 4.0 — beginner-first, evidence-first
+**[Open the app](https://whiiskerz.github.io/pullsheet/)** · **[Help Center & Documentation](https://whiiskerz.github.io/pullsheet/docs/)** · **[Source code](https://github.com/whiiskerz/pullsheet)**
 
-- **Interactive event timeline:** Real log events are organized by priority; select one to view recorded RPM, throttle, lambda and correctly scaled pressure when available. Sparkline charts identify row position without inventing timestamps.
-- **SIGNAL Guide:** Deterministic, offline questions grounded in actual recorded events and Diagnostic Brain hypotheses. Not a cloud AI chatbot; never prescribes a calibration change.
-- **Onboarding:** A simple getting-started path teaches exporting, importing and reading a real log, with no fictional engine measurements.
-- **Sensor setup assistant:** Offers only unique, recognizable header-name suggestions; explicit user confirmation is required. Selecting a header never verifies sensor scaling or units.
-- **Before/after:** A simpler wrapper around existing matched RPM/MAP bin comparisons; incomplete samples or incompatible ethanol are clearly called out.
-- **My Garage:** Quick access to local saved build profiles and their log-linked screening.
-- **Premium reports:** Branded, printable review and downloadable standalone HTML, ready for print-to-PDF. Includes warnings and evidence limitations.
-- **Mobile/offline:** Touch-friendly cards, focus styles, reduced-motion support and updated service-worker shell.
+> **Safety:** This is a read-only screening and educational tool, not an ECU tuning or engine-health certification. Sensor mappings, wiring and calibrations must be verified before trusting readings.
 
-**Important:** Browser-based, local and read-only; cannot flash ECUs, independently verify physical sensors, certify safe engine operation, or prove causality. Workflows use real imports and the existing diagnostics engine.
+## Start here
 
-## Beginner-first experience (v3.3.0)
+1. Export an actual datalog from your ECU logging software.
+2. Open the app and choose **Analyze my log** to select the exported file.
+3. Review the explanation, tap a moment in the event timeline and inspect RPM, throttle and mixture.
+4. Open **Sensors** to resolve missing or conflicting channel mappings.
+5. Use **SIGNAL Guide** to interpret logged evidence and review relevant reference notes.
+6. Save a report to PDF with your browser's Print command.
 
-- **Start here:** Choose **Check my engine**, **Understand my tune**, or **Track my build**; every option opens the existing functional workflow.
-- **Easy / Detailed:** Toggle the level of explanation without losing access to any underlying analysis.
-- **Real-log companion:** After an actual log is processed, a simple review highlights available checks, flags channel-mapping gaps and gives the next steps. It never substitutes mock data or labels a tune safe.
-- **Learn the language:** Built-in interactive help for datalog, AFR, lambda, RPM, TPS, fuel pressure, knock and MAP/boost.
-- **Visual refresh:** Improved contrast, hierarchy, touch targets and responsive mobile/desktop layouts.
-- **Safety stays first:** Local parsing, verified units, visible unknowns, and no ECU writing or automatic tune prescriptions.
+**Supported log formats:** .MaxxECU-Zip-log, .MaxxECU-Log, .log, .zip, and .csv. MaxxECU is primary; Holley CSV is supported; some other CSV files require manual channel mapping. Genuine MTune .MaxxECU-save files go in Tune Studio instead of the log picker.
 
-## What it does
+## New in 4.0.1
 
-- Reads `.MaxxECU-Zip-log`, `.MaxxECU-Log`, `.log`, `.zip`, and plain `.csv` exports (Holley EFI, Haltech, AEM, Link, and similar loggers work too — map channels by hand in I/O Config if auto-detect misses one)
-- Parses RPM, TPS, MAP/boost, ignition timing, knock retard, coolant/oil/trans temps, fuel pressure, AFR vs target, battery voltage, VSS, and gear
-- Estimates 0-60 and eighth-mile times per WOT pull from the actual VSS trace, no assumed drivetrain constants
-- Flags likely issues with a weighted health score and plain-language reasons
-- Compares two logs side by side (before/after a tune change, part swap, etc.)
-- Tracks history across multiple vehicles
-- Exports a report via the native share sheet, print-to-PDF, or a saved chart image
-- Works offline once loaded (installable as a home-screen app on iOS/Android)
+- **Fixed Target AFR:** The graph no longer treats an empty channel array as a usable target.
+- **Lambda by default:** It plots actual and target lambda from independent logged channels, especially useful for flex fuel.
+- **Optional AFR:** The graph uses a matched logged AFR pair, or converts both lambda traces using *logged* stoichiometric AFR. It never assumes gasoline 14.7 on an unknown fuel blend.
+- **Clear unavailable states:** The chart explains missing or insufficient fuel channels instead of silently producing a blank trace.
+- **Help Center:** A searchable guide at [the docs website](https://whiiskerz.github.io/pullsheet/docs/).
+- **Reference uploads:** In **SIGNAL Guide → My reference documents**, import text/Markdown/CSV/JSON files. The app can find matching excerpts, kept separate from logged measurements.
+
+## Upload options
+
+| What you want | Where to add it | Input |
+|---|---|---|
+| Analyze ECU sensor data | Analyze my log | Actual log or supported CSV |
+| Inspect MaxxECU tune settings | Tune Studio | MTune .MaxxECU-save |
+| Search reference text | SIGNAL Guide → My reference documents | .txt, .md, .markdown, .csv, .json |
+| Publish public documentation | GitHub repo → docs directory | Public guides that you have permission to share |
+
+**Reference library limits:** 10 files, 200 KB each and 500 KB total, stored only in the current browser.
+
+**PDF limitation:** PDF parsing and OCR are not included. Export text from readable PDFs into .txt or .md before importing. Uploading a PDF as a log will not make it analyzable.
+
+**Important distinction:** Text references are local search results, *not* machine learning, an LLM knowledge base, or verified ECU evidence.
+
+## What v4 already supports
+
+- Responsive beginner-first interface with Easy / Detailed views.
+- Event timeline with recorded engine data and conservative safety flags.
+- SIGNAL Guide, backed by deterministic log-based hypotheses.
+- Channel setup assistant and manual mapping.
+- Matched RPM/load before-and-after comparison with data-quality restrictions.
+- My Garage build profiles saved to your device.
+- Read-only MaxxECU calibration inspection.
+- Branded reports, including print-to-PDF and standalone HTML export.
+- Installable PWA with offline caching of core site assets.
 
 ## Privacy
 
-Nothing is uploaded anywhere. Log files are parsed and rendered entirely in your browser — there's no server-side component and no analytics.
+Logs and local reference documents are processed in the browser. There is no account, cloud storage, remote file analysis, or automatic tuning service in this release. Saved browser data can be lost when site storage is cleared or you change devices; back up Garage data and exports.
 
-## Running locally
+**Do not commit private datalogs, VINs, passwords, personal data or copyrighted manuals into the public GitHub repository.** Public documentation can be contributed to the docs directory only when redistribution is permitted.
 
-It's a static site with no build step. Clone the repo and open `index.html`, or serve the folder with any static file server.
+## Running and testing locally
+
+The site is static HTML, CSS and JavaScript. Clone the repository and serve it over a local static server. Open index.html for the app or docs/index.html for the Help Center.
+
+With Node 22+ you can run: **node --test tests/*.test.js**
+
+GitHub Actions verifies JavaScript syntax and behavior tests, and deploys through the Pages workflow.
+
+## Your own website domain
+
+You can use a domain you own with GitHub Pages via **Settings → Pages → Custom domain** and your DNS provider's CNAME/A records. Set the domain in GitHub first, configure DNS second, and turn on HTTPS when available.
+
+[Official GitHub custom-domain instructions](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site)
+
+A custom domain is just the branded address. Adding accounts, payment subscriptions, cloud document uploads or genuine backend AI would require additional infrastructure and privacy/security work.
 
 ---
 
-Built by @whiiskerzbuilt.
+Built by [@whiiskerzbuilt](https://instagram.com/whiiskerzbuilt) · RAWEST Performance.
