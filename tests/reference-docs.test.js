@@ -43,8 +43,10 @@ test('document search only returns relevant snippets, never pretends they are EC
 test('public help center and documents view are present',()=>{
  const html=fs.readFileSync(path.join(base,'docs/index.html'),'utf8');
  const script=fs.readFileSync(path.join(base,'signal-v4.js'),'utf8');
- assert.match(html,/Add manuals and reference documents/);
- assert.match(html,/PDF text extraction/);
+ assert.match(html,/Knowledge Base/);
+ const article=fs.readFileSync(path.join(base,'docs/pages/reference-docs.md'),'utf8');
+ assert.match(article,/Add manuals and notes/);
+ assert.match(article,/PDF parsing and OCR/);
  assert.match(script,/v4DocUpload/);
  assert.match(script,/RawestSignalDocs/);
 });
