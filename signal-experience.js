@@ -53,6 +53,7 @@ entry.innerHTML=[
 '</div><div class="signal-term-answer" role="status" aria-live="polite"><b id="signalTermTitle"></b><p id="signalTermText"></p></div></div></details>'
 ].join('');
 home.insertAdjacentElement('afterend',entry);
+const modeNote=document.createElement('p');modeNote.id='signalModeHelp';modeNote.className='signal-mode-help';entry.querySelector('.signal-launch-top > div:first-child').appendChild(modeNote);
 const intents={
 check:['Have a real log from a drive, idle session or test? Add it here and see what the recorded sensors actually show.','Choose a log'],
 tune:['Want to know what changed in your MaxxECU tune? Open Tune studio, then add your original .MaxxECU-save file.','Open Tune studio'],
@@ -75,6 +76,8 @@ document.body.classList.toggle('signal-detailed',detailed);
 id('signalEasy').setAttribute('aria-pressed',String(!detailed));
 id('signalDetailed').setAttribute('aria-pressed',String(detailed));
 saveMode(detailed?'detailed':'easy');
+modeNote.textContent=detailed?'Detailed view: see more technical labels and explanations. All sensor evidence is still shown in both views.':'Easy view: clearer labels and plain-English explanations first. Your graphs and evidence are still available.';
+term(currentTerm);
 }
 id('signalEasy').addEventListener('click',()=>mode('easy'));
 id('signalDetailed').addEventListener('click',()=>mode('detailed'));
@@ -88,10 +91,13 @@ pressure:['Fuel pressure · Supply sensor','A pressure reading only means someth
 knock:['Knock · A signal to investigate','An indication should be reviewed with the rest of the log. It alone does not confirm detonation or justify an automatic timing change.'],
 map:['MAP / Boost · Intake pressure','Manifold absolute pressure helps describe load. Boost is normally pressure above atmospheric. Verify units and the channel meaning.']
 };
+let currentTerm='log';
+const technical={afr:'Technical: always compare time-aligned actual and commanded AFR under the same operating conditions.',lambda:'Technical: fuel stoichiometry and commanded enrichment vary with fuel blend and load.',rpm:'Technical: RPM should be interpreted with gear, throttle and rev limiter channels.',tps:'Technical: thresholds are used as event filters, not proof of a driving condition.',pressure:'Technical: compare calibrated sensor units against the tune and a verified physical reference.',knock:'Technical: event flags need correlation with load, timing, sensor setup and repeatability.',map:'Technical: absolute manifold pressure includes atmospheric pressure.',log:'Technical: missing fields do not count as passing checks.'};
 function term(name){
 const item=terms[name];if(!item)return;
+currentTerm=name;
 entry.querySelectorAll('[data-term]').forEach(btn=>btn.setAttribute('aria-pressed',String(btn.dataset.term===name)));
-id('signalTermTitle').textContent=item[0];id('signalTermText').textContent=item[1];
+id('signalTermTitle').textContent=item[0];id('signalTermText').textContent=item[1]+(document.body.classList.contains('signal-detailed')?' '+(technical[name]||''):'');
 }
 entry.querySelectorAll('[data-term]').forEach(btn=>btn.addEventListener('click',()=>term(btn.dataset.term)));
 choose('check');mode(getMode());term('log');
@@ -118,17 +124,31 @@ node.append(heading,p);id('signalReviewPoints').appendChild(node);
 function showResults(data,health,filename){
 if(!data||!health)return;
 const all=Array.isArray(health.checks)?health.checks.filter(x=>x&&typeof x.name==='string'&&Number.isFinite(x.score)):[];
-const flags=all.filter(x=>x.score<75).sort((a,b)=>a.score-b.score);
+const flags=all.filter(x=>x.score<85&&x.weight!==0).sort((a,b)=>a.score-b.score);
 const mapping=Array.isArray(data.channelWarnings)?data.channelWarnings.filter(Boolean):[];
-id('signalReviewTitle').textContent=flags.length||mapping.length?'Here is what deserves a closer look.':'Here is what your log can tell us.';
+const uncertain=all.filter(x=>x.weight===0 && /calibrat|can't be trusted|raw reading/i.test(x.reason||''));
+id('signalReviewTitle').textContent=flags.length||mapping.length||uncertain.length?'Here is what deserves a closer look.':'Here is what your log can tell us.';
 id('signalReviewSubtitle').textContent=(filename||'Your log')+' · '+all.length+' available checks. Only measured channels were considered.';
 id('signalReviewPoints').replaceChildren();
 const lines=['RAWEST SIGNAL · LOG REVIEW',filename||'Your log',''];
-if(mapping.length){point('caution','First: confirm your sensors','Some channels need mapping or calibration review before their results can be interpreted.');lines.push('Confirm your sensor mappings and calibrations.');}
+if(mapping.length||uncertain.length){point('caution','First: confirm your sensors','Some sensor channels have missing, mismatched or unverified calibration data. Do not rely on those readings until the channel and units are checked.');lines.push('Confirm your sensor channels and calibration before interpreting their readings.');}
 if(flags.length){
-flags.slice(0,3).forEach(x=>{const why=x.reason||'Review this recorded reading and its sensor configuration.';point('watch',x.name,why);lines.push(x.name+': '+why);});
+flags.slice(0,3).forEach(x=>{const why=x.reason||'Review this recorded reading and its sensor configuration.';const hint={
+'WOT AFR':'Compare measured fuel mixture with the commanded target. ',
+'Fuel pressure':'Verify fuel delivery and the calibrated sensor reading. ',
+'Oil pressure':'Verify the reading and its operating conditions. ',
+'Coolant':'Check temperature against the operating conditions and any tune warning limit. ',
+'Battery':'Review charging and electrical voltage during this log. ',
+'Knock':'A knock-related indication was recorded; it does not prove detonation by itself. ',
+'Injector duty':'Review how hard the injectors were working under load. ',
+'ECU errors':'The ECU reported an error indication. Inspect the logged codes and context. ',
+'Transmission':'Review transmission temperature in context. ',
+'Limp-home mode':'Transmission limp-home indication was recorded. ',
+'TCU fault flag':'Transmission fault indication was recorded. '
+}[x.name]||'This recorded check deserves a closer look. ';
+point('watch',x.name,hint+why);lines.push(x.name+': '+hint+why);});
 if(flags.length>3){point('more','More to review',(flags.length-3)+' additional flagged checks appear in the full results below.');lines.push((flags.length-3)+' more flagged checks are in the full report.');}
-}else if(!mapping.length){
+}else if(!mapping.length&&!uncertain.length){
 const words=all.length?'No priority flags in the checks available here. This does not prove that other systems are healthy.':'Not enough verified sensor data to show a meaningful screening summary.';
 point('info',all.length?'No priority flags in available checks':'Need more sensor information',words);lines.push(words);
 }
