@@ -30,6 +30,7 @@ home.innerHTML=[
 '</ol><span class="signal-how-note">NEW HERE? START BELOW ↓</span></div>'
 ].join('');
 id('signalChooseLog').addEventListener('click',()=>id('fileInput')?.click());
+id('signalDropBrowse')?.addEventListener('click',e=>{e.stopPropagation();id('fileInput')?.click();});
 id('signalOpenStudio').addEventListener('click',()=>go('ai'));
 id('signalOpenGarage').addEventListener('click',garage);
 
