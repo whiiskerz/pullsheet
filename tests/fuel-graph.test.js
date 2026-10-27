@@ -41,7 +41,7 @@ test('missing, colliding, or non-numeric channels cannot create a fake target',(
 });
 test('released HTML loads safe graph helper and explicitly presents fuel unit modes',()=>{
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
- assert.match(html,/signal-fuel-graph\.js\?v=4\.0\.1/);
+ assert.match(html,/signal-fuel-graph\.js\?v=4\.0\.2/);
  assert.match(html,/fuelModeControls/);
  assert.match(html,/fuelGraphNote/);
  assert.match(html,/graphSeries/);

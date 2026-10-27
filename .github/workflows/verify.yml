@@ -9,6 +9,7 @@ on:
       - 'signal-fuel-graph.js'
       - 'signal-docs-library.js'
       - 'docs/**'
+      - 'signal-import-flow.js'
       - 'README.md'
       - 'signal-v4.css'
       - 'signal-experience.css'
@@ -51,6 +52,9 @@ jobs:
           node --check signal-v4.js
           node --check signal-fuel-graph.js
           node --check signal-docs-library.js
+          node --check signal-import-flow.js
+          node --check docs/wiki.js
+          node --check docs/catalog.js
           node --check ai-tuner.js
           node --check signal-intelligence.js
           node --check signal-brain.js

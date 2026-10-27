@@ -1,129 +1,59 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#100b21">
-<meta name="description" content="RAWEST SIGNAL Help Center: first log import, lambda and AFR, sensor mapping, reference documents, safety and privacy.">
-<title>RAWEST SIGNAL · Help & Documentation</title>
-<style>
-:root{color-scheme:dark;--bg:#090711;--panel:#181126;--card:#201733;--line:#453261;--text:#f5f0ff;--muted:#c3b5d6;--purple:#c4a8ff}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 90% 0%,#24143e 0,transparent 42%),var(--bg);color:var(--text);font:15px/1.7 system-ui,-apple-system,Segoe UI,Arial,sans-serif}
-a{color:#d9c3ff}a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #e3bfff;outline-offset:3px}
-header{border-bottom:1px solid var(--line);background:rgba(10,7,19,.94);position:sticky;top:0;z-index:2}
-.top{max-width:1220px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 22px}
-.logo{text-decoration:none;color:#fff;font-weight:900;letter-spacing:-.04em;font-size:17px}.logo span{color:var(--purple)}.pill{border:1px solid #a686df;border-radius:10px;padding:9px 14px;text-decoration:none;font-size:12px;font-weight:700;color:white;background:#3b245e}
-.wrapper{max-width:1220px;margin:0 auto;padding:30px 22px;display:grid;grid-template-columns:240px minmax(0,1fr);gap:30px}
-aside{align-self:start;position:sticky;top:90px;border:1px solid var(--line);background:var(--panel);border-radius:17px;padding:14px}
-aside strong{font-size:11px;color:var(--purple);letter-spacing:.13em;display:block;margin:5px 10px 12px}
-aside a{display:block;padding:10px 12px;text-decoration:none;border-radius:9px;color:#d5c9e7;font-size:13px;font-weight:650}
-aside a:hover{background:#34254b;color:white}
-.hero{background:radial-gradient(circle at 100% 0%,rgba(181,128,255,.25),transparent 55%),linear-gradient(130deg,#291744,#160f25);border:1px solid #634482;border-radius:22px;padding:35px;margin-bottom:22px}
-.eyebrow{font-weight:800;font-size:10px;color:#d7b7ff;letter-spacing:.15em}
-h1{font-size:clamp(32px,5vw,60px);line-height:1.06;letter-spacing:-.055em;margin:11px 0}h1 em{font-style:normal;color:#d0b8ff}
-.hero p{max-width:700px;color:#d6cae9}
-.search{padding:14px 16px;border-radius:10px;background:#0e0a19;border:1px solid #7a5d9e;color:white;font:inherit;width:100%;margin-top:12px}
-.search:focus{outline:2px solid #c9a7ff}
-.doc{border:1px solid var(--line);border-radius:18px;background:rgba(27,19,42,.96);padding:26px 30px;margin:19px 0;scroll-margin-top:88px}
-.doc h2{font-size:24px;letter-spacing:-.035em;line-height:1.2;margin:0 0 14px}.doc h3{font-size:15px;color:#e3d0ff;margin:23px 0 8px}
-p{color:#d0c3e0}li{margin:8px 0;color:#ded4e8}ol,ul{padding-left:24px}
-code{padding:3px 5px;background:#38284b;color:#eddbff;border-radius:5px;overflow-wrap:anywhere}
-table{border-collapse:collapse;width:100%;display:block;overflow-x:auto;color:#eee5ff;font-size:13px}
-th,td{border-bottom:1px solid #49365e;padding:11px 12px;text-align:left}th{color:#ceb2fa}
-.notice{background:rgba(176,134,251,.09);border-left:3px solid #c5a3ff;border-radius:0 8px 8px 0;padding:11px 16px;color:#e4d8f5;margin:15px 0}
-.small{color:var(--muted);font-size:12px}.results{font-size:12px;color:#ccb5e9;margin:10px 0;min-height:17px}
-footer{padding:24px 0 70px;color:#aa9bba;font-size:12px}
-@media(max-width:850px){.wrapper{grid-template-columns:1fr;gap:10px}aside{position:static;display:flex;flex-wrap:wrap;gap:4px;padding:8px}aside strong{width:100%;margin:5px}aside a{padding:7px 10px;font-size:12px}.doc{padding:22px 18px}}
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0d0918">
+<meta name="description" content="RAWEST SIGNAL knowledge base — easy-to-follow guides for datalogs, lambda and AFR, MaxxECU, imports and engine measurements.">
+<title>RAWEST SIGNAL · Knowledge Base</title>
+<link rel="stylesheet" href="./wiki.css?v=4.0.2">
 </head>
 <body>
-<header><div class="top"><a class="logo" href="../">RAWEST <span>SIGNAL</span> / HELP</a><a class="pill" href="../">Open the app ↗</a></div></header>
-<div class="wrapper">
-<aside aria-label="Documentation navigation">
-<strong>HELP CENTER</strong>
-<a href="#start">Getting started</a><a href="#files">Supported ECU files</a><a href="#fuel">AFR vs Lambda</a><a href="#sensors">Fixing missing channels</a><a href="#reference">Upload reference documents</a><a href="#garage">Garage & reports</a><a href="#privacy">Privacy & limitations</a><a href="#troubleshoot">Troubleshooting</a><a href="#website">Your own domain</a>
-</aside>
-<main>
-<div class="hero"><span class="eyebrow">RAWEST PERFORMANCE · SIGNAL DOCUMENTATION</span><h1>Know your build.<br><em>Know what the log means.</em></h1><p>Start with your first ECU log and work up to detailed comparisons. No tuning degree required. Every explanation should lead back to actual measurements, not guesses.</p><label for="docSearch" class="small">Find help</label><input id="docSearch" class="search" type="search" placeholder="Try: target AFR, sensor, upload, PDF…" autocomplete="off"><div class="results" id="searchStatus" role="status"></div></div>
-<section class="doc" id="start" data-help>
-<h2>01 / Your first log in 3 steps</h2>
-<ol><li><b>Record and export a datalog</b> in the software for your ECU. You need a real recorded session, not just a tune file.</li><li><b>Open RAWEST SIGNAL</b>, choose <b>Analyze my log</b>, and select the exported file on your device. You can also drag it into the drop zone on desktop.</li><li><b>Review the findings.</b> See the plain-English overview, then the 4.0 event timeline. Tap an event to inspect surrounding RPM, throttle and mixture measurements.</li></ol>
-<div class="notice">A missing channel is not a passing check. Even when the app reports no alerts, it cannot certify that your car or tune is safe.</div>
-</section>
-<section class="doc" id="files" data-help>
-<h2>02 / Files SIGNAL can open</h2>
-<table><thead><tr><th>File</th><th>What it does</th></tr></thead><tbody>
-<tr><td><code>.MaxxECU-Zip-log</code></td><td>Preferred MaxxECU archive; may include log and tune metadata.</td></tr>
-<tr><td><code>.MaxxECU-Log</code>, <code>.log</code></td><td>Recorded engine log containing sensor data.</td></tr>
-<tr><td><code>.zip</code></td><td>Supported log archive structure.</td></tr>
-<tr><td><code>.csv</code></td><td>Plain text data, including Holley EFI exports; other ECU formats may need manual channel selection.</td></tr>
-<tr><td><code>.MaxxECU-save</code></td><td>Original MTune calibration file for Tune Studio inspection—this is NOT a recorded datalog.</td></tr>
-</tbody></table>
-<p>Import files with the log picker on the main site. Files are analyzed in your browser; they are not uploaded to a remote server.</p>
-</section>
-<section class="doc" id="fuel" data-help>
-<h2>03 / Should the graph use AFR or Lambda?</h2>
-<p><b>Lambda is the default.</b> It expresses fuel mixture relative to the stoichiometric point for the fuel actually being used. A real comparison needs both <b>Measured lambda</b> and <b>Target lambda</b> from separate source columns.</p>
-<p>AFR is an optional view when actual and target AFR were both logged, or when actual/target lambda can both be converted using the ECU's <b>logged stoichiometric AFR</b>. The app must not assume gasoline stoichiometry for an E85 or flex-fuel run.</p>
-<table><tr><th>Reading</th><th>Interpretation</th></tr><tr><td>Lambda 1.00</td><td>Stoichiometric for the current fuel; not a safe WOT target by itself.</td></tr><tr><td>Actual lambda above target</td><td>Measured mixture is leaner than the commanded target, assuming valid channels and matching conditions.</td></tr><tr><td>Actual lambda below target</td><td>Measured mixture is richer than the commanded target.</td></tr></table>
-<div class="notice">Do not use a single graph reading to decide fuel or ignition adjustments. Sensor calibration, load, closed-loop behavior, fuel cut and transient enrichment all matter.</div>
-</section>
-<section class="doc" id="sensors" data-help>
-<h2>04 / When a channel looks wrong</h2>
-<ol><li>Open the <b>Sensors</b> tab after importing a log.</li><li>Look for source names that uniquely match RPM, TPS, measured lambda, target lambda, fuel pressure and other sensors.</li><li>Confirm suggested mappings manually. If none exists, open full sensor settings.</li><li>Verify units and calibration in the ECU software, especially analog pressure sensors.</li><li>Re-run your analysis after correcting the channel selection.</li></ol>
-<p>If Target AFR isn't present, try logging Target lambda and (if an AFR presentation is needed) stoichiometric AFR. The graph explains when it cannot show a matched target.</p>
-</section>
-<section class="doc" id="reference" data-help>
-<h2>05 / Add manuals and reference documents</h2>
-<p>There are <b>two different uploads</b>: ECU datalogs to analyze and written documents to consult. They are not interchangeable.</p>
-<h3>Import a reference on your device</h3>
-<ol><li>Open RAWEST SIGNAL and import a real log.</li><li>Go to <b>02 · SIGNAL Guide</b> and expand <b>My reference documents</b>.</li><li>Choose a <code>.txt</code>, <code>.md</code>, <code>.markdown</code>, <code>.csv</code> or <code>.json</code> file containing reference text.</li><li>Ask a question. Matching sections are shown separately as <b>Reference document excerpts</b>. They are not proof of a real engine condition.</li></ol>
-<p>Reference text is saved in the local browser, not your GitHub account or an online AI service. Current limits: up to 10 files, 200 KB per file, 500 KB total. Remove old documents from the same panel.</p>
-<h3>What about PDFs?</h3>
-<p>PDF text extraction is <b>not currently built into SIGNAL</b>. Export or copy the readable content from a PDF to <code>.txt</code> or <code>.md</code> and import that text. Scanned-image PDFs require OCR first; uploading a raw PDF to the log input does not teach the app its contents.</p>
-<h3>Publish guides on the public website</h3>
-<p>On the <a href="https://github.com/whiiskerz/pullsheet" target="_blank" rel="noopener noreferrer">GitHub repository</a>, choose <b>Add file → Create new file</b> or <b>Upload files</b>, put public guides under <code>docs/</code>, and commit changes. Only publish materials you have permission to share. Public repo documents are visible to everyone. This is separate from importing private references locally.</p>
-<div class="notice">A searchable text library is not model training or an AI knowledge base. It shows document excerpts alongside deterministic, log-based explanations.</div>
-</section>
-<section class="doc" id="garage" data-help>
-<h2>06 / My Garage and reports</h2>
-<p>Use <b>My Garage</b> to record each project car's basic information, modifications, fuel system and tuning notes. Save a backup before changing browsers or devices. Garage data currently lives on the same browser.</p>
-<p>Use <b>Compare</b> to save a baseline log and inspect matched RPM/MAP conditions after another session. Comparison is blocked or qualified when too little overlapping evidence exists.</p>
-<p>Use <b>Report → Print / save PDF</b> to open the browser's print dialog and choose Save as PDF. You can also download a standalone HTML report to share without uploading the original log.</p>
-</section>
-<section class="doc" id="privacy" data-help>
-<h2>07 / Privacy, data and safety</h2>
-<p>RAWEST SIGNAL is a client-side web app. ECU logs and imported text references are processed on your device. There is no account system, remote file storage, human tuner review, automatic ECU flashing, or online AI assistant in this release.</p>
-<p>Your saved references, configuration, baseline and Garage may be lost if your browser data is erased. Use backup/export features for data you want to keep.</p>
-<p>Do not publish private datalogs, addresses, VINs, tune files, credentials, or copyrighted workshop manuals into the public GitHub repo.</p>
-</section>
-<section class="doc" id="troubleshoot" data-help>
-<h2>08 / Troubleshooting</h2>
-<h3>Target AFR button has no line</h3>
-<p>On many MaxxECU logs there is no literal target AFR channel. Show actual/target lambda first. If AFR cannot be computed from suitable logged sources, the app will tell you rather than draw fabricated values.</p>
-<h3>The graph is empty</h3><p>Confirm your file contains recorded RPM/runtime and valid channels. Check Sensors for mapping collisions. Some WOT analyses also need TPS and reliable lambda source columns.</p>
-<h3>The page looks like an older version</h3><p>Reload the page while online. If installed as an app, close/reopen it; the service worker may be serving an older cached copy. Clearing site storage also clears saved browser data, so back up first.</p>
-<h3>It says "not enough data"</h3><p>That's a data-quality limit, not a broken rating. Capture the sensor channels needed for the question and verify their calibration before interpreting the result.</p>
-</section>
-<section class="doc" id="website" data-help>
-<h2>09 / Turn SIGNAL into a branded website</h2>
-<p>It's already live on GitHub Pages at <a href="https://whiiskerz.github.io/pullsheet/">whiiskerz.github.io/pullsheet</a>. GitHub Pages serves your HTML, CSS and JavaScript without needing a paid server.</p>
-<p>For your own domain, buy or use a name you control, then navigate to your repo <b>Settings → Pages → Custom domain</b>. Add the DNS record recommended by GitHub for your selected subdomain or apex domain and enable HTTPS after it becomes available.</p>
-<p>Example: a domain like <code>signal.yourbrand.com</code> would normally use a CNAME pointing to <code>whiiskerz.github.io</code>. The name is only an example, not a registered or configured domain.</p>
-<p>To add online accounts, cloud uploads, subscription billing or genuine AI document indexing, you'll eventually need additional services, security controls and explicit data-consent handling. A domain alone doesn't add those capabilities.</p>
-<p><a href="https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/managing-a-custom-domain-for-your-github-pages-site" target="_blank" rel="noopener noreferrer">GitHub's official custom-domain instructions ↗</a></p>
-</section>
-<footer>RAWEST SIGNAL · LOCAL-FIRST ENGINE LOG INTELLIGENCE · DOCUMENTATION 4.0.1. Measurements and reference texts are not a vehicle safety certification.</footer>
-</main></div>
-<script>
-(function(){
-const input=document.getElementById('docSearch'),blocks=Array.from(document.querySelectorAll('[data-help]')),status=document.getElementById('searchStatus');
-input.addEventListener('input',()=>{
- const q=input.value.trim().toLowerCase(),terms=q.split(/\s+/).filter(Boolean);let count=0;
- blocks.forEach(section=>{const matches=terms.every(term=>section.textContent.toLowerCase().includes(term));section.hidden=!matches;if(matches)count++;});
- status.textContent=q?(count?count+' matching topic'+(count===1?'':'s'):'No topics matched. Try another term.'):'';
-});
-})();
-</script>
+<a class="skip-link" href="#mainContent">Skip to documentation</a>
+<header class="wiki-topbar">
+  <div class="wiki-top-left">
+    <button id="mobileNav" class="icon-btn mobile-only" type="button" aria-label="Toggle documentation navigation" aria-controls="wikiSidebar" aria-expanded="false">☰</button>
+    <a href="#/" class="wiki-brand" aria-label="RAWEST SIGNAL docs homepage"><span class="brand-symbol">R//</span><span>RAWEST <b>SIGNAL</b></span><span class="brand-divider">/</span><span class="brand-docs">Docs</span></a>
+  </div>
+  <div class="wiki-top-right">
+    <button type="button" id="searchTrigger" class="top-search" aria-label="Search documentation"><span>⌕ Search everything</span><kbd>⌘ K</kbd></button>
+    <span class="version">v4.0.2</span>
+    <a href="../" class="app-link">Open app <span aria-hidden="true">↗</span></a>
+  </div>
+</header>
+<div class="wiki-layout">
+  <aside id="wikiSidebar" class="wiki-sidebar" aria-label="Documentation navigation">
+    <div class="sidebar-intro"><strong>KNOWLEDGE BASE</strong><span>Everything you need to understand SIGNAL.</span></div>
+    <nav id="sidebarNav" aria-label="Knowledge base articles"></nav>
+    <div class="sidebar-footer"><span class="footer-dot"></span> Local-first by design <p>Built by RAWEST Performance.</p></div>
+  </aside>
+  <main id="mainContent" class="wiki-main" tabindex="-1">
+    <div id="wikiContent" aria-live="polite">
+      <section class="wiki-intro">
+        <span class="eyebrow">RAWEST SIGNAL / HELP CENTER</span>
+        <h1>Understand your engine.<br><em>One log at a time.</em></h1>
+        <p>Beginner-friendly guides, without hiding the technical details.</p>
+        <p>Choose a topic on the left or search anything above.</p>
+      </section>
+    </div>
+  </main>
+  <aside id="wikiToc" class="wiki-toc" aria-label="On this page" hidden>
+    <strong>ON THIS PAGE</strong><nav id="tocLinks"></nav>
+    <a href="#/" class="toc-home">← All documentation</a>
+  </aside>
+</div>
+<dialog id="wikiSearch" class="search-dialog" aria-label="Search all documentation">
+  <div class="search-dialog-top">
+    <span class="search-icon" aria-hidden="true">⌕</span>
+    <input id="wikiSearchInput" type="search" placeholder="Search guides, features, and terms…" autocomplete="off" aria-label="Search documentation articles">
+    <button type="button" id="searchClose" class="close-search" aria-label="Close search">Esc</button>
+  </div>
+  <p class="search-hint" id="searchHint" role="status">Type to search across all documentation.</p>
+  <div id="wikiSearchResults" class="search-results"></div>
+  <div class="search-dialog-bottom">Made for first-time tuners and experienced builders alike.</div>
+</dialog>
+<footer class="wiki-bottom">RAWEST PERFORMANCE · SIGNAL KNOWLEDGE BASE · v4.0.2 · Read-only analysis, not a vehicle safety certification.</footer>
+<script src="./catalog.js?v=4.0.2"></script>
+<script src="./wiki.js?v=4.0.2"></script>
 </body>
 </html>

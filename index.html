@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="RAWEST SIGNAL">
 <meta name="theme-color" content="#100b21">
 <meta name="application-version" content="4.0.0">
-<title>RAWEST SIGNAL v4.0.1 — ECU Intelligence</title>
+<title>RAWEST SIGNAL v4.0.2 — ECU Intelligence</title>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
@@ -1061,8 +1061,8 @@ html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),tr
 .signal-step span{color:var(--dim)}
 @media(max-width:760px){.signal-home{grid-template-columns:1fr}.top{padding:12px}.wrap{width:min(100% - 18px,1450px)}.signal-home .signal-card{padding:18px}}
 </style>
-<link rel="stylesheet" href="./signal-experience.css?v=4.0.1">
-<link rel="stylesheet" href="./signal-v4.css?v=4.0.1">
+<link rel="stylesheet" href="./signal-experience.css?v=4.0.2">
+<link rel="stylesheet" href="./signal-v4.css?v=4.0.2">
 </head>
 
 <body>
@@ -1075,7 +1075,7 @@ html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),tr
     <div class="logoMark">R//</div>
     <div>
       <h1>RAWEST<span> SIGNAL</span></h1>
-      <small>RAWEST PERFORMANCE · ECU INTELLIGENCE · v4.0.1</small>
+      <small>RAWEST PERFORMANCE · ECU INTELLIGENCE · v4.0.2</small>
       <a class="creditLink" href="https://instagram.com/whiiskerzbuilt" target="_blank" rel="noopener">
         BUILT BY @WHIISKERZBUILT
       </a>
@@ -1698,7 +1698,7 @@ html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),tr
   <div class="configHeader">
     <h2>Recent fixes</h2>
     <p style="font-family:Inter;font-size:12px;line-height:1.6;color:var(--text)">
-      <b>v4.0.1</b> — beginner-first guided experience, real-log companion, interactive glossary and clearer import flow. <b>v2.1.2</b> — Plain-English tuning report and TXT export. v2.1.0 — RAWEST SIGNAL rebrand, Calibration Studio, safety screening, event explorer and GitHub Pages migration. <b>v2.0</b> — added Holley EFI CSV support (parses to the same
+      <b>v4.0.2</b> — beginner-first guided experience, real-log companion, interactive glossary and clearer import flow. <b>v2.1.2</b> — Plain-English tuning report and TXT export. v2.1.0 — RAWEST SIGNAL rebrand, Calibration Studio, safety screening, event explorer and GitHub Pages migration. <b>v2.0</b> — added Holley EFI CSV support (parses to the same
       internal format as MaxxECU, so health scoring/charts/unit
       toggles all work identically); pressure units now auto-detect
       per channel instead of assuming a fixed source unit; fixed a
@@ -1724,7 +1724,7 @@ html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),tr
 </section>
 
 <footer style="text-align:center;margin-top:45px;color:var(--muted);font:9px JetBrains Mono">
-  RAWEST SIGNAL 4.0 · LOCAL ANALYSIS · DATA NEVER LEAVES YOUR BROWSER · built by
+  RAWEST SIGNAL 4.0.2 · LOCAL ANALYSIS · DATA NEVER LEAVES YOUR BROWSER · built by
   <a href="https://instagram.com/whiiskerzbuilt" target="_blank" rel="noopener" style="color:var(--amber);text-decoration:none;font-weight:700">@whiiskerzbuilt</a>
 </footer>
 
@@ -1990,6 +1990,9 @@ async function handleFiles(files){
     render(parsed,lastFilename);
 
     saveHistory(parsed,lastFilename);
+
+    // Only successful NEW imports move the screen; never re-renders or errors.
+    window.RawestImportFlow?.jump?.();
 
   }catch(err){
 
@@ -7285,16 +7288,17 @@ renderHistory();
 
 </script>
 
-<script src="signal-units.js?v=4.0.1"></script>
-<script src="calibration-intelligence.js?v=4.0.1"></script>
-<script src="signal-intelligence.js?v=4.0.1"></script>
-<script src="signal-brain.js?v=4.0.1"></script>
-<script src="garage-beta.js?v=4.0.1"></script>
-<script src="ai-tuner.js?v=4.0.1"></script>
-<script src="./signal-experience.js?v=4.0.1"></script>
-<script src="./signal-fuel-graph.js?v=4.0.1"></script>
-<script src="./signal-docs-library.js?v=4.0.1"></script>
-<script src="./signal-v4-core.js?v=4.0.1"></script>
-<script src="./signal-v4.js?v=4.0.1"></script>
+<script src="signal-units.js?v=4.0.2"></script>
+<script src="calibration-intelligence.js?v=4.0.2"></script>
+<script src="signal-intelligence.js?v=4.0.2"></script>
+<script src="signal-brain.js?v=4.0.2"></script>
+<script src="garage-beta.js?v=4.0.2"></script>
+<script src="ai-tuner.js?v=4.0.2"></script>
+<script src="./signal-experience.js?v=4.0.2"></script>
+<script src="./signal-fuel-graph.js?v=4.0.2"></script>
+<script src="./signal-docs-library.js?v=4.0.2"></script>
+<script src="./signal-import-flow.js?v=4.0.2"></script>
+<script src="./signal-v4-core.js?v=4.0.2"></script>
+<script src="./signal-v4.js?v=4.0.2"></script>
 </body>
 </html>
