@@ -257,7 +257,7 @@ function analyzeLog(log,intelligence){
 }
 function powerPlan(fields,hardware,logReport){
  const goal=num(fields.goalWhp),current=num(fields.currentWhp),asp=fields.aspiration||'';
- const options=[],barriers=hardware.checks.filter(c=>c.severity==='stop').concat(logReport.alerts.filter(c=>c.severity==='stop'));
+ const options=[],barriers=hardware.checks.filter(c=>c.severity==='stop').concat((logReport.alerts||[]).filter(c=>c.severity==='stop'));
  if(!finite(goal)){
   options.push(issue('verify','Define a wheel-horsepower goal',
    'Power upgrades depend on the target, traction, fuel, engine hardware, budget and intended use.',
