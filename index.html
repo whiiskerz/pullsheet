@@ -1295,6 +1295,39 @@ html,body{background:radial-gradient(ellipse at 12% -12%,rgba(127,79,255,.24),tr
 /* SIGNAL INTELLIGENCE / EVENT INSPECTOR: fixes site-wide canvas height overrides */
 .signal-intelligence{min-width:0;max-width:100%;box-sizing:border-box}
 
+/* Progressive disclosure: beginner 3-step build, detailed expert view */
+.garage-mode-bar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 8px}
+.garage-mode-button{padding:10px 13px;border:1px solid var(--ps-border,var(--line));border-radius:9px;background:var(--panel,#121820);color:var(--text);font:inherit;font-size:12px;cursor:pointer}
+.garage-mode-button[aria-pressed="true"]{border-color:var(--amber,#dfaa5d);background:rgba(230,170,85,.09);font-weight:700}
+.garage-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:14px 0 9px}
+.garage-step{min-width:0;min-height:44px;padding:9px 11px;background:var(--panel2,#151b23);border:1px solid var(--ps-border,var(--line));border-radius:9px;color:var(--text);font:inherit;font-size:12px;text-align:center;cursor:pointer;white-space:normal}
+.garage-step[aria-current="step"]{border-color:var(--amber,#dfaa5d);background:rgba(230,170,85,.10);font-weight:700}
+.garage-guide{margin:0 0 13px;font-size:12px;line-height:1.6;color:var(--dim,#c4cad0)}
+.garage-field-help{color:var(--dim,#b8c3cd);font-size:11px;font-weight:400;line-height:1.45}
+.garage-step-actions{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0}
+.garage-step-actions .ps-btn{min-width:132px;white-space:normal}
+.garage-quick-result{padding:16px;border:1px solid var(--ps-border,var(--line));border-left:3px solid #dea658;border-radius:11px;background:var(--panel2,#171d26);margin:12px 0 17px;min-width:0}
+.garage-quick-result.garage-quick-stop{border-left-color:#d36c63}
+.garage-quick-result h4{font-size:15px;letter-spacing:.02em;margin:8px 0}
+.garage-quick-result p{font-size:12px;line-height:1.6;margin:8px 0}
+.garage-quick-result button{margin-top:8px;white-space:normal}
+.garage-eyebrow{font-size:10px;letter-spacing:.08em;font-weight:700;color:var(--dim,#bbc7d1)}
+.garage-next{font-size:12px;line-height:1.5;font-weight:650}
+.garage-plain{font-size:12px;line-height:1.55}
+.garage-technical{border-top:1px solid var(--ps-border,var(--line));margin-top:12px;padding-top:6px}
+.garage-technical summary{font-size:11px;padding:7px 0;cursor:pointer;color:var(--dim,#bfc7ce)}
+.garage-technical p,.garage-technical small{font-size:11px;line-height:1.6}
+.garage-power>.garage-upgrade-ideas{border:1px solid var(--ps-border,var(--line));border-radius:9px;padding:8px 12px;margin-top:10px}
+.garage-upgrade-ideas>summary,.garage-log-context>summary{font-size:13px;font-weight:650;padding:8px 0;cursor:pointer}
+.garage-section[hidden],.garage-field[hidden],.garage-steps[hidden],.garage-guide[hidden],.garage-step-actions button[hidden]{display:none!important}
+@media(max-width:640px){
+ .garage-mode-button{flex:1 1 42%}
+ .garage-step{font-size:11px;padding:8px 5px;line-height:1.4}
+ .garage-step-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .garage-step-actions .ps-btn{min-width:0}
+ .garage-quick-result{padding:12px}
+}
+
 /* v3.2 My Garage build, cam compatibility and log-aware planning BETA */
 #aiGarageBeta{min-width:0;max-width:100%;box-sizing:border-box}
 #aiGarageBeta h3{font-size:16px;line-height:1.35;margin:0 0 9px}
