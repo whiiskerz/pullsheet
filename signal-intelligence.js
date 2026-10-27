@@ -836,5 +836,5 @@ function render(host,d,opts){
  const ul=element('ul');for(const item of result.next)ul.append(element('li',item));coach.append(ul);
  coach.append(element('p',result.limitation));area.append(coach);
 }
-root.RawestSignalIntelligence={analyze,render,forGoal,workflowInfo,idleDiagnostics,detectWotSessions,version:'3.2.0'};
+root.RawestSignalIntelligence={analyze,render,forGoal,workflowInfo,idleDiagnostics,detectWotSessions,snapshot,compareSnapshots,readBaseline,saveBaseline,clearBaseline,version:'4.0.0'};
 })(typeof window!=='undefined'?window:globalThis);
