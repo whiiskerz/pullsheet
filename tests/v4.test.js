@@ -37,7 +37,7 @@ test('SIGNAL Guide includes recorded evidence, refuses unsupported diagnoses',()
  assert.equal(out.evidence[0],'Pressure fell under logged load.');
  assert.match(out.next[0],/Verify units/);
  assert.match(core.answer('my boost controller',event,{hypotheses:[]},report).body,/does not establish a specific diagnosis/);
- assert.match(core.answer('why',null,null,null).body,/real log/);
+ assert.match(core.answer('why',null,null,null).body,/actual log/);
 });
 test('before after never claims proof and distinguishes incomparable conditions',()=>{
  let out=core.compareInsight({rows:[{delta:-1},{delta:.8}],ethanolGap:12});
