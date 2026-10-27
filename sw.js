@@ -10,22 +10,25 @@
   instead of them being stuck on a stale cached copy forever.
 */
 
-const CACHE_NAME = 'rawest-signal-v4.0.0';
+const CACHE_NAME = 'rawest-signal-v4.0.1';
 
 const APP_SHELL = [
   './',
   './index.html',
-  './signal-experience.css?v=4.0.0',
-  './signal-experience.js?v=4.0.0',
-  './signal-v4-core.js?v=4.0.0',
-  './signal-v4.js?v=4.0.0',
-  './signal-v4.css?v=4.0.0',
-  './signal-units.js?v=4.0.0',
-  './calibration-intelligence.js?v=4.0.0',
-  './signal-intelligence.js?v=4.0.0',
-  './signal-brain.js?v=4.0.0',
-  './garage-beta.js?v=4.0.0',
-  './ai-tuner.js?v=4.0.0',
+  './signal-experience.css?v=4.0.1',
+  './signal-experience.js?v=4.0.1',
+  './signal-v4-core.js?v=4.0.1',
+  './signal-v4.js?v=4.0.1',
+  './signal-fuel-graph.js?v=4.0.1',
+  './signal-docs-library.js?v=4.0.1',
+  './docs/index.html',
+  './signal-v4.css?v=4.0.1',
+  './signal-units.js?v=4.0.1',
+  './calibration-intelligence.js?v=4.0.1',
+  './signal-intelligence.js?v=4.0.1',
+  './signal-brain.js?v=4.0.1',
+  './garage-beta.js?v=4.0.1',
+  './ai-tuner.js?v=4.0.1',
   './manifest.json',
   './vendor/jszip.min.js',
   './vendor/chart.umd.js',
