@@ -24,7 +24,7 @@ test('new companion flags uncertain channels, explains evidence and can reset',(
   constructor(tag='div'){
    this.tag=tag;this.listeners={};this.children=[];this.attrs={};this.dataset={};this.hidden=false;this._markup='';this.textContent='';
    const values=new Set();
-   this.classList={toggle:(n,force)=>{if(force)values.add(n);else values.delete(n);},contains:n=>values.has(n)};
+   this.classList={toggle:(n,force)=>{if(force)values.add(n);else values.delete(n);},contains:n=>values.has(n),add:n=>values.add(n),remove:n=>values.delete(n)};
    Object.defineProperty(this,'id',{get:()=>this._id||'',set:v=>{this._id=v;if(v)nodes.set(v,this)}});
   }
   set innerHTML(value){
