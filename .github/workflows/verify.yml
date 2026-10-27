@@ -6,6 +6,10 @@ on:
       - 'signal-experience.js'
       - 'signal-v4.js'
       - 'signal-v4-core.js'
+      - 'signal-fuel-graph.js'
+      - 'signal-docs-library.js'
+      - 'docs/**'
+      - 'README.md'
       - 'signal-v4.css'
       - 'signal-experience.css'
       - 'ai-tuner.js'
@@ -45,6 +49,8 @@ jobs:
           node --check signal-experience.js
           node --check signal-v4-core.js
           node --check signal-v4.js
+          node --check signal-fuel-graph.js
+          node --check signal-docs-library.js
           node --check ai-tuner.js
           node --check signal-intelligence.js
           node --check signal-brain.js
