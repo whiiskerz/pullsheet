@@ -92,7 +92,7 @@ function drawEvent(){
   plot(host,'Lambda commanded',log.targetLambda,a,b,'#bcb5e5');
  }
  if(review?.pressureFactor!==null&&num(review?.pressureFactor)){
-  plot(host,'Fuel pressure (verified conversion to PSI)',log.fuelPress?.map(x=>num(x)?x*review.pressureFactor:NaN),a,b,'#ef9cac');
+  plot(host,'Fuel pressure (converted to PSI; verify sensor calibration)',log.fuelPress?.map(x=>num(x)?x*review.pressureFactor:NaN),a,b,'#ef9cac');
  }
  id('v4ChartCaution').textContent='Gold marker: selected event center. Every trace uses its own vertical scale; do not compare line heights across channels. '+(review?.time?.verified?'Event time based on verified runtime.':'Elapsed seconds are unavailable: the chart uses recorded row order.')+' Verify source units and sensor scaling.';
 }
