@@ -302,8 +302,9 @@ function powerPlan(fields,hardware,logReport){
  return {goal:finite(goal)?goal:null,baseline:finite(current)?current:null,barriers,options,gated,
   headline:gated?'HARDWARE / LOG WARNINGS FIRST — added power is not the next step':'Power paths are possibilities, not predicted WHP or approved parts'};
 }
-function analyzeBuild(build,log,intelligence){
- const fields=cleanFields(build?.fields||build||{}),hardware=analyzeHardware(fields),logReport=analyzeLog(log,intelligence);
+function analyzeBuild(build,log,intelligence,cachedLogReport){
+ const fields=cleanFields(build?.fields||build||{}),hardware=analyzeHardware(fields);
+ const logReport=cachedLogReport===undefined?analyzeLog(log,intelligence):cachedLogReport;
  const plan=powerPlan(fields,hardware,logReport);
  const issues=[...hardware.checks,...logReport.alerts];
  const totals={stop:issues.filter(x=>x.severity==='stop').length,verify:issues.filter(x=>x.severity==='verify').length,upgrade:issues.filter(x=>x.severity==='upgrade').length};
@@ -404,6 +405,17 @@ function mount(host,getLog){
  const io=mk('input');io.type='file';io.accept='.json,application/json';io.hidden=true;host.append(io);
  const storageMsg=()=>local?'Stored in THIS browser only. Browser deletion/private mode can erase builds; export backups. Raw datalogs and tune files are never saved here.':'Browser storage unavailable; JSON export is required to retain your build.';
  let analysis=null;
+ let previousLog=null,cachedLogReport;
+ function liveLog(){return typeof getLog==='function'?getLog():null;}
+ function logReview(){
+  const log=liveLog();
+  if(log!==previousLog||!cachedLogReport){
+   previousLog=log;
+   cachedLogReport=analyzeLog(log,root.RawestSignalIntelligence);
+  }
+  return cachedLogReport;
+ }
+ function buildReview(){return analyzeBuild(model.draft,liveLog(),root.RawestSignalIntelligence,logReview());}
  function fieldRow(f){
   const label=mk('label',f.label,'garage-field');
   let input;
@@ -488,7 +500,7 @@ function mount(host,getLog){
   badges.append(count);
  }
  function refreshRecommendations(){
-  analysis=analyzeBuild(model.draft,typeof getLog==='function'?getLog():null,root.RawestSignalIntelligence);
+  analysis=buildReview();
   audit.replaceChildren();
   const h=mk('h3','BUILD COMPATIBILITY · LIVE BETA');audit.append(h);
   const counts=mk('div',null,'garage-metrics');
@@ -615,7 +627,7 @@ function mount(host,getLog){
   const active=getActive();
   if(!active){status.textContent='Save/select a build first before attaching a compact log snapshot.';return;}
   if(model.dirty){status.textContent='Save your build edits first, then save a log snapshot.';return;}
-  const report=analyzeLog(typeof getLog==='function'?getLog():null,root.RawestSignalIntelligence);
+  const report=logReview();
   if(!report.available){status.textContent='No valid log linked. Import a current log under Analyze first.';return;}
   const snap=safeSnapshot({savedAt:new Date().toISOString(),samples:report.samples,
    wotCandidates:report.wotCandidates,eventCount:report.events,highPriority:report.high,
@@ -625,7 +637,7 @@ function mount(host,getLog){
   if(persist()){drawHistory();status.textContent='Compact log snapshot saved locally (no CSV or raw ECU data stored).';}
  },'ps-btn secondary');
  const jsonBtn=addButton('Export compatibility report',()=>{
-  const buildReport=analyzeBuild(model.draft,typeof getLog==='function'?getLog():null,root.RawestSignalIntelligence);
+  const buildReport=buildReview();
   const backup={format:'rawest-signal-build-review-beta',generatedAt:new Date().toISOString(),
    build:{name:buildReport.fields.name||'Unsaved build',fields:buildReport.fields},
    compatibility:buildReport.hardware,logContext:buildReport.logReport,upgradeOptions:buildReport.plan,
