@@ -4,6 +4,9 @@ on:
     paths:
       - 'index.html'
       - 'signal-experience.js'
+      - 'signal-v4.js'
+      - 'signal-v4-core.js'
+      - 'signal-v4.css'
       - 'signal-experience.css'
       - 'ai-tuner.js'
       - 'signal-intelligence.js'
@@ -40,6 +43,8 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check signal-experience.js
+          node --check signal-v4-core.js
+          node --check signal-v4.js
           node --check ai-tuner.js
           node --check signal-intelligence.js
           node --check signal-brain.js
