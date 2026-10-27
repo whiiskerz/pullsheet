@@ -571,10 +571,14 @@ function mount(host,getLog){
   const power=mk('section',null,'garage-power');
   power.append(mk('h3','WANT MORE POWER?'),mk('p',analysis.plan.headline,'garage-muted'));
   if(analysis.plan.gated)power.append(mk('p','We can still show upgrade ideas, but the warnings above come first. No power gain is promised.','garage-plain'));
+  const lead=model.mode==='simple'&&!analysis.plan.gated?
+    analysis.plan.options.find(p=>p.severity==='upgrade')||analysis.plan.options.find(p=>p.severity==='verify')||analysis.plan.options[0]:null;
+  if(lead)power.append(item(lead));
+  const moreIdeas=analysis.plan.options.filter(p=>p!==lead);
   const ideas=mk('details',null,'garage-upgrade-ideas');
   ideas.open=!analysis.plan.gated&&model.mode==='detailed';
-  ideas.append(mk('summary','Explore possible upgrades ('+analysis.plan.options.length+')'));
-  for(const p of analysis.plan.options)ideas.append(item(p));
+  ideas.append(mk('summary',analysis.plan.gated?'Upgrade ideas (after resolving warnings) · '+moreIdeas.length:'More ideas and things to check ('+moreIdeas.length+')'));
+  for(const p of moreIdeas)ideas.append(item(p));
   power.append(ideas);audit.append(power);
   audit.append(mk('p',analysis.disclaimer,'garage-disclaimer'));
   const source=mk('p','Spring clearances are only screening calculations. Manufacturer specs and physical measurement take priority.','garage-disclaimer');
