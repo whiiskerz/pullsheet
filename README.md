@@ -1,4 +1,4 @@
-# RAWEST SIGNAL · v4.0.1
+# RAWEST SIGNAL · v4.0.2
 
 **Know your build. Know your next move.**
 
@@ -19,7 +19,14 @@ RAWEST SIGNAL is a beginner-friendly, local-first ECU datalog review app by RAWE
 
 **Supported log formats:** .MaxxECU-Zip-log, .MaxxECU-Log, .log, .zip, and .csv. MaxxECU is primary; Holley CSV is supported; some other CSV files require manual channel mapping. Genuine MTune .MaxxECU-save files go in Tune Studio instead of the log picker.
 
-## New in 4.0.1
+## New in 4.0.2
+
+- **Auto-scroll after successful log import.** The browser moves to the plain-English findings automatically, without jumping during sensor remaps, unit toggles, or failed imports.
+- **Notion-style docs hub.** Replaced the old long Help page with 15 Markdown-powered articles, grouped sidebar, mobile navigation, full-text search, page table of contents, copy-link control, page-to-page navigation and direct GitHub edit links.
+- **Simple publishing.** To add a public article, create docs/pages/new-guide.md, then add its slug and metadata in docs/catalog.js. Changes deploy automatically through GitHub Pages.
+- **Local-first operation stays unchanged.** This is a docs website, not a remote Notion workspace or real-time collaborative CMS. True Notion synchronization would require a connected integration or separate publishing pipeline.
+
+## Previously in 4.0.1
 
 - **Fixed Target AFR:** The graph no longer treats an empty channel array as a usable target.
 - **Lambda by default:** It plots actual and target lambda from independent logged channels, especially useful for flex fuel.
@@ -63,7 +70,7 @@ Logs and local reference documents are processed in the browser. There is no acc
 
 ## Running and testing locally
 
-The site is static HTML, CSS and JavaScript. Clone the repository and serve it over a local static server. Open index.html for the app or docs/index.html for the Help Center.
+The site is static HTML, CSS and JavaScript. Clone the repository and serve it over a local static server. Open index.html for the app or docs/index.html for the Markdown knowledge base.
 
 With Node 22+ you can run: **node --test tests/*.test.js**
 
