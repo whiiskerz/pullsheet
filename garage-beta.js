@@ -375,11 +375,11 @@ function mount(host,getLog){
  const local=(()=>{try{return root.localStorage||null;}catch(e){return null;}})();
  const initial=readStorage(local),model={
   builds:initial.builds,activeId:initial.activeId,draft:null,
-  error:initial.error,dirty:false,importing:false
+  error:initial.error,dirty:false,importing:false,mode:'simple',step:0
  };
  const getActive=()=>model.builds.find(x=>x.id===model.activeId)||null;
  model.draft={...blank(),...(getActive()?.fields||{})};
- const formControls={};
+ const formControls={},fieldNodes={},sectionNodes={};
  const top=mk('div',null,'garage-top'),header=mk('div',null,'garage-header');
  header.append(mk('h3','MY GARAGE · BUILD BETA'));
  header.append(mk('p','Save complete builds and cam/valvetrain specifications locally. Hardware checks use what YOU entered; log evidence comes from the currently loaded file. No automatic ECU changes.','garage-muted'));
@@ -390,6 +390,13 @@ function mount(host,getLog){
  const addButton=(text,fn,cls='ps-btn secondary')=>{const b=mk('button',text,cls);b.type='button';b.onclick=fn;toolbar.append(b);return b;};
  toolbar.append(select);
  const status=mk('p','', 'garage-muted');host.append(status);
+ const modes=mk('div',null,'garage-mode-bar');host.append(modes);
+ const easyBtn=mk('button','Easy setup · beginner','garage-mode-button');easyBtn.type='button';modes.append(easyBtn);
+ const detailBtn=mk('button','Detailed specs · intermediate','garage-mode-button');detailBtn.type='button';modes.append(detailBtn);
+ const modeExplainer=mk('p','', 'garage-muted');host.append(modeExplainer);
+ const steps=mk('nav',null,'garage-steps');steps.setAttribute('aria-label','Easy build setup steps');host.append(steps);
+ const guideText=mk('p','', 'garage-guide');host.append(guideText);
+ const quickResult=mk('section',null,'garage-quick-result');quickResult.setAttribute('aria-live','polite');host.append(quickResult);
  const form=mk('div',null,'garage-form');host.append(form);
  const actions=mk('div',null,'garage-actions');host.append(actions);
  const audit=mk('section',null,'garage-audit');host.append(audit);
@@ -415,18 +422,61 @@ function mount(host,getLog){
    model.draft[f.id]=input.value;model.dirty=true;status.textContent='Unsaved changes · '+storageMsg();refreshRecommendations();
   });
   input.addEventListener('change',()=>{
-   model.draft[f.id]=input.value;model.dirty=true;refreshRecommendations();
+   model.draft[f.id]=input.value;model.dirty=true;
+   if(f.id==='camBasis')renderMode();
+   refreshRecommendations();
   });
-  formControls[f.id]=input;label.append(input);return label;
+  formControls[f.id]=input;fieldNodes[f.id]=label;label.append(input);
+  if(FIELD_HELP[f.id])label.append(mk('span',FIELD_HELP[f.id],'garage-field-help'));
+  return label;
  }
  for(const section of sectionOrder){
   const group=mk('details',null,'garage-section');group.open=section==='Vehicle / project'||section==='Camshaft / timing'||section==='Valvetrain / springs';
+  sectionNodes[section]=group;
   group.append(mk('summary',section));
   const grid=mk('div',null,'garage-grid');for(const f of FIELDS.filter(x=>x.section===section))grid.append(fieldRow(f));
   group.append(grid);form.append(group);
  }
+ function renderMode(){
+  const easy=model.mode==='simple';
+  easyBtn.setAttribute('aria-pressed',String(easy));
+  detailBtn.setAttribute('aria-pressed',String(!easy));
+  modeExplainer.textContent=easy?'Start with a few questions. You can leave anything you don\'t know blank and switch to Detailed later. Nothing is erased.':'Full build sheet: heads, valvetrain measurements, spring pressures, powertrain and ECU details. Only enter confirmed values.';
+  steps.hidden=!easy;guideText.hidden=!easy;
+  steps.replaceChildren();
+  for(const [index,step] of EASY_STEPS.entries()){
+   const b=mk('button',step.title,'garage-step');
+   b.type='button';b.setAttribute('aria-current',String(model.step===index?'step':'false'));
+   b.onclick=()=>{model.step=index;renderMode();form.scrollIntoView?.({behavior:'smooth',block:'start'});};
+   steps.append(b);
+  }
+  const step=EASY_STEPS[model.step];
+  guideText.textContent=easy?'STEP '+(model.step+1)+' OF '+EASY_STEPS.length+' · '+step.description:'';
+  for(const section of sectionOrder){
+   const visible=!easy||EASY_STEP_BY_SECTION[section]===model.step;
+   sectionNodes[section].hidden=!visible;
+   if(easy&&visible)sectionNodes[section].open=true;
+  }
+  for(const f of FIELDS){
+   const active=EASY_IDS.has(f.id)||(f.id==='installedRatio'&&model.draft.camBasis==='lobe');
+   fieldNodes[f.id].hidden=easy&&!active;
+  }
+  navBack.hidden=!easy||model.step===0;
+  navNext.hidden=!easy||model.step===EASY_STEPS.length-1;
+  navReview.hidden=!easy||model.step!==EASY_STEPS.length-1;
+ }
+ easyBtn.onclick=()=>{model.mode='simple';renderMode();};
+ detailBtn.onclick=()=>{model.mode='detailed';renderMode();};
+ const navActions=mk('div',null,'garage-step-actions');form.append(navActions);
+ const navBack=mk('button','Previous step','ps-btn secondary');navBack.type='button';navActions.append(navBack);
+ const navNext=mk('button','Next step','ps-btn');navNext.type='button';navActions.append(navNext);
+ const navReview=mk('button','See my next move ↓','ps-btn');navReview.type='button';navActions.append(navReview);
+ navBack.onclick=()=>{model.step=Math.max(0,model.step-1);renderMode();form.scrollIntoView?.({behavior:'smooth',block:'start'});};
+ navNext.onclick=()=>{model.step=Math.min(EASY_STEPS.length-1,model.step+1);renderMode();form.scrollIntoView?.({behavior:'smooth',block:'start'});};
+ navReview.onclick=()=>audit.scrollIntoView?.({behavior:'smooth',block:'start'});
  function refreshInputs(){
   for(const f of FIELDS)formControls[f.id].value=model.draft[f.id]||'';
+  renderMode();
  }
  function refreshSelect(){
   select.replaceChildren();
