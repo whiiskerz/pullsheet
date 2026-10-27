@@ -321,6 +321,51 @@ function demo(){
  };
 }
 const sectionOrder=[...new Set(FIELDS.map(x=>x.section))];
+const EASY_STEPS=[
+ {title:'1 · Your car',description:'What are you building? Just enter what you know; blank answers are okay.',
+  sections:['Vehicle / project','Engine / rotating assembly'],
+  fields:['name','year','make','model','use','engine','displacement']},
+ {title:'2 · Cam + springs',description:'Enter the lift from the cam card and the spring kit’s advertised maximum lift. If you’re unsure, leave it blank instead of guessing.',
+  sections:['Camshaft / timing','Valvetrain / springs'],
+  fields:['camName','camBasis','camInt','camExh','springPart','springMaxLift','rockerType','ptvChecked']},
+ {title:'3 · Power goals',description:'What would you like to make? No dyno baseline needed. We suggest what to CHECK first, not guaranteed horsepower gains.',
+  sections:['Fuel / power adders','Drivetrain / ECU'],
+  fields:['aspiration','fuel','injectors','pumps','transmission','goalWhp','currentWhp','budget']}
+];
+const EASY_STEP_BY_SECTION=Object.fromEntries(EASY_STEPS.flatMap((step,index)=>step.sections.map(section=>[section,index])));
+const EASY_IDS=new Set(EASY_STEPS.flatMap(s=>s.fields));
+const FIELD_HELP={
+ camInt:'Example .610 means .610 inch valve lift on the intake side. Check the cam card.',
+ camExh:'If your cam has separate exhaust lift, enter that number. Otherwise leave blank.',
+ camBasis:'Most cam cards list lift at the valve. Choose lobe lift only when you are sure.',
+ springMaxLift:'Use the spring manufacturer’s stated maximum valve lift—not the amount of lift your cam has.',
+ springPart:'An exact part number makes the warning much more reliable.',
+ camCardRatio:'Cam-card rocker arm ratio used to calculate the advertised valve lift.',
+ installedRatio:'Your actual rocker ratio. Required if you entered lobe lift; do not assume it matches the cam card.',
+ springBindHeight:'Spring height when the coils contact at full compression. Needs physical measurement.',
+ springInstalledHeight:'Spring height with the valve closed. Measure it on the engine.',
+ goalWhp:'WHP = horsepower measured at the wheels. No estimate is generated from your parts.',
+ currentWhp:'Optional: enter only a verified dyno number, not a guessed crank-horsepower figure.',
+ rockerType:'Trunnion = the bearing/shaft area of the rocker arm. If you do not know, leave unverified.'
+};
+function plainFinding(entry){
+ const title=entry.title||'';
+ if(/Valve lift exceeds/.test(title))return 'Your cam is listed with MORE lift than your springs support. Fix the combination before harder driving.';
+ if(/coil bind/i.test(title))return 'Your springs may compress too far at full lift. That can damage the valvetrain.';
+ if(/Retainer-to-seal/i.test(title))return 'Parts near the valve spring may touch when the valve opens fully.';
+ if(/High-load lean/i.test(title))return 'Your log shows the engine may be running lean under load. Check that before adding power.';
+ if(/knock\/warning/i.test(title))return 'Your ECU recorded a warning or knock signal. The code still needs to be identified.';
+ if(/cam-to-spring/i.test(title))return 'Enter your cam lift and maximum spring lift to check whether they match.';
+ if(/spring pressures/i.test(title))return 'The springs’ lift rating alone does not prove the valve springs are right for the cam.';
+ if(/Rocker/i.test(title))return 'Your rocker arms/bearings and their clearances need to suit your lift and RPM.';
+ if(/Piston-to-valve/i.test(title))return 'Make sure the valves have clearance from the pistons with this cam.';
+ if(/Naturally aspirated/i.test(title))return 'Review the whole engine combination before buying a bigger cam or more intake parts.';
+ if(/Forced-induction/i.test(title))return 'Check cooling, boost control and fuel capacity before raising boost.';
+ if(/Nitrous/i.test(title))return 'Fuel support and working safety interlocks come before a bigger shot.';
+ if(/Fuel-system capacity/i.test(title))return 'Enter injector and pump part numbers before estimating what power they can support.';
+ return entry.category==='Power plan'?'An upgrade path to consider—not a guaranteed horsepower gain.':entry.explanation;
+}
+
 const mk=(tag,textValue,cls)=>{
  const e=document.createElement(tag);if(textValue!==undefined&&textValue!==null)e.textContent=String(textValue);if(cls)e.className=cls;return e;
 };
