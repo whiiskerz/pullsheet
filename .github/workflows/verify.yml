@@ -3,6 +3,8 @@ on:
   push:
     paths:
       - 'index.html'
+      - 'signal-experience.js'
+      - 'signal-experience.css'
       - 'ai-tuner.js'
       - 'signal-intelligence.js'
       - 'signal-brain.js'
@@ -37,6 +39,7 @@ jobs:
           node-version: '22'
       - name: Check JavaScript syntax
         run: |
+          node --check signal-experience.js
           node --check ai-tuner.js
           node --check signal-intelligence.js
           node --check signal-brain.js
