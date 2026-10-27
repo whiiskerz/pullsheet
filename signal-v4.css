@@ -124,3 +124,6 @@
 .v4-reference p{font-size:12px;line-height:1.6;margin:0}
 #v4DocMessages{font-size:12px;color:#e5d4ff;margin:10px 0}
 @media(max-width:620px){.signal-doc-link{min-height:40px}.v4-doc-row{align-items:flex-start;flex-direction:column}}
+
+/* Post-import anchor stays visible beneath any sticky site chrome. */
+#signalReview,#signalV4,#results{scroll-margin-top:88px}
