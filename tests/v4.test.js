@@ -51,15 +51,17 @@ test('before after never claims proof and distinguishes incomparable conditions'
 });
 test('v4 files are actually loaded by HTML, cached offline and version-aligned',()=>{
  const html=load('index.html'),worker=load('sw.js'),manifest=JSON.parse(load('manifest.json'));
- for(const f of ['signal-v4.js','signal-v4-core.js','signal-v4.css']){
-  assert.ok(html.includes(f+'?v=4.0.0'),f+' missing from HTML');
-  assert.ok(worker.includes(f+'?v=4.0.0'),f+' missing from offline cache');
+ for(const f of ['signal-v4.js','signal-v4-core.js','signal-v4.css','signal-fuel-graph.js','signal-docs-library.js']){
+  assert.ok(html.includes(f+'?v=4.0.1'),f+' missing from HTML');
+  assert.ok(worker.includes(f+'?v=4.0.1'),f+' missing from offline cache');
  }
- assert.match(html,/RAWEST SIGNAL v4\.0\.0/);
- assert.match(manifest.name,/v4\.0\.0/);
+ assert.match(html,/RAWEST SIGNAL v4\.0\.1/);
+ assert.match(manifest.name,/v4\.0\.1/);
  const ui=load('signal-v4.js');
  for(const feature of ['v4Timeline','v4Question','v4Sensors','v4Compare','v4OpenGarage','v4Printable','v4Onboarding']){
   assert.ok(ui.includes(feature),feature+' UI missing');
  }
  assert.match(ui,/window\.RawestSignalExperience\.showResults=function/);
+ assert.ok(html.includes('href="./docs/"'));
+ assert.ok(worker.includes('./docs/index.html'));
 });

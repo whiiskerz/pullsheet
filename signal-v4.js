@@ -16,7 +16,7 @@ wrapper.innerHTML=[
 '<div class="v4-status" id="v4Status" aria-live="polite"></div>',
 '<nav class="v4-nav" aria-label="Review steps"><button type="button" data-v4tab="moments" aria-pressed="true">01 · Moments</button><button type="button" data-v4tab="guide" aria-pressed="false">02 · SIGNAL Guide</button><button type="button" data-v4tab="sensors" aria-pressed="false">03 · Sensors</button><button type="button" data-v4tab="compare" aria-pressed="false">04 · Compare</button><button type="button" data-v4tab="garage" aria-pressed="false">05 · Garage</button><button type="button" data-v4tab="report" aria-pressed="false">06 · Report</button></nav>',
 '<section class="v4-page" data-v4page="moments"><div class="v4-grid"><div class="v4-panel"><div class="v4-panel-head"><h3>Tap an event</h3><span id="v4EventCount"></span></div><p class="v4-muted">The app sorts potential concerns first. An alert is something to inspect, not a confirmed engine failure.</p><div class="v4-timeline" id="v4Timeline" role="group" aria-label="Recorded event positions"></div><div class="v4-events" id="v4Events"></div></div><div class="v4-panel v4-event-detail"><div class="v4-panel-head"><h3 id="v4EventTitle">Select a moment</h3><span id="v4EventTag"></span></div><p id="v4EventExplanation"></p><div class="v4-metrics" id="v4Metrics"></div><div id="v4Traces"></div><p class="v4-muted" id="v4ChartCaution"></p><button type="button" class="signal-action" id="v4AskThis">Ask SIGNAL about this moment ↗</button></div></div></section>',
-'<section class="v4-page" data-v4page="guide" hidden><div class="v4-panel"><span class="signal-eyebrow">EXPLANATIONS BASED ON YOUR LOG</span><h3>Ask SIGNAL Guide</h3><p class="v4-muted">This is a transparent, offline question guide. It uses recorded evidence and diagnostic checks, not a cloud AI model or invented answers.</p><div class="v4-questions"><button type="button" data-question="What happened?">What happened?</button><button type="button" data-question="Why was the fuel pressure low?">Fuel pressure?</button><button type="button" data-question="What does lambda mean here?">Lambda / AFR?</button><button type="button" data-question="Was there knock?">Knock warning?</button><button type="button" data-question="What should I check next?">What next?</button></div><div class="v4-ask-line"><input id="v4Question" maxlength="160" placeholder="Ask about pressure, lambda, corrections..." aria-label="Question about this log"><button type="button" class="signal-action primary" id="v4Send">Explain</button></div><div class="v4-answer" id="v4Answer" role="status" aria-live="polite"></div></div></section>',
+'<section class="v4-page" data-v4page="guide" hidden><div class="v4-panel"><span class="signal-eyebrow">EXPLANATIONS BASED ON YOUR LOG</span><h3>Ask SIGNAL Guide</h3><p class="v4-muted">This is a transparent, offline question guide. It uses recorded evidence and diagnostic checks, not a cloud AI model or invented answers.</p><div class="v4-questions"><button type="button" data-question="What happened?">What happened?</button><button type="button" data-question="Why was the fuel pressure low?">Fuel pressure?</button><button type="button" data-question="What does lambda mean here?">Lambda / AFR?</button><button type="button" data-question="Was there knock?">Knock warning?</button><button type="button" data-question="What should I check next?">What next?</button></div><div class="v4-ask-line"><input id="v4Question" maxlength="160" placeholder="Ask about pressure, lambda, corrections..." aria-label="Question about this log"><button type="button" class="signal-action primary" id="v4Send">Explain</button></div><div class="v4-answer" id="v4Answer" role="status" aria-live="polite"></div><details class="v4-docs-panel"><summary>My reference documents · Add manuals and notes</summary><p class="v4-muted">Import text files (.txt, .md, .csv, .json). Saved locally in this browser. SIGNAL Guide can display relevant excerpts labeled as references, never as verified ECU evidence. PDF text extraction is not available yet—export PDF text first.</p><input type="file" id="v4DocUpload" multiple accept=".txt,.md,.markdown,.csv,.json,text/plain,text/markdown" aria-label="Add reference documents"><div id="v4DocMessages" role="status"></div><div id="v4DocList"></div><p><a href="./docs/" target="_blank" rel="noopener noreferrer">Read the full documentation ↗</a></p></details></div></section>',
 '<section class="v4-page" data-v4page="sensors" hidden><div class="v4-panel"><span class="signal-eyebrow">SETUP ASSISTANT</span><h3>Know what your sensors mean</h3><p class="v4-muted">Suggestions match unique, recognizable header names only. Review before applying. Pressure calibration and units are never guessed, and selecting a column does not verify its scaling.</p><div id="v4Sensors"></div><p class="v4-muted" id="v4SensorNote"></p><button type="button" id="v4FullConfig" class="signal-action">Open full sensor settings ↗</button></div></section>',
 '<section class="v4-page" data-v4page="compare" hidden><div class="v4-panel"><span class="signal-eyebrow">CHANGE CHECK</span><h3>Did the next log look different?</h3><p class="v4-muted">Save this log as a baseline, then import a newer log. We compare only overlapping, sufficiently sampled RPM/load areas. This does not prove a tune caused a change.</p><div class="v4-controls"><button id="v4SaveBase" class="signal-action primary" type="button">Save current log as baseline</button><button id="v4ClearBase" class="signal-action" type="button">Clear baseline</button></div><div id="v4Compare"></div></div></section>',
 '<section class="v4-page" data-v4page="garage" hidden><div class="v4-panel"><span class="signal-eyebrow">YOUR BUILD</span><h3>Give every log a home.</h3><p class="v4-muted">My Garage already tracks engine, fuel, drivetrain, tune settings and project notes on this device. The log you loaded is also available to Garage screening.</p><div id="v4GarageSummary"></div><button type="button" class="signal-action primary" id="v4OpenGarage">Open my garage ↗</button><p class="v4-muted">Export your Garage backup before changing devices; there is no online account syncing.</p></div></section>',
@@ -122,12 +122,42 @@ function drawAnswer(question){
   const list=node('ul');arr.forEach(txt=>list.append(node('li','',txt)));area.append(list);
  }
  if(diagnosis?.error)area.append(node('p','v4-warning',diagnosis.error));
- area.append(node('p','v4-muted','Guide does not write tune files, choose fuel/spark corrections or certify safe operation.'));
+ const refs=window.RawestSignalDocs?.search(question,3)||[];
+ if(refs.length){
+  area.append(node('strong','v4-answer-label','From your saved reference documents — NOT verified engine data'));
+  for(const match of refs){
+   const card=node('blockquote','v4-reference');
+   card.append(node('strong','',match.name),node('p','',match.excerpt));area.append(card);
+  }
+ }
+ area.append(node('p','v4-muted','References are locally searched text, not learned by an AI model. Follow ECU manufacturer instructions and verify against the actual logs. Guide cannot write tune files or certify safe operation.'));
 }
 wrapper.querySelectorAll('[data-question]').forEach(btn=>btn.addEventListener('click',()=>{id('v4Question').value=btn.dataset.question;drawAnswer(btn.dataset.question);}));
 id('v4Send').addEventListener('click',()=>drawAnswer(id('v4Question').value));
 id('v4Question').addEventListener('keydown',e=>{if(e.key==='Enter')drawAnswer(e.target.value);});
 id('v4AskThis').addEventListener('click',()=>goTab('guide'));
+function drawDocLibrary(){
+ const host=id('v4DocList');if(!host)return;clear(host);
+ const library=window.RawestSignalDocs;
+ if(!library){host.append(node('p','v4-warning','Reference library is unavailable.'));return;}
+ const items=library.docs();if(!items.length){host.append(node('p','v4-muted','No local reference documents added yet.'));return;}
+ items.forEach(doc=>{
+  const line=node('div','v4-doc-row');line.append(node('span','',doc.name+' · '+(doc.text.length/1024).toFixed(1)+' KB'));
+  const del=node('button','signal-action','Remove');del.type='button';del.addEventListener('click',()=>{
+   const result=library.remove(doc.name);
+   id('v4DocMessages').textContent=result.ok?'Removed '+doc.name:result.error;
+   drawDocLibrary();
+  });line.append(del);host.append(line);
+ });
+}
+id('v4DocUpload')?.addEventListener('change',async event=>{
+ const library=window.RawestSignalDocs;
+ if(!library){id('v4DocMessages').textContent='Reference library unavailable.';return;}
+ const items=await library.addFiles(event.target.files);
+ id('v4DocMessages').textContent=items.map(x=>(x.ok?'Added '+x.name:'Could not add '+(x.name||'document')+': '+x.error)).join(' · ');
+ event.target.value='';drawDocLibrary();
+});
+drawDocLibrary();
 function drawSensors(){
  const area=id('v4Sensors');clear(area);const suggestions=core.suggestions(log.headers||[]);let count=0;
  for(const sug of suggestions){
@@ -232,5 +262,5 @@ tour.innerHTML='<summary><span>NEW HERE?</span> Your first log, explained in 60 
 const launch=id('signalLaunchpad');if(launch)launch.insertAdjacentElement('afterend',tour);
 id('v4TourUpload')?.addEventListener('click',()=>id('fileInput')?.click());
 id('v4GuideStart').addEventListener('click',()=>{tour.open=true;id('v4Onboarding').scrollIntoView?.({behavior:'smooth',block:'start'});});
-window.RawestSignalV4={show,clear:clearAll,version:'4.0.0'};
+window.RawestSignalV4={show,clear:clearAll,version:'4.0.1'};
 })();
