@@ -501,43 +501,87 @@ function mount(host,getLog){
  }
  function refreshRecommendations(){
   analysis=buildReview();
+  quickResult.replaceChildren();
+  const blockers=analysis.issues.filter(x=>x.severity==='stop');
+  const first=blockers[0];
+  const complete=finite(analysis.hardware.actual)&&finite(analysis.hardware.maxLift);
+  let heading='',intro='',action='';
+  if(first){
+   heading='CHECK THIS BEFORE ADDING POWER';
+   intro=plainFinding(first);
+   action=first.action;
+  }else if(!complete){
+   heading='START WITH YOUR CAM + SPRING SPECS';
+   intro='We cannot verify compatibility yet. Enter what you know and leave unknown numbers blank.';
+   action='The cam lift and the spring manufacturer’s maximum lift are the first things to check.';
+  }else{
+   heading='NO DIRECT LIFT MISMATCH FOUND IN ENTERED NUMBERS';
+   intro='Your entered cam lift is within the stated spring rating, but this does not prove your engine is safe or that the springs are the correct pressure.';
+   action='Before more power, confirm physical clearances, spring pressures and the current log.';
+  }
+  quickResult.className='garage-quick-result '+(first?'garage-quick-stop':'garage-quick-review');
+  quickResult.append(mk('span','YOUR NEXT MOVE · LIVE PREVIEW','garage-eyebrow'));
+  quickResult.append(mk('h4',heading));
+  quickResult.append(mk('p',intro));
+  quickResult.append(mk('p',action,'garage-muted'));
+  const jump=mk('button','See the checks + reasoning ↓','ps-btn secondary');jump.type='button';
+  jump.onclick=()=>audit.scrollIntoView?.({behavior:'smooth',block:'start'});
+  quickResult.append(jump);
+
   audit.replaceChildren();
-  const h=mk('h3','BUILD COMPATIBILITY · LIVE BETA');audit.append(h);
+  audit.append(mk('h3','BUILD CHECK · WHAT TO FIX FIRST'));
   const counts=mk('div',null,'garage-metrics');
   const makeStat=(value,label,kind)=>{
    const b=mk('div',null,'garage-metric '+(kind||''));b.append(mk('strong',value),mk('span',label));counts.append(b);
   };
-  makeStat(analysis.totals.stop,'Stop / investigate','garage-stop');
-  makeStat(analysis.totals.verify,'Needs verification','garage-verify');
-  makeStat(analysis.logReport.available?'Linked':'Not linked','Current ECU log');
-  makeStat(analysis.plan.gated?'Hold power':'Review options','Power upgrade gate',analysis.plan.gated?'garage-stop':'');
+  makeStat(analysis.totals.stop,'Important warnings','garage-stop');
+  makeStat(analysis.totals.verify,'Questions to verify','garage-verify');
+  makeStat(analysis.logReport.available?'Connected':'Not connected','Current log');
+  makeStat(analysis.plan.gated?'Fix first':'Explore','More power');
   audit.append(counts);
   if(finite(analysis.hardware.actual))audit.append(mk('p',
-   'Calculated max valve lift: '+round(analysis.hardware.actual)+'" · '+analysis.hardware.lift.description,'garage-muted'));
+   'Maximum estimated valve lift: '+round(analysis.hardware.actual)+'" · based on your entries; verify the cam card and rocker ratio.','garage-muted'));
   const item=(entry)=>{
    const card=mk('article',null,'garage-finding severity-'+entry.severity);
-   const h=mk('strong',entry.title+' · '+entry.severity.toUpperCase());
-   card.append(h,mk('p',entry.explanation),mk('p','NEXT: '+entry.action,'garage-muted'));
-   card.append(mk('small',entry.evidence||entry.category));return card;
+   const tag=entry.severity==='stop'?'IMPORTANT WARNING':entry.severity==='verify'?'CHECK THIS':entry.severity==='upgrade'?'OPTION TO CONSIDER':'REFERENCE';
+   card.append(mk('span',tag,'garage-eyebrow'));
+   card.append(mk('strong',entry.title));
+   card.append(mk('p',plainFinding(entry),'garage-plain'));
+   card.append(mk('p','NEXT STEP: '+entry.action,'garage-next'));
+   const details=mk('details',null,'garage-technical');
+   details.append(mk('summary','Why? · See technical details'));
+   details.append(mk('p',entry.explanation));
+   details.append(mk('small',entry.evidence||entry.category));
+   details.open=model.mode==='detailed';
+   card.append(details);
+   return card;
   };
-  for(const c of analysis.issues.filter(x=>x.severity==='stop'))audit.append(item(c));
-  const other=mk('details',null,'garage-other-findings');other.open=!analysis.totals.stop;
-  other.append(mk('summary','Other compatibility / verification checks ('+analysis.issues.filter(x=>x.severity!=='stop').length+')'));
-  for(const c of analysis.issues.filter(x=>x.severity!=='stop'))other.append(item(c));
+  for(const c of blockers)audit.append(item(c));
+  const other=mk('details',null,'garage-other-findings');other.open=!analysis.totals.stop&&model.mode==='detailed';
+  const rest=analysis.issues.filter(x=>x.severity!=='stop');
+  other.append(mk('summary','Other things to verify ('+rest.length+')'));
+  for(const c of rest)other.append(item(c));
   audit.append(other);
-  const logbox=mk('div',null,'garage-log-context');
-  logbox.append(mk('h4','LOG EVIDENCE'),mk('p',analysis.logReport.text));
+  const logbox=mk('details',null,'garage-log-context');
+  logbox.open=analysis.logReport.available&&analysis.logReport.lean>0;
+  logbox.append(mk('summary','What did the ECU log say?'));
+  logbox.append(mk('p',analysis.logReport.text));
   for(const n of analysis.logReport.next)logbox.append(mk('p','• '+n,'garage-muted'));
   audit.append(logbox);
   const power=mk('section',null,'garage-power');
-  power.append(mk('h3','MORE POWER · BUILD-AWARE OPTIONS'),mk('p',analysis.plan.headline,'garage-muted'));
-  for(const p of analysis.plan.options)power.append(item(p));audit.append(power);
+  power.append(mk('h3','WANT MORE POWER?'),mk('p',analysis.plan.headline,'garage-muted'));
+  if(analysis.plan.gated)power.append(mk('p','We can still show upgrade ideas, but the warnings above come first. No power gain is promised.','garage-plain'));
+  const ideas=mk('details',null,'garage-upgrade-ideas');
+  ideas.open=!analysis.plan.gated&&model.mode==='detailed';
+  ideas.append(mk('summary','Explore possible upgrades ('+analysis.plan.options.length+')'));
+  for(const p of analysis.plan.options)ideas.append(item(p));
+  power.append(ideas);audit.append(power);
   audit.append(mk('p',analysis.disclaimer,'garage-disclaimer'));
- const source=mk('p','Technical reference: COMP Cams Valve Springs 101 · minimum 0.060-inch coil clearance is an illustrative check; follow the actual spring/cam manufacturer and measure the engine.','garage-disclaimer');
- const citation=mk('a','Read valve spring clearance guidance');
- citation.href='https://www.compcams.com/valve-springs-101/';
- citation.target='_blank';citation.rel='noopener noreferrer';
- source.append(citation);audit.append(source);
+  const source=mk('p','Spring clearances are only screening calculations. Manufacturer specs and physical measurement take priority.','garage-disclaimer');
+  const citation=mk('a','Read spring clearance guidance');
+  citation.href='https://www.compcams.com/valve-springs-101/';
+  citation.target='_blank';citation.rel='noopener noreferrer';
+  source.append(citation);audit.append(source);
  }
  function drawHistory(){
   logs.replaceChildren();logs.append(mk('h3','BUILD HISTORY · COMPACT LOG SNAPSHOTS'));
