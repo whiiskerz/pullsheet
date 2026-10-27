@@ -477,8 +477,8 @@ function mount(host,getLog){
   navNext.hidden=!easy||model.step===EASY_STEPS.length-1;
   navReview.hidden=!easy||model.step!==EASY_STEPS.length-1;
  }
- easyBtn.onclick=()=>{model.mode='simple';renderMode();};
- detailBtn.onclick=()=>{model.mode='detailed';renderMode();};
+ easyBtn.onclick=()=>{model.mode='simple';renderMode();refreshRecommendations();};
+ detailBtn.onclick=()=>{model.mode='detailed';renderMode();refreshRecommendations();};
  const navActions=mk('div',null,'garage-step-actions');form.append(navActions);
  const navBack=mk('button','Previous step','ps-btn secondary');navBack.type='button';navActions.append(navBack);
  const navNext=mk('button','Next step','ps-btn');navNext.type='button';navActions.append(navNext);
@@ -610,13 +610,13 @@ function mount(host,getLog){
  const confirmLose=()=>!model.dirty||typeof root.confirm!=='function'||root.confirm('Discard unsaved build changes?');
  select.onchange=()=>{
   if(!confirmLose()){select.value=model.activeId||'';return;}
-  model.activeId=select.value||null;applySelection();
+  model.activeId=select.value||null;model.step=0;applySelection();
  };
- const newBuild=()=>{if(!confirmLose())return;model.activeId=null;model.draft=blank();model.dirty=false;applySelection();};
+ const newBuild=()=>{if(!confirmLose())return;model.activeId=null;model.step=0;model.draft=blank();model.dirty=false;applySelection();};
  const newBtn=addButton('New build',newBuild);
  const demoBtn=addButton('Try .610 / .560 demo',()=>{
   if(!confirmLose())return;
-  model.activeId=null;model.draft=demo();model.dirty=true;refreshSelect();refreshInputs();drawHistory();refreshRecommendations();
+  model.activeId=null;model.step=1;model.draft=demo();model.dirty=true;refreshSelect();refreshInputs();drawHistory();refreshRecommendations();
   status.textContent='DEMO ONLY · .610/.615 lift cam and .560 spring rating. Not saved unless you choose Save build.';
  });
  const saveBtn=addButton('Save build',()=>{
@@ -691,7 +691,10 @@ function mount(host,getLog){
    const a=mk('a');a.href=url;a.download='rawest-signal-build-compatibility-review.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }catch(e){status.textContent='Report export unavailable: '+safeText(e.message);}
  });
- const api={refresh(){refreshRecommendations();drawHistory();},getActive:()=>getActive(),getDraft:()=>({...model.draft}),
+ const api={refresh(invalidateLog=false){
+   if(invalidateLog){previousLog=null;cachedLogReport=undefined;}
+   refreshRecommendations();drawHistory();
+  },getActive:()=>getActive(),getDraft:()=>({...model.draft}),
   getSaved:()=>model.builds.map(x=>({id:x.id,fields:{...x.fields},snapshots:[...x.snapshots]})),
   analysis:()=>analysis};
  applySelection();
