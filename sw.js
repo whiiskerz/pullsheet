@@ -22,6 +22,7 @@ const APP_SHELL = [
   './signal-fuel-graph.js?v=4.0.1',
   './signal-docs-library.js?v=4.0.1',
   './docs/index.html',
+  './docs/',
   './signal-v4.css?v=4.0.1',
   './signal-units.js?v=4.0.1',
   './calibration-intelligence.js?v=4.0.1',
